@@ -1,0 +1,7 @@
+[functions]
+  [functions.cv-parser]
+  path = "cv-parser"
+  entrypoint = "index.ts"
+  runtime = "deno1"
+  memory = 512
+  timeout = 30000

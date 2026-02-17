@@ -1,0 +1,40 @@
+# SoussMassa-RH - System Requirements
+# Note: Ce projet utilise Node.js. Utilisez 'npm install' pour les dépendances logicielles.
+
+# Environnement de base
+node >= 20.0.0
+npm >= 10.0.0
+
+# Outils de ligne de commande (CLI)
+typescript           # npm install -g typescript
+ts-node              # npm install -g ts-node
+
+# Extensions VS Code recommandées (ID à chercher dans le Marketplace)
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+bradlc.vscode-tailwindcss
+dsznajder.es7-react-js-snippets
+
+# Dépendances Frontend (React + Vite)
+react
+react-dom
+react-router-dom
+@types/react
+@types/react-dom
+@types/react-router-dom
+vite
+@vitejs/plugin-react
+tailwindcss
+postcss
+autoprefixer
+@types/node
+
+# Dépendances API
+axios
+@google/genai
+
+# Dépendances de développement
+@types/node
+jest
+ts-jest
+@types/jest

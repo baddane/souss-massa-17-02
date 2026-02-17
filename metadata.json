@@ -1,0 +1,8 @@
+{
+  "name": "SoussMassa-RH - Portail Emploi Régional",
+  "description": "Plateforme de mise en relation entre talents et recruteurs dans la région Souss-Massa. Retrouvez soussmassa-rh.com pour vos opportunités de carrière.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

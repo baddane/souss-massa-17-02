@@ -1,0 +1,575 @@
+import { supabase } from './supabase';
+
+// Helper function to ensure supabase is available
+const ensureSupabase = () => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized');
+  }
+  return supabase;
+};
+
+export interface Company {
+  id: string;
+  name: string;
+  description: string;
+  website: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  industry: string;
+  company_size: string;
+  logo_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface School {
+  id: string;
+  name: string;
+  description: string;
+  website: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  school_type: string;
+  programs: string[];
+  logo_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdviceCategory {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  created_at: string;
+}
+
+export interface AdviceArticle {
+  id: string;
+  title: string;
+  subtitle: string;
+  content: string;
+  category_id: string;
+  author: string;
+  author_title: string;
+  author_avatar_url: string;
+  featured_image_url: string;
+  reading_time: number;
+  is_published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+  category?: AdviceCategory;
+}
+
+export interface BlogCategory {
+  id: string;
+  name: string;
+  description: string;
+  slug: string;
+  created_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  subtitle: string;
+  content: string;
+  category_id: string;
+  author: string;
+  author_bio: string;
+  author_avatar_url: string;
+  featured_image_url: string;
+  reading_time: number;
+  tags: string[];
+  is_published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+  category?: BlogCategory;
+}
+
+export const dataService = {
+  // Companies
+  getCompanies: async (filters?: { city?: string; industry?: string; isActive?: boolean }): Promise<Company[]> => {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized');
+    }
+    let query = supabase.from('companies').select('*');
+    
+    if (filters?.city) {
+      query = query.eq('city', filters.city);
+    }
+    
+    if (filters?.industry) {
+      query = query.eq('industry', filters.industry);
+    }
+    
+    if (filters?.isActive !== undefined) {
+      query = query.eq('is_active', filters.isActive);
+    }
+    
+    const { data, error } = await query.order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching companies:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getCompanyById: async (id: string): Promise<Company | null> => {
+    const { data, error } = await ensureSupabase()
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching company:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  createCompany: async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<Company> => {
+    const { data, error } = await supabase
+      .from('companies')
+      .insert([companyData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating company:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  updateCompany: async (id: string, companyData: Partial<Company>): Promise<Company> => {
+    const { data, error } = await supabase
+      .from('companies')
+      .update(companyData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating company:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  deleteCompany: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting company:', error);
+      throw error;
+    }
+  },
+
+  // Schools
+  getSchools: async (filters?: { city?: string; schoolType?: string; isActive?: boolean }): Promise<School[]> => {
+    let query = supabase.from('schools').select('*');
+    
+    if (filters?.city) {
+      query = query.eq('city', filters.city);
+    }
+    
+    if (filters?.schoolType) {
+      query = query.eq('school_type', filters.schoolType);
+    }
+    
+    if (filters?.isActive !== undefined) {
+      query = query.eq('is_active', filters.isActive);
+    }
+    
+    const { data, error } = await query.order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching schools:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getSchoolById: async (id: string): Promise<School | null> => {
+    const { data, error } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching school:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  createSchool: async (schoolData: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School> => {
+    const { data, error } = await supabase
+      .from('schools')
+      .insert([schoolData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating school:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  updateSchool: async (id: string, schoolData: Partial<School>): Promise<School> => {
+    const { data, error } = await supabase
+      .from('schools')
+      .update(schoolData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating school:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  deleteSchool: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('schools')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting school:', error);
+      throw error;
+    }
+  },
+
+  // Advice Categories
+  getAdviceCategories: async (): Promise<AdviceCategory[]> => {
+    const { data, error } = await supabase
+      .from('advice_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching advice categories:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getAdviceCategoryById: async (id: string): Promise<AdviceCategory | null> => {
+    const { data, error } = await supabase
+      .from('advice_categories')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching advice category:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  // Advice Articles
+  getAdviceArticles: async (filters?: { categoryId?: string; published?: boolean }): Promise<AdviceArticle[]> => {
+    let query = supabase
+      .from('advice_articles')
+      .select(`
+        *,
+        category:advice_categories(id, name, color)
+      `);
+    
+    if (filters?.categoryId) {
+      query = query.eq('category_id', filters.categoryId);
+    }
+    
+    if (filters?.published !== undefined) {
+      query = query.eq('is_published', filters.published);
+    }
+    
+    const { data, error } = await query.order('published_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching advice articles:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getAdviceArticleById: async (id: string): Promise<AdviceArticle | null> => {
+    const { data, error } = await supabase
+      .from('advice_articles')
+      .select(`
+        *,
+        category:advice_categories(id, name, color)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching advice article:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  createAdviceArticle: async (articleData: Omit<AdviceArticle, 'id' | 'created_at' | 'updated_at'>): Promise<AdviceArticle> => {
+    const { data, error } = await supabase
+      .from('advice_articles')
+      .insert([articleData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating advice article:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  updateAdviceArticle: async (id: string, articleData: Partial<AdviceArticle>): Promise<AdviceArticle> => {
+    const { data, error } = await supabase
+      .from('advice_articles')
+      .update(articleData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating advice article:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  deleteAdviceArticle: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('advice_articles')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting advice article:', error);
+      throw error;
+    }
+  },
+
+  // Blog Categories
+  getBlogCategories: async (): Promise<BlogCategory[]> => {
+    const { data, error } = await supabase
+      .from('blog_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching blog categories:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getBlogCategoryById: async (id: string): Promise<BlogCategory | null> => {
+    const { data, error } = await supabase
+      .from('blog_categories')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching blog category:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  getBlogCategoryBySlug: async (slug: string): Promise<BlogCategory | null> => {
+    const { data, error } = await supabase
+      .from('blog_categories')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching blog category by slug:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  // Blog Posts
+  getBlogPosts: async (filters?: { categoryId?: string; slug?: string; published?: boolean; tags?: string[] }): Promise<BlogPost[]> => {
+    let query = supabase
+      .from('blog_posts')
+      .select(`
+        *,
+        category:blog_categories(id, name, slug)
+      `);
+    
+    if (filters?.categoryId) {
+      query = query.eq('category_id', filters.categoryId);
+    }
+    
+    if (filters?.slug) {
+      query = query.eq('slug', filters.slug);
+    }
+    
+    if (filters?.published !== undefined) {
+      query = query.eq('is_published', filters.published);
+    }
+    
+    if (filters?.tags && filters.tags.length > 0) {
+      query = query.overlaps('tags', filters.tags);
+    }
+    
+    const { data, error } = await query.order('published_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching blog posts:', error);
+      throw error;
+    }
+    
+    return data || [];
+  },
+
+  getBlogPostById: async (id: string): Promise<BlogPost | null> => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        *,
+        category:blog_categories(id, name, slug)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching blog post:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  getBlogPostBySlug: async (slug: string): Promise<BlogPost | null> => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(`
+        *,
+        category:blog_categories(id, name, slug)
+      `)
+      .eq('slug', slug)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching blog post by slug:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  createBlogPost: async (postData: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>): Promise<BlogPost> => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .insert([postData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating blog post:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  updateBlogPost: async (id: string, postData: Partial<BlogPost>): Promise<BlogPost> => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .update(postData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating blog post:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  deleteBlogPost: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('blog_posts')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting blog post:', error);
+      throw error;
+    }
+  },
+
+  // Utility functions
+  getCompaniesByCity: async (city: string): Promise<Company[]> => {
+    return dataService.getCompanies({ city, isActive: true });
+  },
+
+  getSchoolsByCity: async (city: string): Promise<School[]> => {
+    return dataService.getSchools({ city, isActive: true });
+  },
+
+  getAdviceArticlesByCategory: async (categoryId: string): Promise<AdviceArticle[]> => {
+    return dataService.getAdviceArticles({ categoryId, published: true });
+  },
+
+  getBlogPostsByCategory: async (categoryId: string): Promise<BlogPost[]> => {
+    return dataService.getBlogPosts({ categoryId, published: true });
+  },
+
+  getBlogPostsByTags: async (tags: string[]): Promise<BlogPost[]> => {
+    return dataService.getBlogPosts({ tags, published: true });
+  },
+
+  getPublishedAdviceArticles: async (): Promise<AdviceArticle[]> => {
+    return dataService.getAdviceArticles({ published: true });
+  },
+
+  getPublishedBlogPosts: async (): Promise<BlogPost[]> => {
+    return dataService.getBlogPosts({ published: true });
+  }
+};
