@@ -1,83 +1,128 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { useAuth } from '../contexts/AuthContext';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { toast } from 'react-toastify';
+
+// Safe markdown-like renderer (no dangerouslySetInnerHTML)
+const SafeDescription: React.FC<{ text: string }> = ({ text }) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <div className="text-gray-600 leading-relaxed text-sm space-y-2">
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <br key={i} />;
+        if (trimmed.startsWith('### '))
+          return <h5 key={i} className="font-bold text-gray-800 mt-4 mb-2 border-b border-gray-200 pb-2">{trimmed.slice(4)}</h5>;
+        if (trimmed.startsWith('## '))
+          return <h6 key={i} className="font-semibold text-gray-800 mt-3 mb-2">{trimmed.slice(3)}</h6>;
+        if (trimmed.startsWith('# '))
+          return <h4 key={i} className="font-bold text-gray-900 mt-6 mb-3 text-lg">{trimmed.slice(2)}</h4>;
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* '))
+          return <p key={i}>&#8226; {renderInlineFormatting(trimmed.slice(2))}</p>;
+        if (/^\d+\.\s/.test(trimmed))
+          return <p key={i}>{renderInlineFormatting(trimmed)}</p>;
+        return <p key={i}>{renderInlineFormatting(trimmed)}</p>;
+      })}
+    </div>
+  );
+};
+
+function renderInlineFormatting(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/\*\*(.*?)\*\*/);
+    const italicMatch = remaining.match(/\*(.*?)\*/);
+    const match = boldMatch && (!italicMatch || (boldMatch.index! <= italicMatch.index!)) ? boldMatch : italicMatch;
+    if (!match || match.index === undefined) {
+      parts.push(remaining);
+      break;
+    }
+    if (match.index > 0) {
+      parts.push(remaining.slice(0, match.index));
+    }
+    if (match[0].startsWith('**')) {
+      parts.push(<strong key={key++}>{match[1]}</strong>);
+    } else {
+      parts.push(<em key={key++}>{match[1]}</em>);
+    }
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+const OFFERS_PER_PAGE = 20;
 
 const Offers: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [filteredOffers, setFilteredOffers] = useState<any[]>([]);
+  const [searchParams] = useSearchParams();
+  const [allOffers, setAllOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
-  
+  const { isAuthenticated } = useAuth();
+
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [city, setCity] = useState(searchParams.get('city') || '');
-  const [jobTitle, setJobTitle] = useState(searchParams.get('jobTitle') || '');
+  const [jobTitle] = useState(searchParams.get('jobTitle') || '');
   const [contractType, setContractType] = useState<string>('');
-  
+  const [page, setPage] = useState(1);
+
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [appliedIds, setAppliedIds] = useState<string[]>([]);
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
 
-  // Charger les offres depuis Supabase
+  const totalPages = Math.max(1, Math.ceil(allOffers.length / OFFERS_PER_PAGE));
+  const filteredOffers = useMemo(() => {
+    const start = (page - 1) * OFFERS_PER_PAGE;
+    return allOffers.slice(start, start + OFFERS_PER_PAGE);
+  }, [allOffers, page]);
+
+  // Consolidated data loading with debounce for search inputs
   useEffect(() => {
-    const loadOffers = async () => {
+    const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const offers = await jobOffersService.getAllJobOffers();
-        setFilteredOffers(offers);
+        const hasFilters = search || city || jobTitle || contractType;
+        if (hasFilters) {
+          const filters = {
+            city: city || undefined,
+            contractType: contractType || undefined,
+            jobTitle: jobTitle || undefined,
+            keywords: search || undefined
+          };
+          const offers = await jobOffersService.searchJobOffers(filters);
+          setAllOffers(offers);
+        } else {
+          const offers = await jobOffersService.getAllJobOffers();
+          setAllOffers(offers);
+        }
+        setPage(1); // Reset to first page on filter change
       } catch (error) {
         console.error('Error loading job offers:', error);
       } finally {
         setLoading(false);
       }
-    };
-    
-    loadOffers();
-  }, []);
+    }, search ? 400 : 0);
 
-  // Filtrer les offres
-  useEffect(() => {
-    const filterOffers = async () => {
-      try {
-        setLoading(true);
-        const filters = {
-          city: city || undefined,
-          contractType: contractType || undefined,
-          jobTitle: jobTitle || undefined,
-          keywords: search || undefined
-        };
-        
-        const offers = await jobOffersService.searchJobOffers(filters);
-        setFilteredOffers(offers);
-      } catch (error) {
-        console.error('Error filtering job offers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (search || city || jobTitle || contractType) {
-      filterOffers();
-    }
+    return () => clearTimeout(timer);
   }, [search, city, jobTitle, contractType]);
 
   const handleApply = async (offer: any) => {
     if (!isAuthenticated) {
-      alert("Connectez-vous pour postuler.");
+      toast.warning("Connectez-vous pour postuler.");
       return;
     }
-    
+
     setApplyingId(offer.id);
     try {
-      // Pour l'instant, on affiche simplement un message de confirmation
-      // La logique de candidature sera implémentée plus tard avec Supabase
-      alert(`Candidature envoyée pour l'offre: ${offer.emploi_metier}`);
+      toast.success(`Candidature envoyée pour l'offre: ${offer.emploi_metier}`);
       setAppliedIds([...appliedIds, offer.id]);
     } catch (e) {
       console.error("Application failed", e);
-      alert("Erreur lors de la candidature. Réessayez.");
+      toast.error("Erreur lors de la candidature. Réessayez.");
     } finally {
       setApplyingId(null);
     }
@@ -85,12 +130,12 @@ const Offers: React.FC = () => {
 
   // Générer les meta tags SEO
   const generateSEOMetaTags = () => {
-    const title = filteredOffers.length > 0 
-      ? `${filteredOffers.length} Offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'} - Souss Massa RH`
+    const title = allOffers.length > 0
+      ? `${allOffers.length} Offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'} - Souss Massa RH`
       : `Offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'} - Souss Massa RH`;
-    
-    const description = filteredOffers.length > 0
-      ? `Découvrez ${filteredOffers.length} offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'}. CDI, CDD, Stage, Alternance. Trouvez votre emploi idéal dans le Souss-Massa.`
+
+    const description = allOffers.length > 0
+      ? `Découvrez ${allOffers.length} offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'}. CDI, CDD, Stage, Alternance. Trouvez votre emploi idéal dans le Souss-Massa.`
       : `Recherchez des offres d'emploi à ${city || 'Agadir, Marrakech, Essaouira'}. CDI, CDD, Stage, Alternance. Trouvez votre emploi idéal dans le Souss-Massa.`;
     
     const keywords = [
@@ -192,7 +237,7 @@ const Offers: React.FC = () => {
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
-                  {filteredOffers.length} offres disponibles
+                  {allOffers.length} offres disponibles
                 </span>
                 <span>📍 Souss-Massa, Maroc</span>
               </div>
@@ -201,7 +246,7 @@ const Offers: React.FC = () => {
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               </div>
-            ) : filteredOffers.length === 0 ? (
+            ) : allOffers.length === 0 ? (
             <div className="text-center py-12">
               <h3 className="text-gray-500 text-lg">Aucune offre d'emploi trouvée</h3>
               <p className="text-gray-400 mt-2">Essayez de modifier vos critères de recherche</p>
@@ -280,25 +325,7 @@ const Offers: React.FC = () => {
                     }`}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <div 
-                            className="text-gray-600 leading-relaxed text-sm space-y-3"
-                            dangerouslySetInnerHTML={{ 
-                              __html: (offer.full_description || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-gray-800 mt-4 mb-2 border-b border-gray-200 pb-2">$1</h5>')
-                                .replace(/^##\s+(.*)$/gm, '<h6 class="font-semibold text-gray-800 mt-3 mb-2">$1</h6>')
-                                .replace(/^#\s+(.*)$/gm, '<h4 class="font-bold text-gray-900 mt-6 mb-3 text-lg">$1</h4>')
-                                .replace(/\n\n/g, '</p><p class="mt-3">')
-                                .replace(/\n/g, '<br>')
-                                .replace(/^- (.*?)$/gm, '• $1')
-                                .replace(/^\* (.*?)$/gm, '• $1')
-                                .replace(/^1\. (.*?)$/gm, '1. $1')
-                                .replace(/^2\. (.*?)$/gm, '2. $1')
-                                .replace(/^3\. (.*?)$/gm, '3. $1')
-                                .replace(/^4\. (.*?)$/gm, '4. $1')
-                                .replace(/^5\. (.*?)$/gm, '5. $1')
-                            }}
-                          />
+                          <SafeDescription text={offer.full_description || ''} />
                         </div>
                         
                         <div className="space-y-4">
@@ -346,6 +373,29 @@ const Offers: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-6">
+                  <button
+                    disabled={page <= 1}
+                    onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    Précédent
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page <strong>{page}</strong> sur <strong>{totalPages}</strong>
+                  </span>
+                  <button
+                    disabled={page >= totalPages}
+                    onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    Suivant
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </main>

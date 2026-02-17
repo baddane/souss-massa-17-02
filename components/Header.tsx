@@ -1,14 +1,34 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileOpen]);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setIsProfileOpen(false);
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const navLinks = [
     { name: 'Accueil', path: '/' },
@@ -63,8 +83,8 @@ const Header: React.FC = () => {
                 </Link>
               </>
             ) : (
-              <div className="relative">
-                <button 
+              <div className="relative" ref={profileRef}>
+                <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 bg-gray-50 p-1 pr-3 rounded-full hover:bg-gray-100 transition-colors border border-gray-200"
                 >

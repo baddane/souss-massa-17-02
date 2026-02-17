@@ -34,9 +34,7 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               vendor: ['react', 'react-dom'],
-              ui: ['lucide-react', '@radix-ui/react-*'],
               supabase: ['@supabase/supabase-js'],
-              reactQuery: ['@tanstack/react-query', '@tanstack/react-query-devtools']
             }
           }
         }
@@ -47,7 +45,6 @@ export default defineConfig(({ mode }) => {
           'react-dom',
           'react-router-dom',
           '@supabase/supabase-js',
-          '@tanstack/react-query'
         ]
       }
     };

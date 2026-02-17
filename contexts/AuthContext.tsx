@@ -1,19 +1,21 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
+import { authService } from '../services/supabaseService';
 
 interface User {
   email: string;
   name: string;
   role: 'student' | 'company';
   isProfileComplete: boolean;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, role: 'student' | 'company', initialDetails?: any) => Promise<void>;
-  completeProfile: (details: any) => Promise<void>;
+  login: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<void>;
+  signUp: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<void>;
+  completeProfile: (details: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
@@ -28,7 +30,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedUser = localStorage.getItem('stagiaires_user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('stagiaires_user');
+      }
     }
   }, []);
 
@@ -46,37 +52,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email: string, role: 'student' | 'company', initialDetails?: any) => {
-    // 1. MISE À JOUR LOCALE IMMÉDIATE (Fluidité UI)
-    const name = initialDetails 
-      ? (initialDetails.firstName || email.split('@')[0])
+  const login = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => {
+    // Authenticate via Supabase
+    try {
+      await authService.signIn(email, password);
+    } catch (err: any) {
+      throw new Error(err?.message || 'Identifiants incorrects');
+    }
+
+    const name = initialDetails
+      ? (initialDetails.firstName as string || email.split('@')[0])
       : email.split('@')[0];
 
-    const userData: User = { 
-      email, 
-      name, 
+    const userData: User = {
+      email,
+      name,
       role,
       isProfileComplete: !!initialDetails,
       details: initialDetails || {}
     };
-    
+
     setUser(userData);
     localStorage.setItem('stagiaires_user', JSON.stringify(userData));
 
-    // 2. PERSISTENCE ASYNCHRONE (Background)
-    // On ne 'await' pas si on veut une redirection instantanée, 
-    // mais ici on le fait pour garantir que la DB est à jour avant le dashboard.
     if (initialDetails) {
       try {
         await apiService.saveProfileSync(initialDetails);
       } catch (e) {
-        console.error("Critical: Database sync failed during login", e);
-        // On pourrait ajouter un retry ici si besoin
+        console.error("Database sync failed during login", e);
       }
     }
   };
 
-  const completeProfile = async (details: any) => {
+  const signUp = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => {
+    // Register via Supabase
+    try {
+      await authService.signUp(email, password, role);
+    } catch (err: any) {
+      throw new Error(err?.message || "Erreur lors de l'inscription");
+    }
+
+    const name = initialDetails
+      ? (initialDetails.firstName as string || email.split('@')[0])
+      : email.split('@')[0];
+
+    const userData: User = {
+      email,
+      name,
+      role,
+      isProfileComplete: !!initialDetails,
+      details: initialDetails || {}
+    };
+
+    setUser(userData);
+    localStorage.setItem('stagiaires_user', JSON.stringify(userData));
+
+    if (initialDetails) {
+      try {
+        await apiService.saveProfileSync(initialDetails);
+      } catch (e) {
+        console.error("Database sync failed during sign up", e);
+      }
+    }
+  };
+
+  const completeProfile = async (details: Record<string, unknown>) => {
     if (user) {
       const updatedUser = { ...user, isProfileComplete: true, details: { ...user.details, ...details } };
       setUser(updatedUser);
@@ -86,12 +126,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    authService.signOut().catch(() => {});
     setUser(null);
     localStorage.removeItem('stagiaires_user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, completeProfile, logout, isAuthenticated: !!user, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, signUp, completeProfile, logout, isAuthenticated: !!user, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

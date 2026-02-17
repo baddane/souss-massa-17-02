@@ -1,11 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Configuration Supabase avec vos credentials
-const supabaseUrl = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
-
-// Initialisation du client Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabaseOffers as supabase } from '../src/services/supabase';
 
 // Types pour les offres d'emploi
 export interface JobOffer {
@@ -186,32 +179,45 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*', { count: 'exact', head: true });
 
-    // Compter par type de contrat
-    const { data: contractStats } = await supabase
+    // Note: .group() is not available in supabase-js client.
+    // To get grouped stats, use an RPC call or fetch all records and aggregate client-side.
+    const { data: allOffers } = await supabase
       .from('job_offers')
-      .select('type_contrat, count(*)')
-      .group('type_contrat');
+      .select('type_contrat, ville, emploi_metier');
 
-    // Compter par ville
-    const { data: cityStats } = await supabase
-      .from('job_offers')
-      .select('ville, count(*)')
-      .group('ville')
-      .order('count', { ascending: false });
+    const offers = allOffers || [];
 
-    // Compter par métier
-    const { data: jobTitleStats } = await supabase
-      .from('job_offers')
-      .select('emploi_metier, count(*)')
-      .group('emploi_metier')
-      .order('count', { ascending: false })
-      .limit(10);
+    // Aggregate by contract type
+    const contractMap: Record<string, number> = {};
+    for (const o of offers) {
+      contractMap[o.type_contrat] = (contractMap[o.type_contrat] || 0) + 1;
+    }
+    const contractStats = Object.entries(contractMap).map(([type_contrat, count]) => ({ type_contrat, count }));
+
+    // Aggregate by city
+    const cityMap: Record<string, number> = {};
+    for (const o of offers) {
+      cityMap[o.ville] = (cityMap[o.ville] || 0) + 1;
+    }
+    const cityStats = Object.entries(cityMap)
+      .map(([ville, count]) => ({ ville, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Aggregate by job title (top 10)
+    const jobTitleMap: Record<string, number> = {};
+    for (const o of offers) {
+      jobTitleMap[o.emploi_metier] = (jobTitleMap[o.emploi_metier] || 0) + 1;
+    }
+    const jobTitleStats = Object.entries(jobTitleMap)
+      .map(([emploi_metier, count]) => ({ emploi_metier, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
 
     return {
       totalOffers: totalOffers || 0,
-      contractStats: contractStats || [],
-      cityStats: cityStats || [],
-      jobTitleStats: jobTitleStats || []
+      contractStats,
+      cityStats,
+      jobTitleStats
     };
   }
 };

@@ -201,7 +201,7 @@ const Home: React.FC = () => {
           </div>
           <div className="flex flex-wrap justify-center gap-12 grayscale opacity-60 hover:grayscale-0 transition-all duration-500">
             {/* Placeholder logos for top companies - will be replaced with real company logos from Supabase */}
-            {['logo1.png', 'logo2.png', 'logo3.png', 'logo4.png', 'logo5.png', 'logo6.png'].map((logo, index) => (
+            {['logo1.png', 'logo2.png', 'logo3.png', 'logo4.png', 'logo5.png', 'logo6.png'].map((_logo, index) => (
               <div key={index} className="h-16 w-32 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-sm">
                 Logo entreprise
               </div>

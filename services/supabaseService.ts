@@ -179,7 +179,7 @@ export const studentService = {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/cv.${fileExt}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('cv-files')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -187,7 +187,7 @@ export const studentService = {
       });
 
     if (error) throw error;
-    
+
     // Obtenir l'URL publique
     const { data: publicData } = supabase.storage
       .from('cv-files')
@@ -259,7 +259,7 @@ export const companyService = {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/logo.${fileExt}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('company-logos')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -267,7 +267,7 @@ export const companyService = {
       });
 
     if (error) throw error;
-    
+
     // Obtenir l'URL publique
     const { data: publicData } = supabase.storage
       .from('company-logos')

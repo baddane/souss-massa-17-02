@@ -1,11 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Use process.env.API_KEY directly during initialization within functions to follow strict guidelines
+// Vite exposes env vars via process.env (defined in vite.config.ts)
+// The key GEMINI_API_KEY must be set in .env.local
 
 export const getCareerAdvice = async (query: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Tu es un expert en recrutement pour la région Souss-Massa au Maroc pour le site SoussMassa-RH (soussmassa-rh.com). 
@@ -26,7 +27,7 @@ export const getCareerAdvice = async (query: string): Promise<string> => {
 
 export const extractInfoFromCV = async (base64Data: string, mimeType: string): Promise<any> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
       contents: {
@@ -63,7 +64,7 @@ export const extractInfoFromCV = async (base64Data: string, mimeType: string): P
 
 export const extractInfoFromCompanyDoc = async (base64Data: string, mimeType: string): Promise<any> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
@@ -96,7 +97,7 @@ export const extractInfoFromCompanyDoc = async (base64Data: string, mimeType: st
 
 export const summarizeJobOffer = async (offerTitle: string, description: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Résume cette offre d'emploi publiée sur SoussMassa-RH en 3 points clés.

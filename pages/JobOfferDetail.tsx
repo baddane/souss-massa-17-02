@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,7 +10,7 @@ interface JobOfferDetailProps {
 const JobOfferDetail: React.FC<JobOfferDetailProps> = ({ offerId }) => {
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
   const [applying, setApplying] = useState(false);

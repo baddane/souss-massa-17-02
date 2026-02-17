@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CITIES } from '../constants';
@@ -10,17 +10,28 @@ const ProfileSetup: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialisation avec les données utilisateur s'il y en a déjà (via l'IA lors de l'inscription)
-  const [formData, setFormData] = useState({
-    firstName: user?.details?.firstName || user?.name.split(' ')[0] || '',
-    lastName: user?.details?.lastName || user?.name.split(' ')[1] || '',
-    city: user?.details?.city || '',
-    phone: user?.details?.phone || '',
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    city: string;
+    phone: string;
+    email: string;
+    educationLevel: string;
+    experienceYears: number;
+    skills: string;
+    companySize: string;
+    description: string;
+  }>({
+    firstName: (user?.details?.firstName as string) || user?.name.split(' ')[0] || '',
+    lastName: (user?.details?.lastName as string) || user?.name.split(' ')[1] || '',
+    city: (user?.details?.city as string) || '',
+    phone: (user?.details?.phone as string) || '',
     email: user?.email || '',
-    educationLevel: user?.details?.educationLevel || 'Bac+5 (Master/Ingénieur)',
-    experienceYears: user?.details?.experienceYears || 0,
-    skills: user?.details?.skills || '',
-    companySize: user?.details?.companySize || '51-200 employés',
-    description: user?.details?.description || ''
+    educationLevel: (user?.details?.educationLevel as string) || 'Bac+5 (Master/Ingénieur)',
+    experienceYears: (user?.details?.experienceYears as number) || 0,
+    skills: (user?.details?.skills as string) || '',
+    companySize: (user?.details?.companySize as string) || '51-200 employés',
+    description: (user?.details?.description as string) || ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
