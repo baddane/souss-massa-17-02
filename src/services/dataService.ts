@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseOffers as supabase } from './supabase';
 
 // Helper function to ensure supabase is available
 const ensureSupabase = () => {
