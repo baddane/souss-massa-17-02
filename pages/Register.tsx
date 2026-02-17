@@ -218,6 +218,9 @@ const Register: React.FC = () => {
               <option value="">Ville</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
             <div>
               <input type="password" required placeholder="Mot de passe (8 caractères min.)" className={`w-full px-5 py-4 rounded-xl border bg-gray-50 outline-none font-bold transition-all ${passwordTooShort ? 'border-red-400' : 'border-gray-100'}`} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
               {passwordTooShort && <p className="text-red-500 text-xs mt-1 ml-1">Minimum {MIN_PASSWORD_LENGTH} caractères</p>}
