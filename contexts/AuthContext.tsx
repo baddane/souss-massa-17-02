@@ -13,7 +13,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<void>;
-  signUp: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<void>;
+  signUp: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<string | undefined>;
   completeProfile: (details: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -66,10 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('stagiaires_user', JSON.stringify(userData));
   };
 
-  const signUp = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => {
-    // Register via Supabase
+  const signUp = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>): Promise<string | undefined> => {
+    // Register via Supabase — on récupère l'ID même sans confirmation d'email
+    let userId: string | undefined;
     try {
-      await authService.signUp(email, password, role);
+      const data = await authService.signUp(email, password, role);
+      userId = data?.user?.id;
     } catch (err: any) {
       throw new Error(err?.message || "Erreur lors de l'inscription");
     }
@@ -88,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(userData);
     localStorage.setItem('stagiaires_user', JSON.stringify(userData));
+    return userId;
   };
 
   const completeProfile = async (details: Record<string, unknown>) => {
