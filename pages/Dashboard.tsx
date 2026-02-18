@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
-import { apiService } from '../services/apiService';
+import { supabase } from '../src/services/supabase';
 
 // --- Composants Réutilisables ---
 
@@ -57,8 +57,31 @@ const CandidateView = ({ user }: { user: any }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await apiService.getApplications();
-        setApps(Array.isArray(data) ? data : []);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) { setLoading(false); return; }
+
+        const { data: studentProfile } = await supabase
+          .from('student_profiles')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .single();
+
+        if (!studentProfile) { setLoading(false); return; }
+
+        const { data: applications } = await supabase
+          .from('applications')
+          .select(`id, status, submitted_at, job_offers(title, company_profiles(company_name))`)
+          .eq('student_id', studentProfile.id)
+          .order('submitted_at', { ascending: false });
+
+        const mapped = (applications || []).map((app: any) => ({
+          id: app.id,
+          offerTitle: app.job_offers?.title || 'Offre inconnue',
+          company: app.job_offers?.company_profiles?.company_name || '',
+          status: app.status,
+          date: new Date(app.submitted_at).toLocaleDateString('fr-FR'),
+        }));
+        setApps(mapped);
       } catch {
         setApps([]);
       } finally {
@@ -162,8 +185,29 @@ const EmployerView = ({ user }: { user: any }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await apiService.getEmployerJobs();
-        setJobs(Array.isArray(data) ? data : []);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) { setLoading(false); return; }
+
+        const { data: companyProfile } = await supabase
+          .from('company_profiles')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .single();
+
+        if (!companyProfile) { setLoading(false); return; }
+
+        const { data: jobOffers } = await supabase
+          .from('job_offers')
+          .select(`id, title, is_active, applications(count)`)
+          .eq('company_id', companyProfile.id)
+          .order('created_at', { ascending: false });
+
+        const mapped = (jobOffers || []).map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          candidatesCount: job.applications?.[0]?.count || 0,
+        }));
+        setJobs(mapped);
       } catch {
         setJobs([]);
       } finally {
