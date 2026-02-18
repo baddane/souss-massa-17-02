@@ -204,7 +204,14 @@ const Register: React.FC = () => {
       navigate('/dashboard');
     } catch (error: any) {
       console.error("Registration failed", error);
-      toast.error(error?.message || "Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+      const msg = error?.message || '';
+      if (msg.includes('rate limit') || msg.includes('email rate')) {
+        toast.error("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
+      } else if (msg.includes('already registered') || msg.includes('already exists')) {
+        toast.error("Cette adresse email est déjà utilisée. Connectez-vous ou utilisez une autre adresse.");
+      } else {
+        toast.error(msg || "Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+      }
     } finally {
       setIsLoading(false);
     }
