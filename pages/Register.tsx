@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { SECTORS, CITIES } from '../constants';
 import { extractInfoFromCV, extractInfoFromCompanyDoc } from '../services/geminiService';
-import { apiService } from '../services/apiService';
+import { studentService, companyService } from '../services/supabaseService';
+import { supabase } from '../src/services/supabase';
 import { toast } from 'react-toastify';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -130,20 +131,27 @@ const Register: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let finalFileUrl = '';
-
-      if (uploadedFile) {
-        const category = role === 'student' ? 'cv' : 'company_doc';
-        const { uploadUrl, publicUrl } = await apiService.getUploadUrl(uploadedFile.name, uploadedFile.type, category as any);
-        await apiService.uploadFileToS3(uploadUrl, uploadedFile);
-        finalFileUrl = publicUrl;
-      }
-
       const { password: _pw, ...profileData } = formData;
-      await signUp(formData.email, formData.password, role, {
-        ...profileData,
-        [role === 'student' ? 'cvUrl' : 'companyDocUrl']: finalFileUrl,
-      });
+
+      // 1. Inscription via Supabase (auth + état local)
+      await signUp(formData.email, formData.password, role, profileData);
+
+      // 2. Upload du fichier vers Supabase Storage (non-bloquant si le bucket n'est pas configuré)
+      if (uploadedFile) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.id) {
+            if (role === 'student') {
+              await studentService.uploadCV(uploadedFile, user.id);
+            } else {
+              await companyService.uploadLogo(uploadedFile, user.id);
+            }
+          }
+        } catch (uploadErr) {
+          console.error('File upload to Supabase Storage failed:', uploadErr);
+          // Non-bloquant — l'utilisateur peut uploader depuis son profil plus tard
+        }
+      }
 
       navigate('/dashboard');
     } catch (error: any) {
