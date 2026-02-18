@@ -133,14 +133,23 @@ const Register: React.FC = () => {
     try {
       const { password: _pw, ...profileData } = formData;
 
-      // 1. Inscription via Supabase Auth
-      await signUp(formData.email, formData.password, role, profileData);
-
-      // 2. Récupérer l'ID utilisateur Supabase
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id;
+      // 1. Inscription via Supabase Auth — retourne l'userId directement
+      const userId = await signUp(formData.email, formData.password, role, profileData);
 
       if (userId) {
+        // 2. Créer la ligne dans public.users (le trigger peut l'avoir déjà fait)
+        try {
+          await supabase.from('users').upsert({
+            id: userId,
+            email: formData.email,
+            name: formData.firstName || formData.email.split('@')[0],
+            role: role,
+            profile_status: 'incomplete',
+          }, { onConflict: 'id', ignoreDuplicates: true });
+        } catch (usersErr) {
+          console.error('public.users row creation failed:', usersErr);
+        }
+
         // 3. Créer le profil dans la base de données
         try {
           if (role === 'student') {
