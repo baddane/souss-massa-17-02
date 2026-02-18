@@ -41,28 +41,25 @@ CREATE POLICY "users: update own"     ON users FOR UPDATE USING (id = auth.uid()
 -- 3. Trigger tolérant handle_new_user
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  _role text;
+  _name text;
 BEGIN
-  BEGIN
-    INSERT INTO public.users (id, email, name, role, profile_status)
-    VALUES (
-      NEW.id,
-      NEW.email,
-      COALESCE(
-        NULLIF(NEW.raw_user_meta_data->>'name', ''),
-        NULLIF(NEW.raw_user_meta_data->>'firstName', ''),
-        split_part(NEW.email, '@', 1)
-      ),
-      CASE
-        WHEN NEW.raw_user_meta_data->>'role' IN ('student', 'company', 'admin')
-        THEN (NEW.raw_user_meta_data->>'role')::user_role
-        ELSE 'student'::user_role
-      END,
-      'incomplete'
-    )
-    ON CONFLICT (id) DO NOTHING;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'handle_new_user failed: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
-  END;
+  _role := coalesce(NEW.raw_user_meta_data->>'role', 'student');
+  IF _role NOT IN ('student','company','admin') THEN _role := 'student'; END IF;
+  _name := coalesce(
+    nullif(NEW.raw_user_meta_data->>'firstName', ''),
+    nullif(NEW.raw_user_meta_data->>'name', ''),
+    split_part(NEW.email, '@', 1)
+  );
+
+  INSERT INTO public.users (id, email, name, role, profile_status)
+  VALUES (NEW.id, NEW.email, _name, _role::user_role, 'incomplete')
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'handle_new_user: % (SQLSTATE %)', SQLERRM, SQLSTATE;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
