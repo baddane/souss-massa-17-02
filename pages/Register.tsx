@@ -133,23 +133,57 @@ const Register: React.FC = () => {
     try {
       const { password: _pw, ...profileData } = formData;
 
-      // 1. Inscription via Supabase (auth + état local)
+      // 1. Inscription via Supabase Auth
       await signUp(formData.email, formData.password, role, profileData);
 
-      // 2. Upload du fichier vers Supabase Storage (non-bloquant si le bucket n'est pas configuré)
-      if (uploadedFile) {
+      // 2. Récupérer l'ID utilisateur Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      if (userId) {
+        // 3. Créer le profil dans la base de données
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user?.id) {
-            if (role === 'student') {
-              await studentService.uploadCV(uploadedFile, user.id);
-            } else {
-              await companyService.uploadLogo(uploadedFile, user.id);
-            }
+          if (role === 'student') {
+            await studentService.createProfile({
+              user_id: userId,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              phone: formData.phone,
+              city: formData.city,
+              education_level: formData.educationLevel,
+              field_of_study: formData.school,
+              skills: formData.skills
+                ? formData.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+                : [],
+              experience_years: formData.experienceYears,
+            });
+          } else {
+            await companyService.createProfile({
+              user_id: userId,
+              company_name: formData.firstName,
+              company_description: formData.description,
+              industry: formData.companySector,
+              city: formData.city,
+              phone: formData.phone,
+            });
           }
-        } catch (uploadErr) {
-          console.error('File upload to Supabase Storage failed:', uploadErr);
-          // Non-bloquant — l'utilisateur peut uploader depuis son profil plus tard
+        } catch (profileErr) {
+          console.error('Profile DB creation failed:', profileErr);
+          // Non-bloquant — le profil peut être complété depuis le dashboard
+        }
+
+        // 4. Upload du fichier vers Supabase Storage
+        if (uploadedFile) {
+          try {
+            if (role === 'student') {
+              await studentService.uploadCV(uploadedFile, userId);
+            } else {
+              await companyService.uploadLogo(uploadedFile, userId);
+            }
+          } catch (uploadErr) {
+            console.error('File upload to Supabase Storage failed:', uploadErr);
+            // Non-bloquant — l'utilisateur peut uploader depuis son profil plus tard
+          }
         }
       }
 
