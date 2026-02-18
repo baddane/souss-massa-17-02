@@ -146,46 +146,85 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('company-docs', 'company-docs', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 7. Storage policies (DROP old + CREATE)
-DROP POLICY IF EXISTS "cv: upload own" ON storage.objects;
-DROP POLICY IF EXISTS "cv: read own" ON storage.objects;
-DROP POLICY IF EXISTS "cv: update own" ON storage.objects;
+-- 7. Storage policies (DROP old + CREATE avec syntaxe correcte TO authenticated)
+DROP POLICY IF EXISTS "cv: upload own"   ON storage.objects;
+DROP POLICY IF EXISTS "cv: read own"     ON storage.objects;
+DROP POLICY IF EXISTS "cv: update own"   ON storage.objects;
+DROP POLICY IF EXISTS "cv: delete own"   ON storage.objects;
 DROP POLICY IF EXISTS "logo: upload own" ON storage.objects;
-DROP POLICY IF EXISTS "logo: read all" ON storage.objects;
+DROP POLICY IF EXISTS "logo: read all"   ON storage.objects;
 DROP POLICY IF EXISTS "logo: update own" ON storage.objects;
+DROP POLICY IF EXISTS "logo: delete own" ON storage.objects;
+DROP POLICY IF EXISTS "docs: upload own" ON storage.objects;
+DROP POLICY IF EXISTS "docs: read own"   ON storage.objects;
 
-CREATE POLICY "cv: upload own" ON storage.objects FOR INSERT
+-- cv-files : chaque candidat peut uploader/lire/supprimer son propre dossier
+CREATE POLICY "cv: upload own" ON storage.objects
+  FOR INSERT TO authenticated
   WITH CHECK (
     bucket_id = 'cv-files'
-    AND auth.role() = 'authenticated'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "cv: read own" ON storage.objects FOR SELECT
+CREATE POLICY "cv: read own" ON storage.objects
+  FOR SELECT TO authenticated
   USING (
     bucket_id = 'cv-files'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "cv: update own" ON storage.objects FOR UPDATE
+CREATE POLICY "cv: update own" ON storage.objects
+  FOR UPDATE TO authenticated
   USING (
     bucket_id = 'cv-files'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "logo: upload own" ON storage.objects FOR INSERT
+CREATE POLICY "cv: delete own" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'cv-files'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- company-logos : upload/modif par l'entreprise propriétaire, lecture publique
+CREATE POLICY "logo: upload own" ON storage.objects
+  FOR INSERT TO authenticated
   WITH CHECK (
     bucket_id = 'company-logos'
-    AND auth.role() = 'authenticated'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "logo: read all" ON storage.objects FOR SELECT
+CREATE POLICY "logo: read all" ON storage.objects
+  FOR SELECT TO public
   USING (bucket_id = 'company-logos');
 
-CREATE POLICY "logo: update own" ON storage.objects FOR UPDATE
+CREATE POLICY "logo: update own" ON storage.objects
+  FOR UPDATE TO authenticated
   USING (
     bucket_id = 'company-logos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "logo: delete own" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'company-logos'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- company-docs : mêmes droits que cv-files
+CREATE POLICY "docs: upload own" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'company-docs'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "docs: read own" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'company-docs'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
