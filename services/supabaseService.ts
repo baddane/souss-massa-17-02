@@ -178,7 +178,7 @@ export const studentService = {
   async uploadCV(file: File, userId: string) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/cv.${fileExt}`;
-    
+
     const { error } = await supabase.storage
       .from('cv-files')
       .upload(fileName, file, {
@@ -188,12 +188,14 @@ export const studentService = {
 
     if (error) throw error;
 
-    // Obtenir l'URL publique
-    const { data: publicData } = supabase.storage
-      .from('cv-files')
-      .getPublicUrl(fileName);
+    // Stocker le chemin storage dans student_profiles.cv_url
+    const cvPath = `cv-files/${fileName}`;
+    await supabase
+      .from('student_profiles')
+      .update({ cv_url: cvPath })
+      .eq('user_id', userId);
 
-    return publicData.publicUrl;
+    return cvPath;
   },
 
   // Parser un CV avec Gemini
@@ -467,7 +469,6 @@ export const applicationService = {
           first_name,
           last_name,
           phone,
-          email,
           cv_url,
           skills
         )

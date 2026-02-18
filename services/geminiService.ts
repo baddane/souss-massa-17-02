@@ -1,15 +1,21 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Vite exposes env vars via process.env (defined in vite.config.ts)
-// The key GEMINI_API_KEY must be set in .env.local
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
+
+const getAI = () => {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'votre_cle_gemini_ici') {
+    throw new Error('Clé API Gemini non configurée. Ajoutez GEMINI_API_KEY dans .env.local');
+  }
+  return new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+};
 
 export const getCareerAdvice = async (query: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Tu es un expert en recrutement pour la région Souss-Massa au Maroc pour le site SoussMassa-RH (soussmassa-rh.com). 
+      model: 'gemini-2.0-flash',
+      contents: `Tu es un expert en recrutement pour la région Souss-Massa au Maroc pour le site SoussMassa-RH (soussmassa-rh.com).
       Réponds à la question suivante d'un étudiant ou d'un jeune diplômé en étant encourageant et pragmatique.
       Focalise tes conseils sur le dynamisme économique d'Agadir et de sa région quand c'est pertinent.
       Question: ${query}`,
@@ -27,9 +33,9 @@ export const getCareerAdvice = async (query: string): Promise<string> => {
 
 export const extractInfoFromCV = async (base64Data: string, mimeType: string): Promise<any> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-2.0-flash",
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType: mimeType } },
@@ -64,9 +70,9 @@ export const extractInfoFromCV = async (base64Data: string, mimeType: string): P
 
 export const extractInfoFromCompanyDoc = async (base64Data: string, mimeType: string): Promise<any> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType: mimeType } },
@@ -78,7 +84,7 @@ export const extractInfoFromCompanyDoc = async (base64Data: string, mimeType: st
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            firstName: { type: Type.STRING }, // On utilise firstName pour stocker le nom de l'entreprise dans le formulaire existant
+            firstName: { type: Type.STRING },
             companySector: { type: Type.STRING },
             city: { type: Type.STRING },
             email: { type: Type.STRING },
@@ -97,9 +103,9 @@ export const extractInfoFromCompanyDoc = async (base64Data: string, mimeType: st
 
 export const summarizeJobOffer = async (offerTitle: string, description: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: `Résume cette offre d'emploi publiée sur SoussMassa-RH en 3 points clés.
       Titre: ${offerTitle}
       Description: ${description}`,
@@ -110,3 +116,4 @@ export const summarizeJobOffer = async (offerTitle: string, description: string)
     return description;
   }
 };
+
