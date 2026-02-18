@@ -71,11 +71,16 @@ const Register: React.FC = () => {
         const base64Data = await fileToBase64(file);
         setUploadProgress(50);
 
+        // Timeout 30s pour éviter que l'UI reste bloquée si l'API ne répond pas
+        const timeout = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout: analyse IA trop longue')), 30000)
+        );
+
         let aiData;
         if (role === 'student') {
-          aiData = await extractInfoFromCV(base64Data, file.type);
+          aiData = await Promise.race([extractInfoFromCV(base64Data, file.type), timeout]);
         } else {
-          aiData = await extractInfoFromCompanyDoc(base64Data, file.type);
+          aiData = await Promise.race([extractInfoFromCompanyDoc(base64Data, file.type), timeout]);
         }
 
         setUploadProgress(100);
