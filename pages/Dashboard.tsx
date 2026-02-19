@@ -191,7 +191,7 @@ const AppCard = ({ app }: { app: any }) => {
 
 // ─── Candidate View ───────────────────────────────────────────────────────────
 
-const CandidateView = ({ user: _user }: { user: any }) => {
+const CandidateView = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [apps, setApps] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
@@ -1057,7 +1057,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-20">
-        {user?.role === 'student' ? <CandidateView user={user} /> : <EmployerView user={user} />}
+        {user?.role === 'student' ? <CandidateView /> : <EmployerView user={user} />}
       </div>
     </div>
   );
