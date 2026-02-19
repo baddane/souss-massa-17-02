@@ -10,36 +10,34 @@ const ensureSupabase = () => {
 
 export interface Company {
   id: string;
-  name: string;
-  description: string;
-  website: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  industry: string;
-  company_size: string;
-  logo_url: string;
-  is_active: boolean;
+  nom: string;
+  secteur: string;
+  ville: string;
+  site_web: string;
+  nb_employes: string;
+  date_ajout: string;
+  presentation: string;
+  seo_keywords: string;
+  meta_description: string;
+  specialites: string;
+  slug: string;
   created_at: string;
-  updated_at: string;
 }
 
 export interface School {
   id: string;
-  name: string;
-  description: string;
-  website: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  school_type: string;
-  programs: string[];
-  logo_url: string;
-  is_active: boolean;
+  nom: string;
+  type_ecole: string;
+  ville: string;
+  site_web: string;
+  date_ajout: string;
+  presentation: string;
+  seo_keywords: string;
+  meta_description: string;
+  filieres: string[];
+  niveaux_acces: string[];
+  slug: string;
   created_at: string;
-  updated_at: string;
 }
 
 export interface AdviceCategory {
@@ -52,20 +50,16 @@ export interface AdviceCategory {
 
 export interface AdviceArticle {
   id: string;
-  title: string;
-  subtitle: string;
-  content: string;
-  category_id: string;
-  author: string;
-  author_title: string;
-  author_avatar_url: string;
-  featured_image_url: string;
-  reading_time: number;
-  is_published: boolean;
-  published_at: string;
+  titre: string;
+  slug: string;
+  thematique: string;
+  contenu: string;
+  meta_title: string;
+  meta_description: string;
+  seo_keywords: string;
+  date_publi: string;
+  temps_lecture: number;
   created_at: string;
-  updated_at: string;
-  category?: AdviceCategory;
 }
 
 export interface BlogCategory {
@@ -97,24 +91,20 @@ export interface BlogPost {
 
 export const dataService = {
   // Companies
-  getCompanies: async (filters?: { city?: string; industry?: string; isActive?: boolean }): Promise<Company[]> => {
+  getCompanies: async (filters?: { ville?: string; secteur?: string }): Promise<Company[]> => {
     if (!supabase) {
       throw new Error('Supabase client not initialized');
     }
     let query = supabase.from('entreprises').select('*');
-    
-    if (filters?.city) {
-      query = query.eq('city', filters.city);
+
+    if (filters?.ville) {
+      query = query.eq('ville', filters.ville);
     }
-    
-    if (filters?.industry) {
-      query = query.eq('industry', filters.industry);
+
+    if (filters?.secteur) {
+      query = query.eq('secteur', filters.secteur);
     }
-    
-    if (filters?.isActive !== undefined) {
-      query = query.eq('is_active', filters.isActive);
-    }
-    
+
     const { data, error } = await query;
 
     if (error) {
@@ -140,7 +130,7 @@ export const dataService = {
     return data;
   },
 
-  createCompany: async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<Company> => {
+  createCompany: async (companyData: Omit<Company, 'id' | 'created_at'>): Promise<Company> => {
     const { data, error } = await supabase
       .from('entreprises')
       .insert([companyData])
@@ -184,21 +174,17 @@ export const dataService = {
   },
 
   // Schools
-  getSchools: async (filters?: { city?: string; schoolType?: string; isActive?: boolean }): Promise<School[]> => {
+  getSchools: async (filters?: { ville?: string; type_ecole?: string }): Promise<School[]> => {
     let query = supabase.from('ecoles').select('*');
-    
-    if (filters?.city) {
-      query = query.eq('city', filters.city);
+
+    if (filters?.ville) {
+      query = query.eq('ville', filters.ville);
     }
-    
-    if (filters?.schoolType) {
-      query = query.eq('school_type', filters.schoolType);
+
+    if (filters?.type_ecole) {
+      query = query.eq('type_ecole', filters.type_ecole);
     }
-    
-    if (filters?.isActive !== undefined) {
-      query = query.eq('is_active', filters.isActive);
-    }
-    
+
     const { data, error } = await query;
 
     if (error) {
@@ -224,7 +210,7 @@ export const dataService = {
     return data;
   },
 
-  createSchool: async (schoolData: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School> => {
+  createSchool: async (schoolData: Omit<School, 'id' | 'created_at'>): Promise<School> => {
     const { data, error } = await supabase
       .from('ecoles')
       .insert([schoolData])
@@ -298,13 +284,13 @@ export const dataService = {
   },
 
   // Advice Articles
-  getAdviceArticles: async (filters?: { categoryId?: string; published?: boolean }): Promise<AdviceArticle[]> => {
+  getAdviceArticles: async (filters?: { thematique?: string }): Promise<AdviceArticle[]> => {
     let query = supabase
       .from('conseils')
       .select('*');
 
-    if (filters?.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
+    if (filters?.thematique) {
+      query = query.eq('thematique', filters.thematique);
     }
 
     const { data, error } = await query;
@@ -332,7 +318,7 @@ export const dataService = {
     return data;
   },
 
-  createAdviceArticle: async (articleData: Omit<AdviceArticle, 'id' | 'created_at' | 'updated_at'>): Promise<AdviceArticle> => {
+  createAdviceArticle: async (articleData: Omit<AdviceArticle, 'id' | 'created_at'>): Promise<AdviceArticle> => {
     const { data, error } = await supabase
       .from('conseils')
       .insert([articleData])
@@ -536,15 +522,15 @@ export const dataService = {
 
   // Utility functions
   getCompaniesByCity: async (city: string): Promise<Company[]> => {
-    return dataService.getCompanies({ city, isActive: true });
+    return dataService.getCompanies({ ville: city });
   },
 
   getSchoolsByCity: async (city: string): Promise<School[]> => {
-    return dataService.getSchools({ city, isActive: true });
+    return dataService.getSchools({ ville: city });
   },
 
-  getAdviceArticlesByCategory: async (categoryId: string): Promise<AdviceArticle[]> => {
-    return dataService.getAdviceArticles({ categoryId, published: true });
+  getAdviceArticlesByThematique: async (thematique: string): Promise<AdviceArticle[]> => {
+    return dataService.getAdviceArticles({ thematique });
   },
 
   getBlogPostsByCategory: async (categoryId: string): Promise<BlogPost[]> => {
@@ -556,7 +542,7 @@ export const dataService = {
   },
 
   getPublishedAdviceArticles: async (): Promise<AdviceArticle[]> => {
-    return dataService.getAdviceArticles({ published: true });
+    return dataService.getAdviceArticles();
   },
 
   getPublishedBlogPosts: async (): Promise<BlogPost[]> => {
