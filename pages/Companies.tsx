@@ -3,6 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { dataService } from '../src/services/dataService';
 import { Company } from '../src/services/dataService';
 
+const stripMarkdown = (text: string): string =>
+  text
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n+/g, ' ')
+    .trim();
+
 const Companies: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +123,7 @@ const Companies: React.FC = () => {
 
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{company.nom}</h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">{company.presentation}</p>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">{company.presentation ? stripMarkdown(company.presentation) : ''}</p>
 
                 <div className="space-y-2 text-sm text-gray-500">
                   {company.ville && (

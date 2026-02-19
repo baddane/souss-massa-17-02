@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { marked } from 'marked';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { useAuth } from '../contexts/AuthContext';
+
+marked.setOptions({ breaks: true, gfm: true });
 
 interface JobOfferDetailProps {
   offerId: string;
@@ -127,29 +130,17 @@ const JobOfferDetail: React.FC<JobOfferDetailProps> = ({ offerId }) => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Description du poste</h2>
             <div className="space-y-6">
-              {/* Convertir le markdown en HTML */}
-              <div 
-                className="text-gray-700 leading-relaxed text-lg space-y-4"
-                dangerouslySetInnerHTML={{ 
-                  __html: offer.full_description
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/^#\s+(.*)$/gm, '<h1 class="text-3xl font-bold text-gray-900 mt-8 mb-4 border-b border-gray-300 pb-2">$1</h1>')
-                    .replace(/^##\s+(.*)$/gm, '<h2 class="text-2xl font-bold text-gray-900 mt-6 mb-3 border-b border-gray-200 pb-2">$1</h2>')
-                    .replace(/^###\s+(.*)$/gm, '<h3 class="text-xl font-semibold text-gray-900 mt-4 mb-2">$1</h3>')
-                    .replace(/^####\s+(.*)$/gm, '<h4 class="text-lg font-medium text-gray-900 mt-4 mb-2">$1</h4>')
-                    .replace(/^#####\s+(.*)$/gm, '<h5 class="text-base font-medium text-gray-900 mt-3 mb-2">$1</h5>')
-                    .replace(/^######\s+(.*)$/gm, '<h6 class="text-sm font-medium text-gray-900 mt-3 mb-2">$1</h6>')
-                    .replace(/\n\n/g, '</p><p class="mt-4">')
-                    .replace(/\n/g, '<br>')
-                    .replace(/^- (.*?)$/gm, '• $1')
-                    .replace(/^\* (.*?)$/gm, '• $1')
-                    .replace(/^1\. (.*?)$/gm, '1. $1')
-                    .replace(/^2\. (.*?)$/gm, '2. $1')
-                    .replace(/^3\. (.*?)$/gm, '3. $1')
-                    .replace(/^4\. (.*?)$/gm, '4. $1')
-                    .replace(/^5\. (.*?)$/gm, '5. $1')
-                }}
+              <div
+                className="prose prose-gray prose-lg max-w-none
+                  prose-h1:text-3xl prose-h1:font-black prose-h1:text-gray-900 prose-h1:mt-8 prose-h1:mb-4
+                  prose-h2:text-2xl prose-h2:font-bold prose-h2:text-gray-800 prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-gray-100 prose-h2:pb-2
+                  prose-h3:text-xl prose-h3:font-semibold prose-h3:text-gray-700 prose-h3:mt-5 prose-h3:mb-2
+                  prose-p:text-gray-700 prose-p:leading-8
+                  prose-li:text-gray-700 prose-li:leading-7
+                  prose-ul:my-4 prose-ol:my-4
+                  prose-strong:text-gray-900 prose-strong:font-semibold
+                  prose-em:text-gray-600"
+                dangerouslySetInnerHTML={{ __html: marked.parse(offer.full_description ?? '') as string }}
               />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 pt-6 border-t border-gray-100">
