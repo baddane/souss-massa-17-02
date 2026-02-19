@@ -49,8 +49,6 @@ const ArticleDetail: React.FC = () => {
     );
   }
 
-  const isHtml = /<[a-z][\s\S]*>/i.test(article.contenu ?? '');
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back nav */}
@@ -114,27 +112,15 @@ const ArticleDetail: React.FC = () => {
 
           {/* Body */}
           <div className="px-8 py-10">
-            {isHtml ? (
-              <div
-                className="prose prose-gray prose-lg max-w-none
-                  prose-headings:font-black prose-headings:text-gray-900
-                  prose-p:text-gray-700 prose-p:leading-relaxed
-                  prose-li:text-gray-700 prose-li:leading-relaxed
-                  prose-strong:text-gray-900
-                  prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
-                dangerouslySetInnerHTML={{ __html: article.contenu }}
-              />
-            ) : (
-              <div className="space-y-5">
-                {article.contenu?.split('\n').map((para, i) =>
-                  para.trim() ? (
-                    <p key={i} className="text-gray-700 text-base leading-relaxed">
-                      {para}
-                    </p>
-                  ) : null
-                )}
-              </div>
-            )}
+            <div
+              className="prose prose-gray prose-lg max-w-none
+                prose-headings:font-black prose-headings:text-gray-900
+                prose-p:text-gray-700 prose-p:leading-relaxed
+                prose-li:text-gray-700 prose-li:leading-relaxed
+                prose-strong:text-gray-900
+                prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+              dangerouslySetInnerHTML={{ __html: article.contenu ?? '' }}
+            />
           </div>
 
           {/* Footer */}
