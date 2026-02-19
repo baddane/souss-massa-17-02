@@ -117,11 +117,16 @@ const ArticleDetail: React.FC = () => {
           <div className="px-8 py-10">
             <div
               className="prose prose-gray prose-lg max-w-none
-                prose-headings:font-black prose-headings:text-gray-900
-                prose-p:text-gray-700 prose-p:leading-relaxed
-                prose-li:text-gray-700 prose-li:leading-relaxed
-                prose-strong:text-gray-900
-                prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+                prose-h1:text-3xl prose-h1:font-black prose-h1:text-gray-900 prose-h1:mt-10 prose-h1:mb-4
+                prose-h2:text-2xl prose-h2:font-bold prose-h2:text-gray-800 prose-h2:mt-10 prose-h2:mb-3 prose-h2:border-b prose-h2:border-gray-100 prose-h2:pb-2
+                prose-h3:text-xl prose-h3:font-semibold prose-h3:text-gray-700 prose-h3:mt-8 prose-h3:mb-2
+                prose-p:text-gray-700 prose-p:leading-8 prose-p:text-[1.05rem]
+                prose-li:text-gray-700 prose-li:leading-7
+                prose-ul:my-4 prose-ol:my-4
+                prose-strong:text-gray-900 prose-strong:font-semibold
+                prose-em:text-gray-600
+                prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                prose-blockquote:border-l-4 prose-blockquote:border-blue-300 prose-blockquote:bg-blue-50 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:rounded-r-lg prose-blockquote:text-gray-600 prose-blockquote:not-italic"
               dangerouslySetInnerHTML={{ __html: marked.parse(article.contenu ?? '') as string }}
             />
           </div>
