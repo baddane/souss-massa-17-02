@@ -191,7 +191,7 @@ const AppCard = ({ app }: { app: any }) => {
 
 // ─── Candidate View ───────────────────────────────────────────────────────────
 
-const CandidateView = ({ user }: { user: any }) => {
+const CandidateView = ({ user: _user }: { user: any }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [apps, setApps] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
