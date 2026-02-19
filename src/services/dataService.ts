@@ -307,7 +307,7 @@ export const dataService = {
       query = query.eq('category_id', filters.categoryId);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching advice articles:', error);
