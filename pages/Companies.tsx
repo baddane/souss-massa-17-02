@@ -21,7 +21,8 @@ const Companies: React.FC = () => {
         setLoading(true);
         const companiesData = await dataService.getCompanies();
         setCompanies(companiesData);
-        setDebugInfo(`OK — ${companiesData.length} entrée(s) reçue(s)`);
+        const cols = companiesData.length > 0 ? Object.keys(companiesData[0]).join(', ') : 'aucune donnée';
+        setDebugInfo(`OK — ${companiesData.length} entrée(s) | colonnes: ${cols}`);
       } catch (error: any) {
         console.error('Error loading companies:', error);
         setDebugInfo(`ERREUR: ${error?.message || JSON.stringify(error)}`);

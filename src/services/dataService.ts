@@ -115,8 +115,8 @@ export const dataService = {
       query = query.eq('is_active', filters.isActive);
     }
     
-    const { data, error } = await query.order('name', { ascending: true });
-    
+    const { data, error } = await query;
+
     if (error) {
       console.error('Error fetching companies:', error);
       throw error;
@@ -199,8 +199,8 @@ export const dataService = {
       query = query.eq('is_active', filters.isActive);
     }
     
-    const { data, error } = await query.order('name', { ascending: true });
-    
+    const { data, error } = await query;
+
     if (error) {
       console.error('Error fetching schools:', error);
       throw error;
