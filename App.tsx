@@ -15,6 +15,7 @@ import Pricing from './pages/Pricing';
 import Companies from './pages/Companies';
 import Schools from './pages/Schools';
 import Advice from './pages/Advice';
+import ArticleDetail from './pages/ArticleDetail';
 import Blog from './pages/Blog';
 import CareerAssistant from './components/CareerAssistant';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -82,6 +83,7 @@ const AppRoutes = () => {
       <Route path="/entreprises" element={<Companies />} />
       <Route path="/ecoles" element={<Schools />} />
       <Route path="/conseils" element={<Advice />} />
+      <Route path="/conseils/:slug" element={<ArticleDetail />} />
       <Route path="/blog" element={<Blog />} />
 
       {/* Routes protégées */}

@@ -309,12 +309,27 @@ export const dataService = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error('Error fetching advice article:', error);
       throw error;
     }
-    
+
+    return data;
+  },
+
+  getAdviceArticleBySlug: async (slug: string): Promise<AdviceArticle | null> => {
+    const { data, error } = await supabase
+      .from('conseils')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      console.error('Error fetching advice article by slug:', error);
+      return null;
+    }
+
     return data;
   },
 
