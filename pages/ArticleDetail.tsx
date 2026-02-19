@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { marked } from 'marked';
 import { dataService } from '../src/services/dataService';
 import { AdviceArticle } from '../src/services/dataService';
+
+marked.setOptions({ breaks: true, gfm: true });
 
 const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -119,7 +122,7 @@ const ArticleDetail: React.FC = () => {
                 prose-li:text-gray-700 prose-li:leading-relaxed
                 prose-strong:text-gray-900
                 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
-              dangerouslySetInnerHTML={{ __html: article.contenu ?? '' }}
+              dangerouslySetInnerHTML={{ __html: marked.parse(article.contenu ?? '') as string }}
             />
           </div>
 
