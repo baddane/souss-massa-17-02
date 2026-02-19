@@ -18,7 +18,7 @@ const Companies: React.FC = () => {
     const loadCompanies = async () => {
       try {
         setLoading(true);
-        const companiesData = await dataService.getCompanies({ isActive: true });
+        const companiesData = await dataService.getCompanies();
         setCompanies(companiesData);
       } catch (error) {
         console.error('Error loading companies:', error);

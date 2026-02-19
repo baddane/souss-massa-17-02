@@ -101,7 +101,7 @@ export const dataService = {
     if (!supabase) {
       throw new Error('Supabase client not initialized');
     }
-    let query = supabase.from('companies').select('*');
+    let query = supabase.from('entreprises').select('*');
     
     if (filters?.city) {
       query = query.eq('city', filters.city);
@@ -127,7 +127,7 @@ export const dataService = {
 
   getCompanyById: async (id: string): Promise<Company | null> => {
     const { data, error } = await ensureSupabase()
-      .from('companies')
+      .from('entreprises')
       .select('*')
       .eq('id', id)
       .single();
@@ -142,7 +142,7 @@ export const dataService = {
 
   createCompany: async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<Company> => {
     const { data, error } = await supabase
-      .from('companies')
+      .from('entreprises')
       .insert([companyData])
       .select()
       .single();
@@ -157,7 +157,7 @@ export const dataService = {
 
   updateCompany: async (id: string, companyData: Partial<Company>): Promise<Company> => {
     const { data, error } = await supabase
-      .from('companies')
+      .from('entreprises')
       .update(companyData)
       .eq('id', id)
       .select()
@@ -173,7 +173,7 @@ export const dataService = {
 
   deleteCompany: async (id: string): Promise<void> => {
     const { error } = await supabase
-      .from('companies')
+      .from('entreprises')
       .delete()
       .eq('id', id);
     
@@ -185,7 +185,7 @@ export const dataService = {
 
   // Schools
   getSchools: async (filters?: { city?: string; schoolType?: string; isActive?: boolean }): Promise<School[]> => {
-    let query = supabase.from('schools').select('*');
+    let query = supabase.from('ecoles').select('*');
     
     if (filters?.city) {
       query = query.eq('city', filters.city);
@@ -211,7 +211,7 @@ export const dataService = {
 
   getSchoolById: async (id: string): Promise<School | null> => {
     const { data, error } = await supabase
-      .from('schools')
+      .from('ecoles')
       .select('*')
       .eq('id', id)
       .single();
@@ -226,7 +226,7 @@ export const dataService = {
 
   createSchool: async (schoolData: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School> => {
     const { data, error } = await supabase
-      .from('schools')
+      .from('ecoles')
       .insert([schoolData])
       .select()
       .single();
@@ -241,7 +241,7 @@ export const dataService = {
 
   updateSchool: async (id: string, schoolData: Partial<School>): Promise<School> => {
     const { data, error } = await supabase
-      .from('schools')
+      .from('ecoles')
       .update(schoolData)
       .eq('id', id)
       .select()
@@ -257,7 +257,7 @@ export const dataService = {
 
   deleteSchool: async (id: string): Promise<void> => {
     const { error } = await supabase
-      .from('schools')
+      .from('ecoles')
       .delete()
       .eq('id', id);
     
@@ -300,21 +300,14 @@ export const dataService = {
   // Advice Articles
   getAdviceArticles: async (filters?: { categoryId?: string; published?: boolean }): Promise<AdviceArticle[]> => {
     let query = supabase
-      .from('advice_articles')
-      .select(`
-        *,
-        category:advice_categories(id, name, color)
-      `);
-    
+      .from('conseils')
+      .select('*');
+
     if (filters?.categoryId) {
       query = query.eq('category_id', filters.categoryId);
     }
-    
-    if (filters?.published !== undefined) {
-      query = query.eq('is_published', filters.published);
-    }
-    
-    const { data, error } = await query.order('published_at', { ascending: false });
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching advice articles:', error);
@@ -326,11 +319,8 @@ export const dataService = {
 
   getAdviceArticleById: async (id: string): Promise<AdviceArticle | null> => {
     const { data, error } = await supabase
-      .from('advice_articles')
-      .select(`
-        *,
-        category:advice_categories(id, name, color)
-      `)
+      .from('conseils')
+      .select('*')
       .eq('id', id)
       .single();
     
@@ -344,7 +334,7 @@ export const dataService = {
 
   createAdviceArticle: async (articleData: Omit<AdviceArticle, 'id' | 'created_at' | 'updated_at'>): Promise<AdviceArticle> => {
     const { data, error } = await supabase
-      .from('advice_articles')
+      .from('conseils')
       .insert([articleData])
       .select()
       .single();
@@ -359,7 +349,7 @@ export const dataService = {
 
   updateAdviceArticle: async (id: string, articleData: Partial<AdviceArticle>): Promise<AdviceArticle> => {
     const { data, error } = await supabase
-      .from('advice_articles')
+      .from('conseils')
       .update(articleData)
       .eq('id', id)
       .select()
@@ -375,7 +365,7 @@ export const dataService = {
 
   deleteAdviceArticle: async (id: string): Promise<void> => {
     const { error } = await supabase
-      .from('advice_articles')
+      .from('conseils')
       .delete()
       .eq('id', id);
     

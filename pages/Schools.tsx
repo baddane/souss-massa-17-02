@@ -18,7 +18,7 @@ const Schools: React.FC = () => {
     const loadSchools = async () => {
       try {
         setLoading(true);
-        const schoolsData = await dataService.getSchools({ isActive: true });
+        const schoolsData = await dataService.getSchools();
         setSchools(schoolsData);
       } catch (error) {
         console.error('Error loading schools:', error);

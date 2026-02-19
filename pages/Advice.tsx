@@ -13,12 +13,9 @@ const Advice: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [articlesData, categoriesData] = await Promise.all([
-          dataService.getPublishedAdviceArticles(),
-          dataService.getAdviceCategories()
-        ]);
+        const articlesData = await dataService.getAdviceArticles();
         setArticles(articlesData);
-        setCategories(categoriesData);
+        setCategories([]);
       } catch (error) {
         console.error('Error loading advice data:', error);
       } finally {
