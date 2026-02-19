@@ -9,6 +9,7 @@ const Companies: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // Get unique cities and industries for filters
   const cities = Array.from(new Set(companies.map(c => c.city).filter(Boolean))).sort();
@@ -20,8 +21,10 @@ const Companies: React.FC = () => {
         setLoading(true);
         const companiesData = await dataService.getCompanies();
         setCompanies(companiesData);
-      } catch (error) {
+        setDebugInfo(`OK — ${companiesData.length} entrée(s) reçue(s)`);
+      } catch (error: any) {
         console.error('Error loading companies:', error);
+        setDebugInfo(`ERREUR: ${error?.message || JSON.stringify(error)}`);
       } finally {
         setLoading(false);
       }
@@ -53,6 +56,11 @@ const Companies: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Entreprises Locales</h1>
         <p className="text-gray-600">Découvrez les entreprises qui recrutent dans la région Souss-Massa</p>
+        {debugInfo && (
+          <p className="mt-2 text-xs bg-yellow-100 border border-yellow-300 text-yellow-800 px-3 py-1 rounded">
+            🔍 Debug: {debugInfo}
+          </p>
+        )}
       </div>
 
       {/* Filters */}
