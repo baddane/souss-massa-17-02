@@ -152,11 +152,14 @@ const AppPipeline = ({ status }: { status: string }) => {
   );
 };
 
-const AppCard = ({ app }: { app: any }) => {
+const AppCard = ({ app, onClick }: { app: any; onClick?: () => void }) => {
   const initials = (app.company || '?').slice(0, 2).toUpperCase();
   const colorIdx = (initials.charCodeAt(0) || 0) % AVATAR_COLORS.length;
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 hover:bg-gray-50/60 transition-colors rounded-2xl">
+    <div
+      onClick={onClick}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 hover:bg-gray-50/60 transition-colors rounded-2xl ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex items-center gap-4 min-w-0">
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 ${AVATAR_COLORS[colorIdx]}`}>
           {initials}
@@ -189,6 +192,185 @@ const AppCard = ({ app }: { app: any }) => {
   );
 };
 
+// ─── Kanban View ──────────────────────────────────────────────────────────────
+
+const KANBAN_COLUMNS = [
+  { key: 'soumise',   label: 'Soumise',   icon: '📨', border: 'border-blue-200',   bg: 'bg-blue-50',   text: 'text-blue-700'   },
+  { key: 'en_cours',  label: 'En cours',  icon: '⏳', border: 'border-violet-200', bg: 'bg-violet-50', text: 'text-violet-700' },
+  { key: 'entretien', label: 'Entretien', icon: '💬', border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-700'  },
+  { key: 'embauchee', label: 'Embauchée', icon: '🎉', border: 'border-green-200',  bg: 'bg-green-50',  text: 'text-green-700'  },
+  { key: 'refusee',   label: 'Refusée',   icon: '❌', border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-600'    },
+];
+
+const KanbanView = ({ apps, onCardClick }: { apps: any[]; onCardClick: (app: any) => void }) => (
+  <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+    {KANBAN_COLUMNS.map(col => {
+      const colApps = apps.filter(a => a.status === col.key);
+      return (
+        <div key={col.key} className="flex-shrink-0 w-60">
+          <div className={`${col.bg} rounded-2xl border ${col.border} p-3 mb-3 flex items-center justify-between`}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">{col.icon}</span>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${col.text}`}>{col.label}</span>
+            </div>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full bg-white/70 ${col.text}`}>{colApps.length}</span>
+          </div>
+          <div className="space-y-3">
+            {colApps.length === 0 ? (
+              <div className="text-center py-8 text-gray-300">
+                <p className="text-xs font-bold">Aucune</p>
+              </div>
+            ) : colApps.map(app => {
+              const initials = (app.company || '?').slice(0, 2).toUpperCase();
+              const colorIdx = (initials.charCodeAt(0) || 0) % AVATAR_COLORS.length;
+              return (
+                <div
+                  key={app.id}
+                  onClick={() => onCardClick(app)}
+                  className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs flex-shrink-0 ${AVATAR_COLORS[colorIdx]}`}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-gray-900 truncate leading-tight">{app.offerTitle}</p>
+                      <p className="text-[10px] text-gray-400 font-semibold truncate">{app.company}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-400 font-medium">{app.date}</span>
+                    <div className="flex gap-1">
+                      {app.viewedByCompany && <span title="Vu par le recruteur" className="text-[10px]">👀</span>}
+                      {app.hasCoverLetter && <span title="Lettre incluse" className="text-[10px]">✍️</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
+
+// ─── App Detail Drawer ─────────────────────────────────────────────────────────
+
+const AppDrawer = ({ app, onClose }: { app: any; onClose: () => void }) => {
+  if (!app) return null;
+  const initials = (app.company || '?').slice(0, 2).toUpperCase();
+  const colorIdx = (initials.charCodeAt(0) || 0) % AVATAR_COLORS.length;
+  const currentIdx = PIPELINE_STAGES.indexOf(app.status as any);
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 ${AVATAR_COLORS[colorIdx]}`}>
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="font-black text-gray-900 truncate">{app.offerTitle}</p>
+              <p className="text-sm text-gray-400 font-semibold">{app.company}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all flex-shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Statut</span>
+            <StatusBadge status={app.status} />
+          </div>
+
+          {/* Pipeline */}
+          <div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Progression</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {PIPELINE_STAGES.map((stage, i) => {
+                const cfg = STATUS_CONFIG[stage];
+                const isActive = i <= currentIdx && app.status !== 'refusee';
+                const isCurrent = stage === app.status;
+                return (
+                  <React.Fragment key={stage}>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                        isCurrent ? `${cfg.bg} ${cfg.text} ring-2 ring-offset-1 ring-current` :
+                        isActive  ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {i + 1}
+                      </div>
+                      <span className={`text-[9px] font-bold ${isCurrent ? cfg.text : isActive ? 'text-blue-500' : 'text-gray-400'}`}>
+                        {cfg.label}
+                      </span>
+                    </div>
+                    {i < PIPELINE_STAGES.length - 1 && (
+                      <div className={`h-px flex-1 min-w-3 mb-3 ${isActive && i < currentIdx ? 'bg-blue-400' : 'bg-gray-200'}`} />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="space-y-1">
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Détails</p>
+            {[
+              { label: 'Type de contrat', value: CONTRACT_LABELS[app.contractType] || app.contractType },
+              { label: 'Télétravail',      value: app.workType },
+              { label: 'Date de candidature', value: app.date },
+            ].filter(i => i.value).map(item => (
+              <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-gray-50">
+                <span className="text-sm font-semibold text-gray-500">{item.label}</span>
+                <span className="text-sm font-bold text-gray-900">{item.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Indicators */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className={`p-4 rounded-2xl text-center ${app.viewedByCompany ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+              <div className="text-xl mb-1">{app.viewedByCompany ? '👀' : '📨'}</div>
+              <p className={`text-[10px] font-black ${app.viewedByCompany ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {app.viewedByCompany ? 'Vu par le recruteur' : 'Pas encore vu'}
+              </p>
+            </div>
+            <div className={`p-4 rounded-2xl text-center ${app.hasCoverLetter ? 'bg-indigo-50' : 'bg-gray-50'}`}>
+              <div className="text-xl mb-1">{app.hasCoverLetter ? '✍️' : '📄'}</div>
+              <p className={`text-[10px] font-black ${app.hasCoverLetter ? 'text-indigo-600' : 'text-gray-400'}`}>
+                {app.hasCoverLetter ? 'Lettre incluse' : 'Sans lettre'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-100">
+          <Link
+            to="/offres"
+            className="w-full inline-block text-center bg-blue-600 text-white px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+          >
+            Voir d'autres offres
+          </Link>
+        </div>
+      </div>
+    </>
+  );
+};
+
 // ─── Candidate View ───────────────────────────────────────────────────────────
 
 const CandidateView = () => {
@@ -197,6 +379,10 @@ const CandidateView = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [appFilter, setAppFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'company' | 'status'>('date_desc');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -230,6 +416,7 @@ const CandidateView = () => {
           workType: app.job_offers?.work_type || '',
           status: normalizeStatus(app.status),
           date: new Date(app.submitted_at).toLocaleDateString('fr-FR'),
+          rawDate: app.submitted_at,
           viewedByCompany: app.viewed_by_company,
           hasCoverLetter: !!app.cover_letter,
         })));
@@ -269,11 +456,26 @@ const CandidateView = () => {
     { key: 'refusee',   label: `Refusées (${refusedCount})` },
   ];
 
-  const filteredApps = appFilter === 'all'
+  const statusFiltered = appFilter === 'all'
     ? apps
     : appFilter === 'active'
     ? apps.filter(a => ['soumise', 'en_cours', 'entretien'].includes(a.status))
     : apps.filter(a => a.status === appFilter);
+
+  const filteredApps = statusFiltered
+    .filter(a => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return a.offerTitle.toLowerCase().includes(q) || a.company.toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'date_asc': return new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime();
+        case 'company':  return a.company.localeCompare(b.company, 'fr');
+        case 'status':   return a.status.localeCompare(b.status);
+        default:         return new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime();
+      }
+    });
 
   const missingFields = profile ? [
     !profile.phone && 'Téléphone',
@@ -488,6 +690,7 @@ const CandidateView = () => {
             {/* ════════════════════════════════ CANDIDATURES ════════════════════════════════ */}
             {activeTab === 'apps' && (
               <div className="space-y-5">
+                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-black text-gray-900">Mes candidatures</h2>
@@ -499,6 +702,67 @@ const CandidateView = () => {
                   >
                     + Postuler
                   </Link>
+                </div>
+
+                {/* Search + Sort + View toggle */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Search */}
+                  <div className="relative flex-1">
+                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Rechercher un poste ou une entreprise…"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sort */}
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as any)}
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                  >
+                    <option value="date_desc">Date ↓ (récent)</option>
+                    <option value="date_asc">Date ↑ (ancien)</option>
+                    <option value="company">Entreprise A→Z</option>
+                    <option value="status">Statut</option>
+                  </select>
+
+                  {/* View toggle */}
+                  <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0">
+                    <button
+                      onClick={() => setViewMode('list')}
+                      title="Vue liste"
+                      className={`px-3 py-2.5 transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-700'}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('kanban')}
+                      title="Vue kanban"
+                      className={`px-3 py-2.5 transition-all ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-700'}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Filter chips */}
@@ -518,43 +782,43 @@ const CandidateView = () => {
                   ))}
                 </div>
 
-                {/* Pipeline legend */}
-                {totalApps > 0 && (
-                  <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-4 items-center">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Pipeline :</span>
-                    {PIPELINE_STAGES.map((s, i) => (
-                      <div key={s} className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
-                        {i > 0 && <span className="text-gray-300 text-xs">→</span>}
-                        <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[s].dot}`} />
-                        {STATUS_CONFIG[s].label}
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 sm:ml-auto">
-                      <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG.refusee.dot}`} />
-                      {STATUS_CONFIG.refusee.label}
-                    </div>
-                  </div>
+                {/* Results count when searching */}
+                {searchQuery && (
+                  <p className="text-xs text-gray-400 font-semibold">
+                    {filteredApps.length} résultat{filteredApps.length > 1 ? 's' : ''} pour «&nbsp;{searchQuery}&nbsp;»
+                  </p>
                 )}
 
-                {/* Applications list */}
+                {/* Applications */}
                 {filteredApps.length === 0 ? (
                   <EmptyState
                     icon="📭"
                     title="Aucune candidature ici"
                     description={
-                      appFilter === 'all'
+                      searchQuery
+                        ? `Aucun résultat pour "${searchQuery}".`
+                        : appFilter === 'all'
                         ? 'Commencez à postuler pour voir votre historique.'
                         : 'Aucune candidature dans cette catégorie.'
                     }
                     actionLabel="Parcourir les offres"
                     actionHref="/offres"
                   />
+                ) : viewMode === 'kanban' ? (
+                  <KanbanView apps={filteredApps} onCardClick={app => setSelectedApp(app)} />
                 ) : (
                   <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
                     <div className="divide-y divide-gray-50/80 px-2">
-                      {filteredApps.map(app => <AppCard key={app.id} app={app} />)}
+                      {filteredApps.map(app => (
+                        <AppCard key={app.id} app={app} onClick={() => setSelectedApp(app)} />
+                      ))}
                     </div>
                   </div>
+                )}
+
+                {/* Detail drawer */}
+                {selectedApp && (
+                  <AppDrawer app={selectedApp} onClose={() => setSelectedApp(null)} />
                 )}
               </div>
             )}
