@@ -114,7 +114,7 @@ const App: React.FC = () => {
         <Router>
           <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
-            <main className="flex-grow">
+            <main id="main-content" className="flex-grow">
               <AppRoutes />
             </main>
             <Footer />
