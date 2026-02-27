@@ -1,3 +1,79 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── Scroll fluide global ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Skip-to-content (accessibilité clavier) ─── */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1.25rem;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0 0 0.5rem 0.5rem;
+  transition: top 0.15s ease;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* ─── Focus visible global (navigation clavier) ─── */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Supprime l'outline par défaut uniquement si :focus-visible est supporté */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ─── Amélioration du contraste des placeholders ─── */
+::placeholder {
+  color: #6b7280; /* gray-500 — ratio 4.6:1 sur fond blanc */
+  opacity: 1;
+}
+
+/* ─── Scrollbar personnalisée (Webkit) ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* ─── Styles d'impression (offres imprimables) ─── */
+@media print {
+  header,
+  footer,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    font-size: 12pt;
+    color: #000;
+  }
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 10pt;
+    color: #555;
+  }
+}
