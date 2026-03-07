@@ -1,0 +1,225 @@
+# SoussMassa-RH — Instructions & Audit Claude
+
+## Projet
+**Nom** : SoussMassa-RH (soussmassa-rh.com)
+**Description** : Portail d'emploi et de recrutement pour la region Souss-Massa (Agadir, Maroc)
+**Domaine** : soussmassa-rh.com
+**Deploiement** : Vercel (vercel.json present)
+
+---
+
+## Stack Technique
+
+| Couche        | Technologie                                    |
+|---------------|------------------------------------------------|
+| Frontend      | React 18 + TypeScript                          |
+| Build         | Vite 5                                         |
+| Styling       | Tailwind CSS 3 + tailwindcss-animate           |
+| Routing       | React Router DOM 6                             |
+| Auth          | Supabase Auth                                  |
+| BDD Site      | Supabase (users, profiles, candidatures, etc.) |
+| BDD Offres    | Supabase (instance separee pour les offres)    |
+| IA            | Google Gemini 2.0 Flash (assistant carriere, parsing CV) |
+| Icons         | Lucide React                                   |
+| Notifications | React-Toastify                                 |
+| HTTP          | Axios (apiService legacy)                      |
+| Deploy        | Vercel                                         |
+| Fonts         | Inter (Google Fonts)                           |
+
+---
+
+## Architecture des fichiers
+
+```
+/
+├── index.html              # Point d'entree HTML
+├── index.tsx               # Bootstrap React (ReactDOM.createRoot)
+├── App.tsx                 # Router principal + ErrorBoundary + Layout
+├── types.ts                # Types globaux (JobOffer, Company, Article, ContractType)
+├── constants.tsx            # Donnees mock + constantes (CITIES, SECTORS)
+├── vercel.json             # Config Vercel (SPA rewrites)
+├── vite.config.ts          # Config Vite (aliases, env vars, build)
+├── tailwind.config.js      # Config Tailwind
+├── tsconfig.json           # Config TypeScript
+├── package.json            # Dependances
+│
+├── components/
+│   ├── Header.tsx          # Navigation principale + menu mobile + profil
+│   ├── Footer.tsx          # Pied de page + newsletter + reseaux sociaux
+│   └── CareerAssistant.tsx # Chatbot IA (Gemini) flottant
+│
+├── pages/
+│   ├── Home.tsx            # Page d'accueil (hero, stats, offres vedettes)
+│   ├── Offers.tsx          # Liste des offres avec filtres et pagination
+│   ├── Login.tsx           # Connexion
+│   ├── Register.tsx        # Inscription (Talent/Entreprise) + upload CV/doc IA
+│   ├── Dashboard.tsx       # Tableau de bord (candidatures, stats, profil)
+│   ├── ProfileSetup.tsx    # Configuration du profil
+│   ├── Pricing.tsx         # Page tarifs (Basic, Pro, Enterprise)
+│   ├── Companies.tsx       # Annuaire des entreprises locales
+│   ├── Schools.tsx         # Annuaire des ecoles/formations
+│   ├── Advice.tsx          # Articles de conseils carriere
+│   ├── Blog.tsx            # Blog
+│   ├── JobOfferDetail.tsx  # Detail d'une offre (non route dans App.tsx)
+│   └── JobOffersStats.tsx  # Statistiques des offres (non route dans App.tsx)
+│
+├── contexts/
+│   └── AuthContext.tsx     # Contexte d'authentification React
+│
+├── services/
+│   ├── supabaseService.ts  # Services Supabase complets (auth, profils, offres, candidatures, notifications, ecoles, articles, stats)
+│   ├── geminiService.ts    # Integration Google Gemini (conseils IA, parsing CV, parsing doc entreprise, resume offre)
+│   ├── apiService.ts       # Client Axios legacy (API Gateway AWS non utilisee)
+│   └── jobOffersService.ts # Service offres d'emploi (BDD externe Supabase)
+│
+├── src/
+│   ├── index.css           # Styles globaux (Tailwind + custom)
+│   └── services/
+│       ├── supabase.ts     # Clients Supabase (2 instances : site + offres)
+│       ├── dataService.ts  # Service donnees (companies, schools, advice, blog) via Supabase offres
+│       └── jobOffersService.ts # Service offres (doublon simplifie de services/jobOffersService.ts)
+│
+├── supabase/
+│   ├── migrations/         # 4 fichiers SQL de migration
+│   ├── functions/cv-parser/ # Edge Function pour parsing CV
+│   ├── policies.sql        # Politiques de securite
+│   └── migrate.sh          # Script de migration
+│
+├── *.d.ts                  # Fichiers de declaration TypeScript (generes)
+├── *.sql                   # Scripts SQL divers (dump, fix, setup)
+└── *.md                    # Documentations (README, guides Supabase, fixes)
+```
+
+---
+
+## Routes de l'application
+
+| Route               | Page            | Protegee |
+|----------------------|-----------------|----------|
+| /                    | Home            | Non      |
+| /offres              | Offers          | Non      |
+| /connexion           | Login           | Non      |
+| /inscription         | Register        | Non      |
+| /nos-tarifs          | Pricing         | Non      |
+| /entreprises         | Companies       | Non      |
+| /ecoles              | Schools         | Non      |
+| /conseils            | Advice          | Non      |
+| /blog                | Blog            | Non      |
+| /dashboard           | Dashboard       | Oui      |
+| /profil              | ProfileSetup    | Oui      |
+| /finaliser-profil    | -> /dashboard   | Redirect |
+| *                    | -> /            | Redirect |
+
+---
+
+## Double base de donnees Supabase
+
+- **supabaseSite** (`VITE_SUPABASE_URL`) : Authentification, users, profils etudiants/entreprises, candidatures, notifications, job_offers (internes), articles, ecoles
+- **supabaseOffers** (`VITE_SUPABASE_OFFERS_URL`) : Base externe d'offres d'emploi scrapees/importees (table job_offers avec champs : ville, ref_offre, type_contrat, raison_sociale, date_offre, nbre_postes, emploi_metier, full_description, seo_keywords, required_skills, suggested_salary_range)
+
+---
+
+## TRAVAIL ACCOMPLI
+
+### Nettoyage Git (07/03/2026)
+- [x] Suppression branche locale `master`
+- [x] Nettoyage des branches inutiles
+- [x] Seule la branche `main` est conservee comme branche de travail
+- [x] Audit complet du projet realise
+
+---
+
+## AUDIT DU SITE — Problemes identifies
+
+### CRITIQUE
+1. **Fichiers .d.ts generes committes** : `App.d.ts`, `constants.d.ts`, `vite.config.d.ts`, `types.d.ts`, `index.d.ts`, `pages/*.d.ts`, `components/*.d.ts`, `services/*.d.ts`, `contexts/AuthContext.d.ts` — devraient etre dans `.gitignore`
+2. **Duplication de services** : `services/jobOffersService.ts` et `src/services/jobOffersService.ts` font la meme chose (requetes offres Supabase). Le premier est plus complet, le second est importe par les pages.
+3. **`apiService.ts` inutilise** : Client Axios configure pour une API AWS Gateway qui n'existe pas. Aucune page ne l'importe directement — code mort.
+4. **Pages non routees** : `JobOfferDetail.tsx` et `JobOffersStats.tsx` existent mais ne sont pas dans le Router (`App.tsx`). Code mort ou oubli d'integration.
+5. **`.env.example` desynchronise** : Reference des variables AWS (Cognito, API Gateway) qui ne sont plus utilisees. Manque les variables Supabase Offers.
+
+### IMPORTANT
+6. **Securite `process.env`** : `vite.config.ts` expose TOUTES les variables d'environnement via `'process.env': JSON.stringify(mergedEnv)`, ce qui peut leaker des secrets dans le bundle client.
+7. **Pas de fichier `.env.local` dans `.gitignore` de facon explicite** : Verifier que les cles API ne sont pas exposees.
+8. **Login force le role `student`** : `Login.tsx` appelle `login(email, password, 'student')` — les entreprises ne peuvent pas se connecter avec le bon role.
+9. **Candidature factice** : `Offers.tsx > handleApply()` affiche un toast de succes mais n'envoie aucune requete au backend.
+10. **Newsletter non fonctionnelle** : Le formulaire dans `Footer.tsx` fait `e.preventDefault()` sans envoyer de donnee.
+
+### AMELIORATIONS
+11. **Pas de page 404 dediee** : Le catch-all redirige vers `/` silencieusement.
+12. **Fichiers SQL en vrac** : `dump.sql`, `fix_site_database.sql`, `fix_storage_policies.sql`, `setup_site_database.sql`, `supabase_schema.sql` — devraient etre consolides ou dans un dossier.
+13. **Fichiers MD multiples** : `README.md`, `README_SUPABASE.md`, `README_SUPABASE_OFFERS.md`, `SUPABASE_SETUP.md`, `SUPABASE_CONFIGURATION_GUIDE.md`, `SUPABASE_FIXES.md`, `FIXES_SUMMARY.md`, `removal_plan.md` — nettoyer et consolider.
+14. **`metadata.json`** demande des permissions camera/micro inutiles pour un portail emploi.
+15. **Liens footer vers pages inexistantes** : `/mentions-legales`, `/cookies`, `/contact` ne sont pas des routes dans le Router.
+16. **Lien "Mot de passe oublie"** dans Login.tsx pointe vers `/mot-de-passe-oublie` qui n'existe pas.
+17. **Pas de SEO dynamique** : Titre/meta-description identiques sur toutes les pages. Pas de balises Open Graph.
+18. **Images via picsum.photos** : Les logos d'entreprises mock utilisent des images aleatoires au lieu de vrais logos.
+19. **Pas de tests** : `package.json` configure Jest mais aucun fichier de test n'existe.
+20. **`vite.config.js`** coexiste avec `vite.config.ts` — potentiel conflit.
+
+### ACCESSIBILITE (Points positifs)
+- Skip-to-content link present
+- Labels `aria-label`, `aria-expanded`, `aria-controls` bien utilises
+- `role="search"`, `role="status"`, `role="alert"` corrects
+- Navigation par clavier supportee (`focus-visible`)
+- Skeleton loading avec `aria-hidden`
+
+---
+
+## TODO — Prochaines sessions
+
+### Priorite haute
+- [ ] Supprimer les fichiers `.d.ts` generes et les ajouter a `.gitignore`
+- [ ] Resoudre la duplication `services/jobOffersService.ts` vs `src/services/jobOffersService.ts`
+- [ ] Supprimer `apiService.ts` (code mort AWS)
+- [ ] Corriger `Login.tsx` pour permettre la connexion en tant qu'entreprise (choix de role)
+- [ ] Securiser `vite.config.ts` : ne pas exposer toutes les vars d'env dans `process.env`
+- [ ] Mettre a jour `.env.example` avec les vraies variables requises (Supabase site + offres + Gemini)
+- [ ] Implementer la vraie candidature dans `Offers.tsx > handleApply()`
+
+### Priorite moyenne
+- [ ] Router `JobOfferDetail.tsx` (ex: `/offres/:id`) et `JobOffersStats.tsx` (ex: `/statistiques`)
+- [ ] Creer les pages manquantes : `/mentions-legales`, `/cookies`, `/contact`, `/mot-de-passe-oublie`
+- [ ] Supprimer ou deplacer les fichiers SQL en vrac dans `supabase/`
+- [ ] Consolider les fichiers README/MD en un seul README
+- [ ] Supprimer `vite.config.js` (doublon de `vite.config.ts`)
+- [ ] Creer une page 404 dediee au lieu du redirect silencieux
+- [ ] Corriger `metadata.json` (retirer permissions camera/micro)
+
+### Priorite basse
+- [ ] Ajouter des meta-tags SEO dynamiques par page (react-helmet ou equivalent)
+- [ ] Implementer la newsletter (connexion a un service type Mailchimp ou Supabase)
+- [ ] Ajouter des tests unitaires (Jest + React Testing Library)
+- [ ] Remplacer les images picsum.photos par de vrais logos/images
+- [ ] Ajouter un PWA manifest pour l'installation mobile
+- [ ] Optimiser les performances (lazy loading des pages, code splitting)
+- [ ] Ajouter i18n si besoin multilingue (fr/ar/en)
+
+---
+
+## Variables d'environnement requises
+
+```env
+# Supabase — Base du site (auth, profils, candidatures)
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJxxxxxxx
+
+# Supabase — Base des offres d'emploi (externe)
+VITE_SUPABASE_OFFERS_URL=https://yyyyy.supabase.co
+VITE_SUPABASE_OFFERS_ANON_KEY=eyJyyyyyyy
+
+# Google Gemini API (assistant carriere + parsing CV)
+GEMINI_API_KEY=AIzaxxxxxxxx
+# ou
+VITE_GEMINI_API_KEY=AIzaxxxxxxxx
+```
+
+---
+
+## Commandes utiles
+
+```bash
+npm run dev      # Demarre le serveur de dev (port 3001)
+npm run build    # Build TypeScript + Vite
+npm run preview  # Preview du build de prod
+```
