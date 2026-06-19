@@ -1,303 +1,217 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { SECTORS, CITIES } from '../constants';
-import { extractInfoFromCV, extractInfoFromCompanyDoc } from '../services/geminiService';
+import { CITIES } from '../constants';
 import { studentService, companyService } from '../services/supabaseService';
 import { supabase } from '../src/services/supabase';
 import { toast } from 'react-toastify';
-
-const MIN_PASSWORD_LENGTH = 8;
+import SEO from '../components/SEO';
 
 const Register: React.FC = () => {
+  const [step, setStep] = useState<'choose' | 'form'>('choose');
   const [role, setRole] = useState<'student' | 'company'>('student');
-  const [isParsing, setIsParsing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [autoFilledFields, setAutoFilledFields] = useState<string[]>([]);
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    school: '',
-    city: '',
-    phone: '',
-    companySector: '',
-    description: '',
-    skills: '',
-    experienceYears: 0,
-    educationLevel: 'Bac+5 (Master/Ingénieur)',
-    cvUrl: '',
-    logoUrl: ''
-  });
-
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setFormData({
-      firstName: '', lastName: '', email: '', password: '', school: '', city: '',
-      phone: '', companySector: '', description: '', skills: '',
-      experienceYears: 0, educationLevel: 'Bac+5 (Master/Ingénieur)', cvUrl: '', logoUrl: ''
-    });
-    setConfirmPassword('');
-    setAutoFilledFields([]);
-    setUploadedFile(null);
-    setUploadProgress(0);
-  }, [role]);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    city: '',
+  });
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = error => reject(error);
-    });
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadedFile(file);
-      setIsParsing(true);
-      setUploadProgress(20);
-
-      try {
-        const base64Data = await fileToBase64(file);
-        setUploadProgress(50);
-
-        // Timeout 30s pour éviter que l'UI reste bloquée si l'API ne répond pas
-        const timeout = new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout: analyse IA trop longue')), 30000)
-        );
-
-        let aiData;
-        if (role === 'student') {
-          aiData = await Promise.race([extractInfoFromCV(base64Data, file.type), timeout]);
-        } else {
-          aiData = await Promise.race([extractInfoFromCompanyDoc(base64Data, file.type), timeout]);
-        }
-
-        setUploadProgress(100);
-
-        if (aiData) {
-          const filled: string[] = [];
-          const updatedData = { ...formData };
-
-          const fieldMap: Record<string, unknown> = role === 'student' ? {
-            firstName: aiData.firstName, lastName: aiData.lastName, email: aiData.email,
-            city: aiData.city, phone: aiData.phone, school: aiData.school,
-            description: aiData.description, skills: aiData.skills,
-            educationLevel: aiData.educationLevel, experienceYears: aiData.experienceYears
-          } : {
-            firstName: aiData.firstName, companySector: aiData.companySector,
-            email: aiData.email, city: aiData.city, phone: aiData.phone, description: aiData.description
-          };
-
-          Object.keys(fieldMap).forEach(key => {
-            if (fieldMap[key]) {
-              (updatedData as any)[key] = fieldMap[key];
-              filled.push(key);
-            }
-          });
-
-          setFormData(updatedData);
-          setAutoFilledFields(filled);
-        }
-      } catch (error) {
-        console.error("AI Analysis failed", error);
-        toast.error("L'analyse du document a échoué. Remplissez le formulaire manuellement.");
-      } finally {
-        setTimeout(() => {
-          setIsParsing(false);
-          setUploadProgress(0);
-        }, 500);
-      }
+  const handleGoogleSignup = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erreur de connexion Google.');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.password.length < MIN_PASSWORD_LENGTH) {
-      toast.warning(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`);
-      return;
-    }
-
-    if (formData.password !== confirmPassword) {
-      toast.warning("Les mots de passe ne correspondent pas.");
+    if (formData.password.length < 8) {
+      toast.warning('Le mot de passe doit contenir au moins 8 caracteres.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const { password: _pw, ...profileData } = formData;
-
-      // 1. Inscription via Supabase Auth — retourne l'userId directement
-      const userId = await signUp(formData.email, formData.password, role, profileData);
+      const userId = await signUp(formData.email, formData.password, role, { firstName: formData.name });
 
       if (userId) {
-        // 2. Créer la ligne dans public.users (le trigger peut l'avoir déjà fait)
         try {
           await supabase.from('users').upsert({
             id: userId,
             email: formData.email,
-            name: formData.firstName || formData.email.split('@')[0],
+            name: formData.name || formData.email.split('@')[0],
             role: role,
             profile_status: 'incomplete',
           }, { onConflict: 'id', ignoreDuplicates: true });
-        } catch (usersErr) {
-          console.error('public.users row creation failed:', usersErr);
+        } catch (e) {
+          console.error('users row failed:', e);
         }
 
-        // 3. Créer le profil dans la base de données
         try {
           if (role === 'student') {
             await studentService.createProfile({
               user_id: userId,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              phone: formData.phone,
+              first_name: formData.name,
+              last_name: '',
               city: formData.city,
-              education_level: formData.educationLevel,
-              field_of_study: formData.school,
-              skills: formData.skills
-                ? formData.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
-                : [],
-              experience_years: formData.experienceYears,
+              skills: [],
+              experience_years: 0,
             });
           } else {
             await companyService.createProfile({
               user_id: userId,
-              company_name: formData.firstName,
-              company_description: formData.description,
-              industry: formData.companySector,
+              company_name: formData.name,
               city: formData.city,
-              phone: formData.phone,
             });
           }
-        } catch (profileErr) {
-          console.error('Profile DB creation failed:', profileErr);
-          // Non-bloquant — le profil peut être complété depuis le dashboard
-        }
-
-        // 4. Upload du fichier vers Supabase Storage
-        if (uploadedFile) {
-          try {
-            if (role === 'student') {
-              await studentService.uploadCV(uploadedFile, userId);
-            } else {
-              await companyService.uploadLogo(uploadedFile, userId);
-            }
-          } catch (uploadErr) {
-            console.error('File upload to Supabase Storage failed:', uploadErr);
-            // Non-bloquant — l'utilisateur peut uploader depuis son profil plus tard
-          }
+        } catch (e) {
+          console.error('profile creation failed:', e);
         }
       }
 
       navigate('/dashboard');
     } catch (error: any) {
-      console.error("Registration failed", error);
       const msg = error?.message || '';
       if (msg.includes('rate limit') || msg.includes('email rate')) {
-        toast.error("Trop de tentatives d'inscription. Veuillez patienter quelques minutes avant de réessayer.");
+        toast.error('Trop de tentatives. Patientez quelques minutes.');
       } else if (msg.includes('already registered') || msg.includes('already exists')) {
-        toast.error("Cette adresse email est déjà utilisée. Connectez-vous ou utilisez une autre adresse.");
+        toast.error('Email deja utilise. Connectez-vous.');
       } else {
-        toast.error(msg || "Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+        toast.error(msg || "Erreur lors de l'inscription.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const passwordTooShort = formData.password.length > 0 && formData.password.length < MIN_PASSWORD_LENGTH;
-  const passwordMismatch = formData.password.length > 0 && confirmPassword.length > 0 && formData.password !== confirmPassword;
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
-      <div className="max-w-3xl w-full bg-white rounded-[3rem] shadow-2xl p-8 md:p-14 border border-gray-100 relative">
-        {isLoading && (
-          <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm rounded-[3rem] flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
-            <p className="font-black text-blue-900 animate-pulse">Synchronisation avec SoussMassa-RH...</p>
+    <>
+      <SEO
+        title="Inscription gratuite"
+        description="Inscrivez-vous gratuitement sur SoussMassa-RH. Acces immediat aux offres d'emploi a Agadir et dans tout le Souss-Massa."
+        canonical="/inscription"
+      />
+
+      <main className="min-h-[80vh] flex items-center justify-center px-4 py-8">
+        <div className="max-w-lg w-full space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {step === 'choose' ? 'Rejoignez SoussMassa-RH' : role === 'student' ? 'Inscription Candidat' : 'Inscription Entreprise'}
+            </h1>
+            <p className="text-gray-500 mt-2">Gratuit. Sans engagement. En 30 secondes.</p>
           </div>
-        )}
 
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-2">Inscription</h1>
-          <p className="text-gray-500 font-medium">Rejoignez l'écosystème RH du Souss-Massa.</p>
-        </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 space-y-6">
+            <button
+              onClick={handleGoogleSignup}
+              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 py-4 px-6 rounded-xl font-bold text-gray-700 hover:border-blue-400 hover:shadow-md transition-all"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              S'inscrire avec Google
+            </button>
 
-        <div className="flex p-2 bg-gray-100 rounded-2xl mb-10">
-          <button onClick={() => setRole('student')} className={`flex-1 py-4 text-sm font-black rounded-xl transition-all ${role === 'student' ? 'bg-white text-blue-700 shadow-md' : 'text-gray-500'}`}>Talent</button>
-          <button onClick={() => setRole('company')} className={`flex-1 py-4 text-sm font-black rounded-xl transition-all ${role === 'company' ? 'bg-white text-blue-700 shadow-md' : 'text-gray-500'}`}>Entreprise</button>
-        </div>
-
-        <div className="mb-10">
-          <div className={`relative border-4 border-dashed rounded-3xl p-8 text-center transition-all ${isParsing ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-200'}`}>
-            <input type="file" id="ai-upload" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileUpload} />
-            <label htmlFor="ai-upload" className="cursor-pointer block">
-              {isParsing ? (
-                <div className="space-y-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2 max-w-xs mx-auto">
-                    <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
-                  </div>
-                  <p className="text-blue-700 font-bold animate-pulse">Analyse intelligente en cours...</p>
-                </div>
-              ) : (
-                <>
-                  <div className={`w-14 h-14 mx-auto mb-3 rounded-xl flex items-center justify-center ${uploadedFile ? 'bg-green-500' : 'bg-blue-600'} text-white`}>
-                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                  </div>
-                  <h3 className="font-black text-gray-900">{uploadedFile ? 'Document analysé !' : role === 'student' ? 'Glissez votre CV' : 'Glissez votre Plaquette'}</h3>
-                  <p className="text-xs text-gray-400 mt-1">L'IA remplira le formulaire pour vous.</p>
-                </>
-              )}
-            </label>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="relative">
-              <input type="text" required placeholder={role === 'student' ? "Prénom" : "Nom de l'entreprise"} className={`w-full px-5 py-4 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white outline-none font-bold transition-all ${autoFilledFields.includes('firstName') ? 'ring-2 ring-green-400' : ''}`} value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
-              {autoFilledFields.includes('firstName') && <span className="absolute right-4 top-4 text-green-500 text-[10px] font-black">AI</span>}
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+              <div className="relative flex justify-center text-sm"><span className="bg-white px-4 text-gray-400">ou par email</span></div>
             </div>
-            {role === 'company' && (
-              <select required className="w-full px-5 py-4 rounded-xl border border-gray-100 bg-gray-50 outline-none font-bold" value={formData.companySector} onChange={(e) => setFormData({...formData, companySector: e.target.value})}>
-                <option value="">Secteur</option>
-                {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+
+            {step === 'choose' ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 text-center font-medium">Je suis :</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setRole('student'); setStep('form'); }}
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-center group"
+                  >
+                    <div className="text-3xl mb-2">🎓</div>
+                    <p className="font-bold text-gray-900 group-hover:text-blue-700">Candidat</p>
+                    <p className="text-xs text-gray-400 mt-1">Je cherche un emploi</p>
+                  </button>
+                  <button
+                    onClick={() => { setRole('company'); setStep('form'); }}
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-center group"
+                  >
+                    <div className="text-3xl mb-2">🏢</div>
+                    <p className="font-bold text-gray-900 group-hover:text-blue-700">Entreprise</p>
+                    <p className="text-xs text-gray-400 mt-1">Je recrute</p>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="text"
+                  required
+                  placeholder={role === 'student' ? 'Votre nom complet' : "Nom de l'entreprise"}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+                <input
+                  type="email"
+                  required
+                  placeholder="Email"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+                <input
+                  type="password"
+                  required
+                  placeholder="Mot de passe (8 caracteres min.)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <select
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                >
+                  <option value="">Ville (optionnel)</option>
+                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60"
+                >
+                  {isLoading ? 'Creation...' : "Creer mon compte gratuit"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('choose')}
+                  className="w-full text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Retour
+                </button>
+              </form>
             )}
-            <input type="email" required placeholder="Email professionnel" className="w-full px-5 py-4 rounded-xl border border-gray-100 bg-gray-50 outline-none font-bold" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-            <select required className="w-full px-5 py-4 rounded-xl border border-gray-100 bg-gray-50 outline-none font-bold" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})}>
-              <option value="">Ville</option>
-              {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-            <div>
-              <input type="password" required placeholder="Mot de passe (8 caractères min.)" className={`w-full px-5 py-4 rounded-xl border bg-gray-50 outline-none font-bold transition-all ${passwordTooShort ? 'border-red-400' : 'border-gray-100'}`} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
-              {passwordTooShort && <p className="text-red-500 text-xs mt-1 ml-1">Minimum {MIN_PASSWORD_LENGTH} caractères</p>}
-            </div>
-            <div>
-              <input type="password" required placeholder="Confirmer" className={`w-full px-5 py-4 rounded-xl border bg-gray-50 outline-none font-bold transition-all ${passwordMismatch ? 'border-red-500' : 'border-gray-100'}`} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-              {passwordMismatch && <p className="text-red-500 text-xs mt-1 ml-1">Les mots de passe ne correspondent pas</p>}
-            </div>
-          </div>
-          <textarea placeholder="Description / Mission" rows={3} className="w-full px-5 py-4 rounded-xl border border-gray-100 bg-gray-50 outline-none font-bold" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
-          <button type="submit" disabled={isLoading || isParsing} className="w-full py-5 bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-800 transition-all transform active:scale-[0.98]">C'est parti !</button>
-        </form>
-      </div>
-    </div>
+          <p className="text-center text-sm text-gray-500">
+            Deja inscrit ?{' '}
+            <Link to="/connexion" className="text-blue-600 font-bold hover:underline">
+              Se connecter
+            </Link>
+          </p>
+        </div>
+      </main>
+    </>
   );
 };
 

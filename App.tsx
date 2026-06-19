@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Offers from './pages/Offers';
+import JobDetail from './pages/JobDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProfileSetup from './pages/ProfileSetup';
@@ -19,7 +21,6 @@ import Blog from './pages/Blog';
 import CareerAssistant from './components/CareerAssistant';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// Error Boundary
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -42,10 +43,9 @@ class ErrorBoundary extends React.Component<
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center space-y-4">
-            <div className="text-5xl">&#9888;&#65039;</div>
             <h1 className="text-2xl font-bold text-gray-900">Une erreur est survenue</h1>
             <p className="text-gray-500 text-sm">
-              {this.state.error?.message || "L'application a rencontré un problème inattendu."}
+              {this.state.error?.message || "L'application a rencontre un probleme inattendu."}
             </p>
             <button
               onClick={() => {
@@ -54,7 +54,7 @@ class ErrorBoundary extends React.Component<
               }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors"
             >
-              Retour à l'accueil
+              Retour a l'accueil
             </button>
           </div>
         </div>
@@ -64,7 +64,6 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/connexion" />;
@@ -76,6 +75,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/offres" element={<Offers />} />
+      <Route path="/emploi/:id/:slug?" element={<JobDetail />} />
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
       <Route path="/nos-tarifs" element={<Pricing />} />
@@ -84,24 +84,19 @@ const AppRoutes = () => {
       <Route path="/conseils" element={<Advice />} />
       <Route path="/blog" element={<Blog />} />
 
-      {/* Routes protégées */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       } />
 
-      {/* Profil détaillé et édition */}
       <Route path="/profil" element={
         <ProtectedRoute>
           <ProfileSetup />
         </ProtectedRoute>
       } />
 
-      {/* Legacy / redirection fallback */}
       <Route path="/finaliser-profil" element={<Navigate to="/dashboard" replace />} />
-
-      {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -110,26 +105,28 @@ const AppRoutes = () => {
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen flex flex-col bg-gray-50">
-            <Header />
-            <main id="main-content" className="flex-grow">
-              <AppRoutes />
-            </main>
-            <Footer />
-            <CareerAssistant />
-          </div>
-          <ToastContainer
-            position="top-right"
-            autoClose={4000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            pauseOnHover
-          />
-        </Router>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen flex flex-col bg-gray-50">
+              <Header />
+              <main id="main-content" className="flex-grow">
+                <AppRoutes />
+              </main>
+              <Footer />
+              <CareerAssistant />
+            </div>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              pauseOnHover
+            />
+          </Router>
+        </AuthProvider>
+      </HelmetProvider>
     </ErrorBoundary>
   );
 };

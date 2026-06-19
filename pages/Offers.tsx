@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { useAuth } from '../contexts/AuthContext';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'react-toastify';
+import SEO, { slugify } from '../components/SEO';
 
 // Safe markdown-like renderer (no dangerouslySetInnerHTML)
 const SafeDescription: React.FC<{ text: string }> = ({ text }) => {
@@ -163,7 +164,21 @@ const Offers: React.FC = () => {
     ? 'Chargement…'
     : `${allOffers.length} offre${allOffers.length !== 1 ? 's' : ''} disponible${allOffers.length !== 1 ? 's' : ''}`;
 
+  const seoCity = searchParams.get('city') || '';
+  const seoQuery = searchParams.get('q') || '';
+  const seoTitle = seoCity
+    ? `Offres d'emploi a ${seoCity} - Souss-Massa`
+    : seoQuery
+    ? `Offres d'emploi : ${seoQuery} - Souss-Massa`
+    : "Toutes les offres d'emploi - Souss-Massa";
+
   return (
+    <>
+    <SEO
+      title={seoTitle}
+      description={`${allOffers.length} offres d'emploi ${seoCity ? 'a ' + seoCity : ''} dans la region Souss-Massa. CDI, CDD, Stage. Postulez gratuitement.`}
+      canonical={`/offres${window.location.search}`}
+    />
     <div id="main-content" className="max-w-7xl mx-auto px-4 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
@@ -317,7 +332,11 @@ const Offers: React.FC = () => {
                           {offer.raison_sociale.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h2 className="font-bold text-lg text-gray-900">{offer.emploi_metier}</h2>
+                          <h2 className="font-bold text-lg text-gray-900">
+                            <Link to={`/emploi/${offer.id}/${slugify(offer.emploi_metier)}-${slugify(offer.ville)}`} className="hover:text-blue-700 transition-colors">
+                              {offer.emploi_metier}
+                            </Link>
+                          </h2>
                           <p className="text-gray-600 font-medium truncate">{offer.raison_sociale}</p>
                           <div className="flex flex-wrap gap-2 mt-2">
                             <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
@@ -462,6 +481,7 @@ const Offers: React.FC = () => {
         </main>
       </div>
     </div>
+    </>
   );
 };
 

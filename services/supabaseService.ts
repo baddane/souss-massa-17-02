@@ -117,6 +117,37 @@ export const authService = {
     return data;
   },
 
+  // Connexion avec Google OAuth
+  async signInWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/dashboard',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Récupérer la session courante
+  async getSession() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session;
+  },
+
+  // Récupérer l'utilisateur courant
+  async getUser() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return data.user;
+  },
+
   // Déconnexion
   async signOut() {
     const { error } = await supabase.auth.signOut();
