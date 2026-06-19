@@ -4,7 +4,13 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite build)",
-      "Bash(timeout 10 npx vite:*)"
+      "Bash(timeout 10 npx vite:*)",
+      "mcp__Vercel__list_teams",
+      "mcp__Vercel__list_projects",
+      "mcp__Vercel__list_deployments",
+      "mcp__Vercel__get_deployment_build_logs",
+      "mcp__Vercel__web_fetch_vercel_url",
+      "mcp__Vercel__get_project"
     ]
   }
 }
