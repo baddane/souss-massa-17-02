@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { supabaseOffers } from '../src/services/supabase';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -9,7 +10,6 @@ interface ApplyModalProps {
   companyName: string;
 }
 
-const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
 const MAX_CV_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
@@ -35,24 +35,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
     setCvFile(file);
   };
 
-  const toBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-  const openMailtoFallback = () => {
-    const subject = encodeURIComponent(`Candidature : ${jobTitle} (Réf: ${jobRef})`);
-    const body = encodeURIComponent(
-      `Bonjour,\n\nJe souhaite postuler au poste de ${jobTitle} chez ${companyName} (Réf: ${jobRef}).\n\n` +
-      `Nom : ${form.name}\nEmail : ${form.email}\nTéléphone : ${form.phone || 'Non renseigné'}\n\n` +
-      `Merci de trouver mon CV en pièce jointe.\n\nCordialement,\n${form.name}`
-    );
-    window.open(`mailto:${RECIPIENT_EMAIL}?subject=${subject}&body=${body}`, '_blank');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email) {
@@ -66,31 +48,41 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
 
     setSending(true);
     try {
-      const cvBase64 = await toBase64(cvFile);
-      const res = await fetch('/api/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          candidateName: form.name,
-          candidateEmail: form.email,
-          candidatePhone: form.phone,
-          jobTitle,
-          jobRef,
-          cvBase64,
-          cvFileName: cvFile.name,
-        }),
-      });
+      const ext = cvFile.name.split('.').pop();
+      const filePath = `${jobRef}/${Date.now()}-${form.name.replace(/\s+/g, '_')}.${ext}`;
 
-      if (!res.ok) {
-        throw new Error('server');
-      }
+      const { error: uploadError } = await supabaseOffers.storage
+        .from('cvs')
+        .upload(filePath, cvFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabaseOffers.storage
+        .from('cvs')
+        .getPublicUrl(filePath);
+
+      const { error: insertError } = await supabaseOffers
+        .from('candidatures')
+        .insert({
+          job_ref: jobRef,
+          job_title: jobTitle,
+          company_name: companyName,
+          candidate_name: form.name,
+          candidate_email: form.email,
+          candidate_phone: form.phone || null,
+          cv_url: urlData.publicUrl,
+          cv_filename: cvFile.name,
+        });
+
+      if (insertError) throw insertError;
 
       toast.success('Candidature envoyée avec succès !');
+      setForm({ name: '', email: '', phone: '' });
+      setCvFile(null);
       onClose();
-    } catch {
-      openMailtoFallback();
-      toast.info('Votre messagerie va s\'ouvrir — joignez votre CV et envoyez le mail.');
-      onClose();
+    } catch (err: any) {
+      console.error('Erreur candidature:', err);
+      toast.error(err?.message || "Erreur lors de l'envoi. Réessayez.");
     } finally {
       setSending(false);
     }

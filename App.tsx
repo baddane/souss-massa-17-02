@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Offers from './pages/Offers';
 import JobDetail from './pages/JobDetail';
+import Admin from './pages/Admin';
 import { AuthProvider } from './contexts/AuthContext';
 
 const App: React.FC = () => {
@@ -23,6 +24,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<Home />} />
                 <Route path="/offres" element={<Offers />} />
                 <Route path="/emploi/:id/:slug?" element={<JobDetail />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
