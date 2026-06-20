@@ -1,10 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/supabaseService';
+import { supabase } from '../src/services/supabase';
 
 interface User {
+  id?: string;
   email: string;
   name: string;
+  avatar?: string;
   role: 'student' | 'company';
   isProfileComplete: boolean;
   details?: Record<string, unknown>;
@@ -13,6 +16,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => Promise<string | undefined>;
   completeProfile: (details: Record<string, unknown>) => Promise<void>;
   logout: () => void;
@@ -25,7 +29,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  // Hydratation immédiate depuis le localStorage pour éviter tout "flicker" au rechargement
   useEffect(() => {
     const savedUser = localStorage.getItem('stagiaires_user');
     if (savedUser) {
@@ -35,15 +38,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('stagiaires_user');
       }
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const existing = localStorage.getItem('stagiaires_user');
+        if (existing) return;
+
+        const supaUser = session.user;
+        const meta = supaUser.user_metadata || {};
+        const userData: User = {
+          id: supaUser.id,
+          email: supaUser.email || '',
+          name: meta.full_name || meta.name || supaUser.email?.split('@')[0] || '',
+          avatar: meta.avatar_url || meta.picture || undefined,
+          role: meta.role || 'student',
+          isProfileComplete: !!meta.role,
+          details: {},
+        };
+        setUser(userData);
+        localStorage.setItem('stagiaires_user', JSON.stringify(userData));
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        localStorage.removeItem('stagiaires_user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const refreshUser = async () => {
-    // Sync local state only — Supabase session is managed by the Supabase client directly
     return;
   };
 
   const login = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>) => {
-    // Authenticate via Supabase
     try {
       await authService.signIn(email, password);
     } catch (err: any) {
@@ -66,8 +93,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('stagiaires_user', JSON.stringify(userData));
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      await authService.signInWithGoogle();
+    } catch (err: any) {
+      throw new Error(err?.message || 'Erreur de connexion Google');
+    }
+  };
+
   const signUp = async (email: string, password: string, role: 'student' | 'company', initialDetails?: Record<string, unknown>): Promise<string | undefined> => {
-    // Register via Supabase — on récupère l'ID même sans confirmation d'email
     let userId: string | undefined;
     try {
       const data = await authService.signUp(email, password, role);
@@ -81,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : email.split('@')[0];
 
     const userData: User = {
+      id: userId,
       email,
       name,
       role,
@@ -108,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signUp, completeProfile, logout, isAuthenticated: !!user, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, signUp, completeProfile, logout, isAuthenticated: !!user, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,29 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Configuration pour la base de données d'offres d'emploi externe
-const offersSupabaseUrl = (import.meta as any).env.VITE_SUPABASE_OFFERS_URL || '';
-const offersSupabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_OFFERS_ANON_KEY || '';
+const OFFERS_URL = (import.meta as any).env.VITE_SUPABASE_OFFERS_URL || 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
+const OFFERS_KEY = (import.meta as any).env.VITE_SUPABASE_OFFERS_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
 
-// Configuration pour la base de données du site actuel (authentification et données utilisateur)
-const siteSupabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
-const siteSupabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
+export const supabaseOffers = createClient(OFFERS_URL, OFFERS_KEY);
+export const supabaseSite = supabaseOffers;
 
-// Vérification que les variables d'environnement sont définies
-if (!offersSupabaseUrl || !offersSupabaseAnonKey) {
-  console.error('Variables d\'environnement des offres non définies. Configurez VITE_SUPABASE_OFFERS_URL et VITE_SUPABASE_OFFERS_ANON_KEY dans .env.local');
-}
-
-if (!siteSupabaseUrl || !siteSupabaseAnonKey) {
-  console.error('Variables d\'environnement du site non définies. Configurez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans .env.local');
-}
-
-// Clients Supabase (always initialized - will fail at runtime if env vars missing)
-export const supabaseOffers = createClient(offersSupabaseUrl, offersSupabaseAnonKey);
-export const supabaseSite = createClient(siteSupabaseUrl, siteSupabaseAnonKey);
-
-// Export par défaut - UTILISER TOUJOURS supabaseSite pour l'authentification et les données utilisateur
-// supabaseOffers est uniquement pour les offres d'emploi
 export const supabase = supabaseSite;
-
-// URL du client Supabase pour les fonctions Edge
-export const supabaseUrl = siteSupabaseUrl;
+export const supabaseUrl = OFFERS_URL;

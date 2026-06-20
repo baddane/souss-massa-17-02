@@ -1,127 +1,113 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { jobOffersService } from '../services/jobOffersService';
-import { CITIES, SECTORS } from '../constants';
+import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
+import { CITIES } from '../constants';
+import SEO, { generateJobPostingJsonLd } from '../components/SEO';
+
+const POPULAR_CATEGORIES = [
+  { label: 'Informatique & IT', icon: '💻', query: 'informatique' },
+  { label: 'Commerce & Vente', icon: '🛒', query: 'commercial' },
+  { label: 'Administration', icon: '📋', query: 'administratif' },
+  { label: 'Industrie', icon: '🏭', query: 'industrie' },
+  { label: 'Sante', icon: '🏥', query: 'sante' },
+  { label: 'Education', icon: '📚', query: 'enseignement' },
+  { label: 'Tourisme & Hotel', icon: '🏨', query: 'tourisme' },
+  { label: 'BTP & Construction', icon: '🏗️', query: 'construction' },
+];
 
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [selectedSector, setSelectedSector] = useState('');
-  const [featuredOffers, setFeaturedOffers] = useState<any[]>([]);
+  const [recentOffers, setRecentOffers] = useState<any[]>([]);
+  const [allOffers, setAllOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/offres?q=${searchQuery}&city=${selectedCity}&sector=${selectedSector}`);
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (selectedCity) params.set('city', selectedCity);
+    navigate(`/offres?${params.toString()}`);
   };
 
   useEffect(() => {
-    const loadFeaturedOffers = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        setLoadError(false);
         const offers = await jobOffersService.getAllJobOffers();
-        const sortedOffers = offers
-          .sort((a: any, b: any) => new Date(b.date_offre).getTime() - new Date(a.date_offre).getTime())
-          .slice(0, 6);
-        setFeaturedOffers(sortedOffers);
+        setAllOffers(offers);
+        setRecentOffers(
+          offers
+            .sort((a: any, b: any) => new Date(b.date_offre).getTime() - new Date(a.date_offre).getTime())
+            .slice(0, 12)
+        );
       } catch (error) {
-        console.error('Error loading featured offers:', error);
-        setLoadError(true);
+        console.error('Error loading offers:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    loadFeaturedOffers();
+    load();
   }, []);
 
-  const stats = loading
-    ? []
-    : [
-        {
-          title: 'Offres à Agadir',
-          count: featuredOffers.filter((o) => o.ville === 'Agadir').length,
-          colorClass: 'bg-blue-100 text-blue-700',
-          icon: (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          ),
-        },
-        {
-          title: 'Stages Souss-Massa',
-          count: featuredOffers.filter((o) => o.type_contrat === 'Stage').length,
-          colorClass: 'bg-green-100 text-green-700',
-          icon: (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          ),
-        },
-        {
-          title: 'CDI / Emplois',
-          count: featuredOffers.filter((o) => o.type_contrat === 'CDI').length,
-          colorClass: 'bg-purple-100 text-purple-700',
-          icon: (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          ),
-        },
-      ];
+  const cityStats = allOffers.reduce((acc: Record<string, number>, o) => {
+    acc[o.ville] = (acc[o.ville] || 0) + 1;
+    return acc;
+  }, {});
+
+  const contractStats = allOffers.reduce((acc: Record<string, number>, o) => {
+    acc[o.type_contrat] = (acc[o.type_contrat] || 0) + 1;
+    return acc;
+  }, {});
+
+  const jobListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: recentOffers.slice(0, 5).map((offer, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: generateJobPostingJsonLd(offer),
+    })),
+  };
 
   return (
-    <div className="space-y-16 pb-16">
+    <>
+      <SEO
+        title="Offres d'emploi Souss-Massa - Agadir, Inezgane, Taroudant"
+        description={`${allOffers.length}+ offres d'emploi dans la region Souss-Massa. CDI, CDD, Stage a Agadir et environs. Postulez gratuitement en 1 clic.`}
+        canonical="/"
+        jsonLd={jobListJsonLd}
+      />
 
-      {/* Hero Section */}
-      <section className="relative bg-blue-700 py-20 px-4 overflow-hidden" aria-labelledby="hero-heading">
-        <div className="absolute inset-0 opacity-10 pointer-events-none" aria-hidden="true">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M0 100 C 20 0 50 0 100 100 Z" fill="white" />
-          </svg>
-        </div>
+      <div className="space-y-12 pb-16">
+        {/* Hero - compact search */}
+        <section className="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 py-12 px-4">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
+              Emploi Souss-Massa
+            </h1>
+            <p className="text-blue-200 text-lg">
+              {loading ? 'Chargement...' : `${allOffers.length} offres disponibles maintenant`}
+            </p>
 
-        <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
-          <h1 id="hero-heading" className="text-4xl md:text-5xl font-extrabold text-white leading-tight">
-            Boostez votre carrière dans la région Souss-Massa
-          </h1>
-          <p className="text-xl text-blue-100 font-medium">
-            Le portail emploi n°1 à Agadir et ses environs sur soussmassa-rh.com
-          </p>
+            <form onSubmit={handleSearch} className="bg-white p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2 max-w-3xl mx-auto">
+              <div className="flex-1 relative">
+                <input
+                  type="search"
+                  placeholder="Poste, metier, entreprise..."
+                  className="w-full pl-10 pr-4 py-3 border-none focus:ring-2 focus:ring-blue-500 rounded-xl text-gray-700 outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <svg className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
 
-          <form onSubmit={handleSearch} role="search" aria-label="Recherche d'offres d'emploi" className="bg-white p-2 rounded-xl shadow-xl flex flex-col md:flex-row gap-2 max-w-5xl mx-auto">
-
-            <div className="flex-1 relative">
-              <label htmlFor="search-metier" className="sr-only">Métier ou mots-clés</label>
-              <input
-                id="search-metier"
-                type="search"
-                placeholder="Quel métier cherchez-vous ?"
-                className="w-full pl-10 pr-4 py-3 border-none focus:ring-2 focus:ring-blue-500 rounded-lg text-gray-700 outline-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <svg
-                className="absolute left-3 top-3.5 h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-
-            <div className="md:w-48 border-t md:border-t-0 md:border-l border-gray-100">
-              <label htmlFor="search-city" className="sr-only">Ville</label>
               <select
-                id="search-city"
-                className="w-full px-4 py-3 border-none focus:ring-2 focus:ring-blue-500 text-gray-600 bg-transparent cursor-pointer outline-none rounded-lg"
+                className="md:w-44 px-4 py-3 border-none focus:ring-2 focus:ring-blue-500 text-gray-600 bg-transparent rounded-xl outline-none"
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
               >
@@ -130,153 +116,163 @@ const Home: React.FC = () => {
                   <option key={city} value={city}>{city}</option>
                 ))}
               </select>
-            </div>
 
-            <div className="md:w-48 border-t md:border-t-0 md:border-l border-gray-100">
-              <label htmlFor="search-sector" className="sr-only">Secteur d'activité</label>
-              <select
-                id="search-sector"
-                className="w-full px-4 py-3 border-none focus:ring-2 focus:ring-blue-500 text-gray-600 bg-transparent cursor-pointer outline-none rounded-lg"
-                value={selectedSector}
-                onChange={(e) => setSelectedSector(e.target.value)}
+              <button
+                type="submit"
+                className="bg-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors"
               >
-                <option value="">Tout secteur</option>
-                {SECTORS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+                Rechercher
+              </button>
+            </form>
+
+            {/* Quick stats */}
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
+              {Object.entries(contractStats).slice(0, 4).map(([type, count]) => (
+                <Link
+                  key={type}
+                  to={`/offres?contractType=${type}`}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full transition-colors"
+                >
+                  {type}: <strong>{count}</strong>
+                </Link>
+              ))}
             </div>
-
-            <button
-              type="submit"
-              className="bg-orange-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors shadow-lg"
-            >
-              Rechercher
-            </button>
-          </form>
-
-          <div className="flex flex-wrap justify-center gap-6 text-white/90 text-sm" aria-label="Chiffres clés">
-            <div><span className="font-bold text-white">+5 000</span> offres régionales</div>
-            <div><span className="font-bold text-white">+300</span> entreprises locales</div>
-            <div><span className="font-bold text-white">+50 000</span> inscrits</div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Stats Cards */}
-      <section aria-label="Statistiques des offres" className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4 animate-pulse" aria-hidden="true">
-              <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-24" />
-                <div className="h-8 bg-gray-200 rounded w-16" />
-              </div>
-            </div>
-          ))
-        ) : (
-          stats.map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
-              <div className={`${stat.colorClass} w-12 h-12 rounded-lg flex items-center justify-center`}>
-                {stat.icon}
-              </div>
-              <div>
-                <h3 className="text-gray-500 font-medium text-sm">{stat.title}</h3>
-                <p className="text-2xl font-bold text-gray-900">{stat.count}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* Featured Offers */}
-      <section aria-labelledby="featured-heading" className="max-w-7xl mx-auto px-4 space-y-8">
-        <div className="flex justify-between items-end">
-          <div>
-            <h2 id="featured-heading" className="text-2xl font-bold text-gray-900">Opportunités à la Une</h2>
-            <p className="text-gray-500">Postulez aux meilleures offres du Souss-Massa</p>
+        {/* Categories - quick access like marocannonce */}
+        <section className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Recherche par categorie</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {POPULAR_CATEGORIES.map((cat) => (
+              <Link
+                key={cat.query}
+                to={`/offres?q=${cat.query}`}
+                className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 hover:border-blue-400 hover:shadow-md transition-all group"
+              >
+                <span className="text-2xl">{cat.icon}</span>
+                <span className="font-medium text-gray-700 group-hover:text-blue-700 text-sm">{cat.label}</span>
+              </Link>
+            ))}
           </div>
-          <Link to="/offres" className="text-blue-700 font-medium hover:underline">
-            Voir toutes les offres
-            <span aria-hidden="true"> →</span>
-          </Link>
-        </div>
+        </section>
 
-        {loadError ? (
-          <div role="alert" className="col-span-full text-center py-12 bg-red-50 rounded-xl border border-red-100">
-            <p className="text-red-600 font-medium">Impossible de charger les offres pour le moment.</p>
-            <p className="text-red-400 text-sm mt-1">Veuillez rafraîchir la page ou réessayer plus tard.</p>
+        {/* Cities - quick access */}
+        <section className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Offres par ville</h2>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(cityStats)
+              .sort(([, a], [, b]) => (b as number) - (a as number))
+              .slice(0, 10)
+              .map(([ville, count]) => (
+                <Link
+                  key={ville}
+                  to={`/offres?city=${ville}`}
+                  className="bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                >
+                  {ville} <span className="text-gray-400 ml-1">({count})</span>
+                </Link>
+              ))}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse" aria-hidden="true">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                    <div className="w-16 h-6 bg-gray-200 rounded-full" />
-                  </div>
-                  <div className="h-6 bg-gray-200 rounded mb-2" />
-                  <div className="h-4 bg-gray-200 rounded mb-4" />
-                  <div className="h-4 bg-gray-200 rounded" />
+        </section>
+
+        {/* Recent offers - immediately visible */}
+        <section className="max-w-7xl mx-auto px-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900">Dernieres offres publiees</h2>
+            <Link to="/offres" className="text-blue-600 font-medium hover:underline text-sm">
+              Voir tout →
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white p-5 rounded-xl border border-gray-100 animate-pulse">
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
+                  <div className="h-3 bg-gray-200 rounded w-1/3" />
                 </div>
-              ))
-            ) : featuredOffers.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-500">Aucune offre en vedette pour le moment.</p>
-              </div>
-            ) : (
-              featuredOffers.map((offer) => (
-                <article key={offer.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                  <div className="flex justify-between items-start mb-4">
-                    <div
-                      className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white text-2xl font-bold"
-                      aria-hidden="true"
-                    >
-                      {offer.raison_sociale.charAt(0)}
-                    </div>
-                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                      {offer.type_contrat}
-                    </span>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {recentOffers.map((offer) => (
+                <Link
+                  key={offer.id}
+                  to={`/emploi/${offer.slug}`}
+                  className="bg-white p-5 rounded-xl border border-gray-100 hover:border-blue-400 hover:shadow-md transition-all group flex items-start gap-4"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    {offer.raison_sociale.charAt(0)}
                   </div>
-                  <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-700 transition-colors mb-2 line-clamp-2">
-                    {offer.emploi_metier}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4">{offer.raison_sociale} · {offer.ville}</p>
-                  <div className="flex items-center text-gray-400 text-xs mt-4 pt-4 border-t border-gray-50">
-                    <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <time dateTime={offer.date_offre}>
-                      Publiée le {new Date(offer.date_offre).toLocaleDateString('fr-FR')}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors truncate">
+                      {offer.emploi_metier}
+                    </h3>
+                    <p className="text-gray-500 text-sm truncate">{offer.raison_sociale}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{offer.type_contrat}</span>
+                      <span className="text-gray-400 text-xs">{offer.ville}</span>
+                      <span className="text-gray-300 text-xs">·</span>
+                      <span className="text-gray-400 text-xs">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <time className="text-xs text-gray-400 block" dateTime={offer.date_offre}>
+                      {new Date(offer.date_offre).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                     </time>
                   </div>
-                </article>
-              ))
-            )}
-          </div>
-        )}
-      </section>
+                </Link>
+              ))}
+            </div>
+          )}
 
-      {/* CTA Section */}
-      <section aria-labelledby="cta-heading" className="max-w-5xl mx-auto px-4">
-        <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-8 md:p-12 text-center text-white space-y-6 shadow-2xl relative overflow-hidden">
-          <div className="relative z-10">
-            <h2 id="cta-heading" className="text-3xl font-bold">Vous recrutez dans le Souss-Massa ?</h2>
-            <p className="text-blue-100 text-lg">Publiez vos annonces et accédez au meilleur vivier de talents locaux.</p>
-            <div className="pt-6 flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/inscription" className="bg-white text-blue-700 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors">
-                Recruter maintenant
-              </Link>
-              <Link to="/nos-tarifs" className="bg-blue-600/30 border border-white/30 text-white px-8 py-3 rounded-lg font-bold hover:bg-white/10 transition-colors">
-                Voir nos tarifs
+          {recentOffers.length > 0 && (
+            <div className="text-center pt-4">
+              <Link
+                to="/offres"
+                className="inline-block bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                Voir toutes les offres ({allOffers.length})
               </Link>
             </div>
+          )}
+        </section>
+
+        {/* CTA for companies */}
+        <section className="max-w-5xl mx-auto px-4">
+          <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-8 md:p-12 text-white flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1 space-y-3">
+              <h2 className="text-2xl font-bold">Vous recrutez ?</h2>
+              <p className="text-blue-200">Publiez vos offres gratuitement et touchez les meilleurs talents du Souss-Massa.</p>
+            </div>
+            <a
+              href="mailto:r.baddane@gmail.com?subject=Publier%20une%20offre%20sur%20SoussMassa-RH"
+              className="bg-white text-blue-700 px-8 py-4 rounded-xl font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
+            >
+              Nous contacter
+            </a>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+
+        {/* SEO text */}
+        <section className="max-w-4xl mx-auto px-4">
+          <div className="bg-gray-50 rounded-xl p-6 text-sm text-gray-500 leading-relaxed space-y-2">
+            <h2 className="font-bold text-gray-700 text-base">Emploi et recrutement dans la region Souss-Massa</h2>
+            <p>
+              SoussMassa-RH est le portail de reference pour l'emploi dans la region Souss-Massa au Maroc.
+              Retrouvez des offres d'emploi a Agadir, Inezgane, Taroudant, Tiznit et dans toute la region.
+              CDI, CDD, stages et alternances dans tous les secteurs : informatique, commerce, industrie, sante, tourisme.
+            </p>
+            <p>
+              Candidats, postulez gratuitement en un clic — deposez votre CV et il arrive directement chez le recruteur.
+              Entreprises, contactez-nous pour publier vos annonces et toucher les meilleurs talents de la region.
+            </p>
+          </div>
+        </section>
+      </div>
+    </>
   );
 };
 
