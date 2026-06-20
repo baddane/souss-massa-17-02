@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { useAuth } from '../contexts/AuthContext';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -10,18 +9,14 @@ interface ApplyModalProps {
   companyName: string;
 }
 
-const MAX_CV_SIZE = 5 * 1024 * 1024; // 5MB
+const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
+const MAX_CV_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobRef, companyName }) => {
-  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [cvFile, setCvFile] = useState<File | null>(null);
 
   if (!isOpen) return null;
@@ -29,7 +24,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!ALLOWED_TYPES.includes(file.type)) {
       toast.error('Format accepté : PDF ou Word (.doc, .docx)');
       return;
@@ -44,13 +38,20 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
   const toBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1]);
-      };
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  const openMailtoFallback = () => {
+    const subject = encodeURIComponent(`Candidature : ${jobTitle} (Réf: ${jobRef})`);
+    const body = encodeURIComponent(
+      `Bonjour,\n\nJe souhaite postuler au poste de ${jobTitle} chez ${companyName} (Réf: ${jobRef}).\n\n` +
+      `Nom : ${form.name}\nEmail : ${form.email}\nTéléphone : ${form.phone || 'Non renseigné'}\n\n` +
+      `Merci de trouver mon CV en pièce jointe.\n\nCordialement,\n${form.name}`
+    );
+    window.open(`mailto:${RECIPIENT_EMAIL}?subject=${subject}&body=${body}`, '_blank');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +67,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
     setSending(true);
     try {
       const cvBase64 = await toBase64(cvFile);
-
       const res = await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,14 +82,15 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Erreur serveur');
+        throw new Error('server');
       }
 
-      toast.success('Candidature envoyée ! Vous recevrez une réponse bientôt.');
+      toast.success('Candidature envoyée avec succès !');
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message || "Erreur lors de l'envoi. Réessayez.");
+    } catch {
+      openMailtoFallback();
+      toast.info('Votre messagerie va s\'ouvrir — joignez votre CV et envoyez le mail.');
+      onClose();
     } finally {
       setSending(false);
     }
@@ -154,15 +155,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
             >
               {cvFile ? (
                 <div className="flex items-center justify-center gap-2 text-blue-700">
-                  <span className="text-2xl">📄</span>
                   <span className="font-medium text-sm">{cvFile.name}</span>
                   <span className="text-xs text-gray-400">({(cvFile.size / 1024 / 1024).toFixed(1)} Mo)</span>
                 </div>
               ) : (
-                <div className="text-gray-400">
-                  <span className="text-3xl block mb-1">📎</span>
-                  <span className="text-sm">Cliquez pour joindre votre CV</span>
-                </div>
+                <span className="text-gray-400 text-sm">Cliquez pour joindre votre CV</span>
               )}
               <input
                 ref={fileInputRef}
@@ -184,7 +181,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
         </form>
 
         <p className="text-xs text-gray-400 text-center">
-          Votre CV sera envoyé directement au recruteur. Données confidentielles.
+          Votre CV sera envoyé directement au recruteur.
         </p>
       </div>
     </div>
