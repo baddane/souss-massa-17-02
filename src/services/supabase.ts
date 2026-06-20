@@ -1,24 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-const PLACEHOLDER_URL = 'https://placeholder.supabase.co';
-const PLACEHOLDER_KEY = 'placeholder';
+const OFFERS_URL = (import.meta as any).env.VITE_SUPABASE_OFFERS_URL || 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
+const OFFERS_KEY = (import.meta as any).env.VITE_SUPABASE_OFFERS_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
 
-const offersSupabaseUrl = (import.meta as any).env.VITE_SUPABASE_OFFERS_URL || '';
-const offersSupabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_OFFERS_ANON_KEY || '';
-
-const siteSupabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || '';
-const siteSupabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || '';
-
-function safeCreateClient(url: string, key: string): SupabaseClient {
-  if (!url || !key) {
-    console.warn('Supabase env vars missing — using placeholder client (API calls will fail gracefully)');
-    return createClient(PLACEHOLDER_URL, PLACEHOLDER_KEY);
-  }
-  return createClient(url, key);
-}
-
-export const supabaseOffers = safeCreateClient(offersSupabaseUrl, offersSupabaseAnonKey);
-export const supabaseSite = safeCreateClient(siteSupabaseUrl, siteSupabaseAnonKey);
+export const supabaseOffers = createClient(OFFERS_URL, OFFERS_KEY);
+export const supabaseSite = supabaseOffers;
 
 export const supabase = supabaseSite;
-export const supabaseUrl = siteSupabaseUrl;
+export const supabaseUrl = OFFERS_URL;
