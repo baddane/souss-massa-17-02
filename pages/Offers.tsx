@@ -2,10 +2,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
-import { useAuth } from '../contexts/AuthContext';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { toast } from 'react-toastify';
 import SEO, { slugify } from '../components/SEO';
+import ApplyModal from '../components/ApplyModal';
 
 // Safe markdown-like renderer (no dangerouslySetInnerHTML)
 const SafeDescription: React.FC<{ text: string }> = ({ text }) => {
@@ -72,16 +71,14 @@ const Offers: React.FC = () => {
   const [allOffers, setAllOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const { isAuthenticated } = useAuth();
 
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [city, setCity] = useState(searchParams.get('city') || '');
   const [contractType, setContractType] = useState<string>('');
   const [page, setPage] = useState(1);
 
-  const [applyingId, setApplyingId] = useState<string | null>(null);
-  const [appliedIds, setAppliedIds] = useState<string[]>([]);
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
+  const [applyOffer, setApplyOffer] = useState<any>(null);
 
   // Ref pour déplacer le focus en haut de la liste après changement de page
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -124,21 +121,8 @@ const Offers: React.FC = () => {
     return () => clearTimeout(timer);
   }, [search, city, contractType, searchParams]);
 
-  const handleApply = async (offer: any) => {
-    if (!isAuthenticated) {
-      toast.warning('Connectez-vous pour postuler.');
-      return;
-    }
-    setApplyingId(offer.id);
-    try {
-      toast.success(`Candidature envoyée pour l'offre : ${offer.emploi_metier}`);
-      setAppliedIds((prev) => [...prev, offer.id]);
-    } catch (e) {
-      console.error('Application failed', e);
-      toast.error('Erreur lors de la candidature. Réessayez.');
-    } finally {
-      setApplyingId(null);
-    }
+  const handleApply = (offer: any) => {
+    setApplyOffer(offer);
   };
 
   const toggleDescription = (offerId: string) => {
@@ -317,8 +301,6 @@ const Offers: React.FC = () => {
             <div className="space-y-4">
               {filteredOffers.map((offer) => {
                 const isExpanded = expandedOffers.has(offer.id);
-                const isApplied = appliedIds.includes(offer.id);
-                const isApplying = applyingId === offer.id;
                 const descId = `desc-${offer.id}`;
 
                 return (
@@ -359,20 +341,11 @@ const Offers: React.FC = () => {
 
                       <div className="flex flex-col gap-2 flex-shrink-0">
                         <button
-                          disabled={isApplying || isApplied}
                           onClick={() => handleApply(offer)}
-                          aria-label={
-                            isApplied
-                              ? `Candidature déjà envoyée pour ${offer.emploi_metier}`
-                              : `Postuler à ${offer.emploi_metier} chez ${offer.raison_sociale}`
-                          }
-                          className={`px-6 py-2 rounded-lg font-bold transition-all ${
-                            isApplied
-                              ? 'bg-green-100 text-green-700 cursor-default'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          } disabled:opacity-70 disabled:cursor-not-allowed`}
+                          aria-label={`Postuler à ${offer.emploi_metier} chez ${offer.raison_sociale}`}
+                          className="px-6 py-2 rounded-lg font-bold transition-all bg-orange-500 text-white hover:bg-orange-600"
                         >
-                          {isApplying ? 'Envoi en cours…' : isApplied ? 'Postulé ✓' : 'Postuler'}
+                          Postuler
                         </button>
                         <span className="text-xs text-gray-400 text-center">
                           Réf : {offer.ref_offre}
@@ -486,6 +459,16 @@ const Offers: React.FC = () => {
         </main>
       </div>
     </div>
+
+    {applyOffer && (
+      <ApplyModal
+        isOpen={!!applyOffer}
+        onClose={() => setApplyOffer(null)}
+        jobTitle={applyOffer.emploi_metier}
+        jobRef={applyOffer.ref_offre}
+        companyName={applyOffer.raison_sociale}
+      />
+    )}
     </>
   );
 };

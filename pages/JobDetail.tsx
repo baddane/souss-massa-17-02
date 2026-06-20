@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
-import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import SEO, { generateJobPostingJsonLd } from '../components/SEO';
+import ApplyModal from '../components/ApplyModal';
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [applied, setApplied] = useState(false);
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -29,13 +27,7 @@ const JobDetail: React.FC = () => {
   }, [id]);
 
   const handleApply = () => {
-    if (!isAuthenticated) {
-      toast.info('Connectez-vous pour postuler rapidement.');
-      navigate('/connexion');
-      return;
-    }
-    toast.success('Candidature envoyee !');
-    setApplied(true);
+    setShowApplyModal(true);
   };
 
   if (loading) {
@@ -105,14 +97,9 @@ const JobDetail: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleApply}
-                disabled={applied}
-                className={`flex-1 py-4 rounded-xl font-bold text-lg transition-all ${
-                  applied
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200'
-                }`}
+                className="flex-1 py-4 rounded-xl font-bold text-lg transition-all bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"
               >
-                {applied ? 'Candidature envoyee' : 'Postuler maintenant'}
+                Postuler maintenant
               </button>
               <button
                 onClick={() => {
@@ -203,6 +190,14 @@ const JobDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ApplyModal
+        isOpen={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        jobTitle={offer.emploi_metier}
+        jobRef={offer.ref_offre}
+        companyName={offer.raison_sociale}
+      />
     </>
   );
 };
