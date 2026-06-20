@@ -17,6 +17,7 @@ export interface JobOffer {
   suggested_salary_range: string;
   required_skills: string[];
   source?: string;
+  slug: string;
 }
 
 // Service pour les offres d'emploi
@@ -46,6 +47,21 @@ export const jobOffersService = {
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching job offer:', error);
+      throw error;
+    }
+
+    return data || null;
+  },
+
+  async getJobOfferBySlug(slug: string): Promise<JobOffer | null> {
+    const { data, error } = await supabase
+      .from('job_offers')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching job offer by slug:', error);
       throw error;
     }
 

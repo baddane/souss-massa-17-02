@@ -57,12 +57,12 @@ export function generateJobPostingJsonLd(offer: {
   full_description?: string;
   meta_description?: string;
   suggested_salary_range?: string;
-  id: string;
+  slug: string;
 }) {
   return {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
-    title: offer.emploi_metier,
+    title: `${offer.emploi_metier} - ${offer.ville}`,
     description: offer.full_description || offer.meta_description || offer.emploi_metier,
     datePosted: offer.date_offre,
     hiringOrganization: {
@@ -74,11 +74,12 @@ export function generateJobPostingJsonLd(offer: {
       address: {
         '@type': 'PostalAddress',
         addressLocality: offer.ville,
+        addressRegion: 'Souss-Massa',
         addressCountry: 'MA',
       },
     },
     employmentType: mapContractType(offer.type_contrat),
-    url: `https://soussmassa-rh.com/emploi/${offer.id}/${slugify(offer.emploi_metier)}-${slugify(offer.ville)}`,
+    url: `${SITE_URL}/emploi/${offer.slug}`,
   };
 }
 

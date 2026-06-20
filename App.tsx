@@ -23,7 +23,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/offres" element={<Offers />} />
-                <Route path="/emploi/:id/:slug?" element={<JobDetail />} />
+                <Route path="/emploi/:slug" element={<JobDetail />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

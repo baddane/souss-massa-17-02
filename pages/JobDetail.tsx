@@ -4,19 +4,18 @@ import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { toast } from 'react-toastify';
 import SEO, { generateJobPostingJsonLd } from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
-import MarkdownContent from '../components/MarkdownContent';
 
 const JobDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     const load = async () => {
       try {
-        const data = await jobOffersService.getJobOfferById(id);
+        const data = await jobOffersService.getJobOfferBySlug(slug);
         setOffer(data);
       } catch {
         setOffer(null);
@@ -25,11 +24,7 @@ const JobDetail: React.FC = () => {
       }
     };
     load();
-  }, [id]);
-
-  const handleApply = () => {
-    setShowApplyModal(true);
-  };
+  }, [slug]);
 
   if (loading) {
     return (
@@ -47,7 +42,7 @@ const JobDetail: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Offre introuvable</h1>
-        <p className="text-gray-500 mb-6">Cette offre n'existe plus ou a ete retiree.</p>
+        <p className="text-gray-500 mb-6">Cette offre n'existe plus ou a été retirée.</p>
         <Link to="/offres" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700">
           Voir toutes les offres
         </Link>
@@ -56,87 +51,60 @@ const JobDetail: React.FC = () => {
   }
 
   const jsonLd = generateJobPostingJsonLd(offer);
+  const descParagraphs = (offer.full_description || '').split('\n\n').filter((p: string) => p.trim());
 
   return (
     <>
       <SEO
-        title={`${offer.emploi_metier} - ${offer.raison_sociale} - ${offer.ville}`}
-        description={offer.meta_description || `Offre ${offer.type_contrat} : ${offer.emploi_metier} chez ${offer.raison_sociale} a ${offer.ville}. Postulez maintenant sur SoussMassa-RH.`}
-        canonical={`/emploi/${offer.id}`}
+        title={`${offer.emploi_metier} ${offer.ville} - ${offer.raison_sociale}`}
+        description={offer.meta_description || `Offre ${offer.type_contrat} : ${offer.emploi_metier} à ${offer.ville} chez ${offer.raison_sociale}. Postulez maintenant.`}
+        canonical={`/emploi/${offer.slug}`}
         type="article"
         jsonLd={jsonLd}
       />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <nav className="text-sm text-gray-500 mb-6" aria-label="Fil d'Ariane">
+        <nav className="text-sm text-gray-500 mb-6">
           <Link to="/" className="hover:text-blue-600">Accueil</Link>
           <span className="mx-2">/</span>
           <Link to="/offres" className="hover:text-blue-600">Offres</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-900">{offer.emploi_metier}</span>
+          <span className="text-gray-900">{offer.emploi_metier} - {offer.ville}</span>
         </nav>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-3xl font-bold flex-shrink-0">
-                {offer.raison_sociale.charAt(0)}
-              </div>
-              <div className="flex-1">
-                <h1 className="text-2xl md:text-3xl font-bold">{offer.emploi_metier}</h1>
-                <p className="text-blue-100 text-lg mt-1">{offer.raison_sociale}</p>
-                <div className="flex flex-wrap gap-3 mt-3">
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.type_contrat}</span>
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.ville}</span>
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>
-                </div>
-              </div>
+            <h1 className="text-2xl md:text-3xl font-bold">{offer.emploi_metier}</h1>
+            <p className="text-blue-100 text-lg mt-1">{offer.raison_sociale} — {offer.ville}</p>
+            <div className="flex flex-wrap gap-3 mt-3">
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.type_contrat}</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>
+              {offer.suggested_salary_range && (
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.suggested_salary_range}</span>
+              )}
             </div>
           </div>
 
           <div className="p-8 space-y-8">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={handleApply}
-                className="flex-1 py-4 rounded-xl font-bold text-lg transition-all bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200"
-              >
-                Postuler maintenant
-              </button>
-              <button
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: offer.emploi_metier, url: window.location.href });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success('Lien copie !');
-                  }
-                }}
-                className="px-6 py-4 border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all"
-              >
-                Partager
-              </button>
-            </div>
+            <button
+              onClick={() => setShowApplyModal(true)}
+              className="w-full py-4 rounded-xl font-bold text-lg bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all"
+            >
+              Postuler maintenant
+            </button>
 
-            {offer.suggested_salary_range && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                <span className="text-2xl">💰</span>
-                <div>
-                  <p className="text-sm text-green-700 font-medium">Salaire estimé</p>
-                  <p className="text-lg font-bold text-green-900">{offer.suggested_salary_range}</p>
-                </div>
-              </div>
-            )}
-
-            {offer.full_description && (
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Description du poste</h2>
-                <MarkdownContent text={offer.full_description} />
+            {descParagraphs.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-gray-900">Description du poste</h2>
+                {descParagraphs.map((p: string, i: number) => (
+                  <p key={i} className="text-gray-600 leading-relaxed">{p}</p>
+                ))}
               </div>
             )}
 
             {offer.required_skills && offer.required_skills.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Competences requises</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Compétences requises</h2>
                 <div className="flex flex-wrap gap-2">
                   {offer.required_skills.map((skill: string, i: number) => (
                     <span key={i} className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
@@ -167,23 +135,35 @@ const JobDetail: React.FC = () => {
                   <dd className="font-medium text-gray-900">{formatJobOffer.formatDate(offer.date_offre)}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Reference</dt>
-                  <dd className="font-medium text-gray-900">{offer.ref_offre}</dd>
-                </div>
-                <div>
                   <dt className="text-gray-500">Nombre de postes</dt>
                   <dd className="font-medium text-gray-900">{offer.nbre_postes}</dd>
                 </div>
-                {offer.source === 'anapec' && (
-                  <div>
-                    <dt className="text-gray-500">Source</dt>
-                    <dd className="font-medium text-orange-600">ANAPEC</dd>
-                  </div>
-                )}
               </dl>
             </div>
 
-            <div className="text-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => setShowApplyModal(true)}
+                className="flex-1 py-4 rounded-xl font-bold text-lg bg-orange-500 text-white hover:bg-orange-600 transition-all"
+              >
+                Postuler maintenant
+              </button>
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: offer.emploi_metier, url: window.location.href });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success('Lien copié !');
+                  }
+                }}
+                className="px-6 py-4 border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all"
+              >
+                Partager
+              </button>
+            </div>
+
+            <div className="text-center">
               <Link to="/offres" className="text-blue-600 font-medium hover:underline">
                 Voir toutes les offres d'emploi
               </Link>

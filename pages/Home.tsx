@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { CITIES } from '../constants';
-import SEO, { generateJobPostingJsonLd, slugify } from '../components/SEO';
+import SEO, { generateJobPostingJsonLd } from '../components/SEO';
 
 const POPULAR_CATEGORIES = [
   { label: 'Informatique & IT', icon: '💻', query: 'informatique' },
@@ -200,7 +200,7 @@ const Home: React.FC = () => {
               {recentOffers.map((offer) => (
                 <Link
                   key={offer.id}
-                  to={`/emploi/${offer.id}/${slugify(offer.emploi_metier)}-${slugify(offer.ville)}`}
+                  to={`/emploi/${offer.slug}`}
                   className="bg-white p-5 rounded-xl border border-gray-100 hover:border-blue-400 hover:shadow-md transition-all group flex items-start gap-4"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
@@ -213,9 +213,6 @@ const Home: React.FC = () => {
                     <p className="text-gray-500 text-sm truncate">{offer.raison_sociale}</p>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{offer.type_contrat}</span>
-                      {offer.source === 'anapec' && (
-                        <span className="bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-xs font-semibold">ANAPEC</span>
-                      )}
                       <span className="text-gray-400 text-xs">{offer.ville}</span>
                       <span className="text-gray-300 text-xs">·</span>
                       <span className="text-gray-400 text-xs">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>

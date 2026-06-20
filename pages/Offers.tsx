@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import SEO from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
-import MarkdownContent from '../components/MarkdownContent';
 
 const OFFERS_PER_PAGE = 20;
 
@@ -191,11 +190,6 @@ const Offers: React.FC = () => {
                           {offer.suggested_salary_range}
                         </span>
                       )}
-                      {offer.source === 'anapec' && (
-                        <span className="bg-orange-50 text-orange-600 px-2.5 py-0.5 rounded text-xs font-semibold">
-                          ANAPEC
-                        </span>
-                      )}
                     </div>
                   </div>
                   <button
@@ -209,7 +203,9 @@ const Offers: React.FC = () => {
 
               {/* Description + détails — toujours visibles */}
               <div className="px-5 pb-4 border-t border-gray-100 pt-3">
-                <MarkdownContent text={offer.full_description || 'Pas de description disponible.'} />
+                {(offer.full_description || '').split('\n\n').filter((p: string) => p.trim()).map((p: string, i: number) => (
+                  <p key={i} className="text-gray-600 text-sm leading-relaxed mb-2">{p}</p>
+                ))}
 
                 {offer.required_skills && offer.required_skills.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -222,8 +218,8 @@ const Offers: React.FC = () => {
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-400">
-                  <span>Réf : {offer.ref_offre}</span>
                   <span>Publiée le {formatJobOffer.formatDate(offer.date_offre)}</span>
+                  <a href={`/emploi/${offer.slug}`} className="text-blue-500 hover:underline">Voir l'offre</a>
                 </div>
               </div>
             </article>
