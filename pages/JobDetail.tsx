@@ -186,6 +186,12 @@ const JobDetail: React.FC = () => {
                   <dt className="text-gray-500">Nombre de postes</dt>
                   <dd className="font-medium text-gray-900">{offer.nbre_postes}</dd>
                 </div>
+                {offer.source === 'anapec' && (
+                  <div>
+                    <dt className="text-gray-500">Source</dt>
+                    <dd className="font-medium text-orange-600">ANAPEC</dd>
+                  </div>
+                )}
               </dl>
             </div>
 

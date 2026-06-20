@@ -348,6 +348,11 @@ const Offers: React.FC = () => {
                             <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">
                               {formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}
                             </span>
+                            {offer.source === 'anapec' && (
+                              <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded text-xs font-semibold">
+                                ANAPEC
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

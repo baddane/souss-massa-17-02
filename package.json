@@ -6,13 +6,16 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "jest",
+    "scrape:anapec": "npx tsx scripts/scrape-anapec.ts"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.95.3",
     "axios": "^1.6.7",
+    "cheerio": "^1.2.0",
     "lucide-react": "^0.294.0",
+    "node-cron": "^4.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^2.0.5",

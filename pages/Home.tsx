@@ -213,6 +213,9 @@ const Home: React.FC = () => {
                     <p className="text-gray-500 text-sm truncate">{offer.raison_sociale}</p>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{offer.type_contrat}</span>
+                      {offer.source === 'anapec' && (
+                        <span className="bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-xs font-semibold">ANAPEC</span>
+                      )}
                       <span className="text-gray-400 text-xs">{offer.ville}</span>
                       <span className="text-gray-300 text-xs">·</span>
                       <span className="text-gray-400 text-xs">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>

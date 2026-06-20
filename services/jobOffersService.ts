@@ -16,6 +16,7 @@ export interface JobOffer {
   meta_description: string;
   suggested_salary_range: string;
   required_skills: string[];
+  source?: string;
 }
 
 // Service pour les offres d'emploi
