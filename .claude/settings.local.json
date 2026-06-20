@@ -13,7 +13,8 @@
       "mcp__Vercel__get_project",
       "mcp__Supabase__execute_sql",
       "mcp__Supabase__get_publishable_keys",
-      "mcp__Supabase__get_project"
+      "mcp__Supabase__get_project",
+      "mcp__Supabase__apply_migration"
     ]
   }
 }
