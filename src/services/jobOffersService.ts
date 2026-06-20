@@ -56,6 +56,21 @@ export const jobOffersService = {
     return data || [];
   },
 
+  async getJobOfferById(id: string) {
+    const { data, error } = await supabaseOffers
+      .from('job_offers')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching job offer by ID:', error);
+      return null;
+    }
+
+    return data;
+  },
+
   // Nouvelle méthode pour accéder à la base de données du site (si besoin)
   async getSiteData(table: string) {
     if (!supabaseSite) {

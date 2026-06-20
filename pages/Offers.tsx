@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import SEO from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
+import MarkdownContent from '../components/MarkdownContent';
 
 const OFFERS_PER_PAGE = 20;
 
@@ -208,9 +209,7 @@ const Offers: React.FC = () => {
 
               {/* Description + détails — toujours visibles */}
               <div className="px-5 pb-4 border-t border-gray-100 pt-3">
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {offer.full_description || 'Pas de description disponible.'}
-                </p>
+                <MarkdownContent text={offer.full_description || 'Pas de description disponible.'} />
 
                 {offer.required_skills && offer.required_skills.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">

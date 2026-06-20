@@ -4,6 +4,7 @@ import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
 import { toast } from 'react-toastify';
 import SEO, { generateJobPostingJsonLd } from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
+import MarkdownContent from '../components/MarkdownContent';
 
 const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -129,7 +130,7 @@ const JobDetail: React.FC = () => {
             {offer.full_description && (
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Description du poste</h2>
-                <div className="text-gray-600 leading-relaxed whitespace-pre-line">{offer.full_description}</div>
+                <MarkdownContent text={offer.full_description} />
               </div>
             )}
 

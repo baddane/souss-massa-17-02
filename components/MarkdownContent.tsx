@@ -1,0 +1,59 @@
+import React from 'react';
+
+interface MarkdownContentProps {
+  text: string;
+  className?: string;
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/\*\*(.*?)\*\*/);
+    if (!boldMatch || boldMatch.index === undefined) {
+      parts.push(remaining);
+      break;
+    }
+    if (boldMatch.index > 0) parts.push(remaining.slice(0, boldMatch.index));
+    parts.push(<strong key={key++}>{boldMatch[1]}</strong>);
+    remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+  }
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+const MarkdownContent: React.FC<MarkdownContentProps> = ({ text, className }) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let key = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (line === '---') {
+      elements.push(<hr key={key++} className="my-4 border-gray-200" />);
+    } else if (line.startsWith('#### ')) {
+      elements.push(<h4 key={key++} className="font-bold text-gray-800 text-base mt-5 mb-2">{renderInline(line.slice(5))}</h4>);
+    } else if (line.startsWith('### ')) {
+      elements.push(<h3 key={key++} className="font-bold text-gray-900 text-lg mt-6 mb-2">{renderInline(line.slice(4))}</h3>);
+    } else if (line.startsWith('## ')) {
+      elements.push(<h3 key={key++} className="font-bold text-gray-900 text-lg mt-6 mb-2">{renderInline(line.slice(3))}</h3>);
+    } else if (line.startsWith('* ') || line.startsWith('- ')) {
+      const items: React.ReactNode[] = [];
+      let j = i;
+      while (j < lines.length && (lines[j].trim().startsWith('* ') || lines[j].trim().startsWith('- '))) {
+        items.push(<li key={j} className="ml-4">{renderInline(lines[j].trim().slice(2))}</li>);
+        j++;
+      }
+      elements.push(<ul key={key++} className="list-disc pl-4 space-y-1 text-gray-600 text-sm my-2">{items}</ul>);
+      i = j - 1;
+    } else {
+      elements.push(<p key={key++} className="text-gray-600 text-sm leading-relaxed my-1">{renderInline(line)}</p>);
+    }
+  }
+
+  return <div className={className}>{elements}</div>;
+};
+
+export default MarkdownContent;
