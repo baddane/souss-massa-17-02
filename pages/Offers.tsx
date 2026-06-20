@@ -239,15 +239,6 @@ const Offers: React.FC = () => {
             </div>
           </div>
 
-          {/* Conseils */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h3 className="font-bold text-blue-900 mb-3">Conseils de recherche</h3>
-            <div className="text-blue-800 text-sm space-y-2">
-              <p><strong>Par ville :</strong> Agadir, Marrakech, Essaouira, Taroudant</p>
-              <p><strong>Types d'emploi :</strong> CDI, CDD, Stage, Alternance</p>
-              <p><strong>Mots-clés :</strong> caissier, développeur, infirmier, technicien</p>
-            </div>
-          </div>
         </aside>
 
         {/* Résultats */}

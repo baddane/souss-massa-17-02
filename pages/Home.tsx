@@ -250,12 +250,12 @@ const Home: React.FC = () => {
               <h2 className="text-2xl font-bold">Vous recrutez ?</h2>
               <p className="text-blue-200">Publiez vos offres gratuitement et touchez les meilleurs talents du Souss-Massa.</p>
             </div>
-            <Link
-              to="/inscription"
+            <a
+              href="mailto:r.baddane@gmail.com?subject=Publier%20une%20offre%20sur%20SoussMassa-RH"
               className="bg-white text-blue-700 px-8 py-4 rounded-xl font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
             >
-              Publier une offre
-            </Link>
+              Nous contacter
+            </a>
           </div>
         </section>
 
@@ -269,8 +269,8 @@ const Home: React.FC = () => {
               CDI, CDD, stages et alternances dans tous les secteurs : informatique, commerce, industrie, sante, tourisme.
             </p>
             <p>
-              Candidats, inscrivez-vous gratuitement et postulez en un clic. Entreprises, publiez vos annonces
-              et accedez aux meilleurs profils locaux. Rejoignez +50 000 utilisateurs qui font confiance a SoussMassa-RH.
+              Candidats, postulez gratuitement en un clic — deposez votre CV et il arrive directement chez le recruteur.
+              Entreprises, contactez-nous pour publier vos annonces et toucher les meilleurs talents de la region.
             </p>
           </div>
         </section>
