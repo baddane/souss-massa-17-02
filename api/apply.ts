@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
 
@@ -8,8 +8,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
+  const gmailUser = process.env.GMAIL_USER || RECIPIENT_EMAIL;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (!gmailAppPassword) {
     return res.status(500).json({ error: 'Email service not configured' });
   }
 
@@ -20,15 +22,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Nom, email et poste sont requis' });
     }
 
-    const resend = new Resend(resendKey);
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword,
+      },
+    });
 
     const attachments = cvBase64 && cvFileName
-      ? [{ filename: cvFileName, content: cvBase64 }]
+      ? [{ filename: cvFileName, content: cvBase64, encoding: 'base64' as const }]
       : [];
 
-    await resend.emails.send({
-      from: 'SoussMassa-RH <noreply@soussmassa-rh.com>',
+    await transporter.sendMail({
+      from: `SoussMassa-RH <${gmailUser}>`,
       to: RECIPIENT_EMAIL,
+      replyTo: candidateEmail,
       subject: `Candidature : ${jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
