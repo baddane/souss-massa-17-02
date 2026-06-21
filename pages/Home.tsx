@@ -147,7 +147,7 @@ const Home: React.FC = () => {
             {POPULAR_CATEGORIES.map((cat) => (
               <Link
                 key={cat.query}
-                to={`/offres?q=${cat.query}`}
+                to={`/offres?sector=${cat.query}`}
                 className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 hover:border-blue-400 hover:shadow-md transition-all group"
               >
                 <span className="text-2xl">{cat.icon}</span>
