@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -13,11 +13,20 @@ import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import { AuthProvider } from './contexts/AuthContext';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 const App: React.FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <main id="main-content" className="flex-grow">
