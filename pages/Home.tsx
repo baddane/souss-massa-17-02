@@ -247,12 +247,12 @@ const Home: React.FC = () => {
               <h2 className="text-2xl font-bold">Vous recrutez ?</h2>
               <p className="text-blue-200">Publiez vos offres gratuitement et touchez les meilleurs talents du Souss-Massa.</p>
             </div>
-            <a
-              href="mailto:r.baddane@gmail.com?subject=Publier%20une%20offre%20sur%20SoussMassa-RH"
+            <Link
+              to="/contact"
               className="bg-white text-blue-700 px-8 py-4 rounded-xl font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
             >
               Nous contacter
-            </a>
+            </Link>
           </div>
         </section>
 

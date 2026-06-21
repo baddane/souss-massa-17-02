@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const SITE_URL = 'https://souss-massa-17-02.vercel.app';
+const SITE_URL = process.env.SITE_URL || 'https://soussmassa-rh.com';
 
 export default function handler(_req: VercelRequest, res: VercelResponse) {
   const txt = `User-agent: *

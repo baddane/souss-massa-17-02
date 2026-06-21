@@ -28,6 +28,14 @@ const Header: React.FC = () => {
               Toutes les offres
             </Link>
             <Link
+              to="/contact"
+              className={`text-sm font-semibold transition-colors ${
+                location.pathname === '/contact' ? 'text-blue-700' : 'text-gray-600 hover:text-blue-700'
+              }`}
+            >
+              Contact
+            </Link>
+            <Link
               to="/offres"
               className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
             >
@@ -55,6 +63,9 @@ const Header: React.FC = () => {
         <nav className="md:hidden bg-white border-t border-gray-100 py-3 px-4 space-y-2">
           <Link to="/offres" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             Toutes les offres
+          </Link>
+          <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+            Contact
           </Link>
           <Link to="/offres" className="block bg-orange-500 text-white text-center py-3 rounded-lg font-bold">
             Trouver un emploi
