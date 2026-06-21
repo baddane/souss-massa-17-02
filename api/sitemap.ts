@@ -1,12 +1,12 @@
-import type { IncomingMessage, ServerResponse } from 'http';
+export const config = { runtime: 'edge' };
 
 const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
-const SITE_URL = process.env.SITE_URL || 'https://soussmassa-rh.com';
+const SITE_URL = 'https://soussmassa-rh.com';
 
-export default async function handler(_req: IncomingMessage, res: ServerResponse) {
+export default async function handler() {
   try {
-    const response = await fetch(
+    const res = await fetch(
       `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre&order=date_offre.desc`,
       {
         headers: {
@@ -16,7 +16,7 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
       }
     );
 
-    const offers = response.ok ? await response.json() : [];
+    const offers = res.ok ? await res.json() : [];
     const today = new Date().toISOString().split('T')[0];
 
     const staticPages = [
@@ -33,7 +33,7 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
     <priority>${p.priority}</priority>
   </url>`)
       .concat(
-        (offers || []).map((o: any) => `  <url>
+        (offers as any[]).map(o => `  <url>
     <loc>${SITE_URL}/emploi/${o.slug}</loc>
     <lastmod>${o.date_offre || today}</lastmod>
     <changefreq>weekly</changefreq>
@@ -47,27 +47,23 @@ export default async function handler(_req: IncomingMessage, res: ServerResponse
 ${urls}
 </urlset>`;
 
-    res.setHeader('Content-Type', 'application/xml');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
-    res.statusCode = 200;
-    res.end(xml);
+    return new Response(xml, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/xml',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
   } catch {
     const today = new Date().toISOString().split('T')[0];
     const fallback = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${SITE_URL}/</loc>
-    <lastmod>${today}</lastmod>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${SITE_URL}/offres</loc>
-    <lastmod>${today}</lastmod>
-    <priority>0.9</priority>
-  </url>
+  <url><loc>${SITE_URL}/</loc><lastmod>${today}</lastmod><priority>1.0</priority></url>
+  <url><loc>${SITE_URL}/offres</loc><lastmod>${today}</lastmod><priority>0.9</priority></url>
 </urlset>`;
-    res.setHeader('Content-Type', 'application/xml');
-    res.statusCode = 200;
-    res.end(fallback);
+    return new Response(fallback, {
+      status: 200,
+      headers: { 'Content-Type': 'application/xml' },
+    });
   }
 }

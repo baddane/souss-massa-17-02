@@ -1,16 +1,17 @@
-import type { IncomingMessage, ServerResponse } from 'http';
+export const config = { runtime: 'edge' };
 
-const SITE_URL = process.env.SITE_URL || 'https://soussmassa-rh.com';
-
-export default function handler(_req: IncomingMessage, res: ServerResponse) {
+export default function handler() {
   const txt = `User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: ${SITE_URL}/sitemap.xml`;
+Sitemap: https://soussmassa-rh.com/sitemap.xml`;
 
-  res.setHeader('Content-Type', 'text/plain');
-  res.setHeader('Cache-Control', 'public, s-maxage=86400');
-  res.statusCode = 200;
-  res.end(txt);
+  return new Response(txt, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain',
+      'Cache-Control': 'public, s-maxage=86400',
+    },
+  });
 }
