@@ -82,7 +82,16 @@ const Offers: React.FC = () => {
     ? 'Chargement…'
     : `${allOffers.length} offre${allOffers.length !== 1 ? 's' : ''}`;
 
-  const CATEGORY_LABELS: Record<string, string> = { tourisme: 'Tourisme & Hôtellerie' };
+  const CATEGORY_LABELS: Record<string, string> = {
+    informatique: 'Informatique & IT',
+    commercial: 'Commerce & Vente',
+    administratif: 'Administration',
+    industrie: 'Industrie',
+    sante: 'Santé',
+    enseignement: 'Éducation',
+    tourisme: 'Tourisme & Hôtellerie',
+    construction: 'BTP & Construction',
+  };
   const seoCity = searchParams.get('city') || '';
   const seoQuery = searchParams.get('q') || '';
   const seoTitle = seoCity

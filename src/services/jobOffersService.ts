@@ -41,11 +41,21 @@ export const jobOffersService = {
     }
 
     if (filters.keywords) {
-      const CATEGORY_KEYWORDS: Record<string, string> = {
-        tourisme: `emploi_metier.ilike.%tourisme%,emploi_metier.ilike.%hotel%,emploi_metier.ilike.%restauration%,emploi_metier.ilike.%cuisinier%,emploi_metier.ilike.%serveur%,emploi_metier.ilike.%barman%,emploi_metier.ilike.%chef de partie%,emploi_metier.ilike.%chef de restauration%,emploi_metier.ilike.%commis%,emploi_metier.ilike.%étage%,emploi_metier.ilike.%réception%,emploi_metier.ilike.%ménage%,emploi_metier.ilike.%femme de ménage%,emploi_metier.ilike.%poissonnier%,raison_sociale.ilike.%hotel%,raison_sociale.ilike.%balneaire%`,
+      const expandCategory = (terms: string[]) =>
+        terms.map(t => `emploi_metier.ilike.%${t}%`).join(',');
+
+      const CATEGORY_FILTERS: Record<string, string> = {
+        informatique: expandCategory(['développeur', 'developpeur', 'informatique', 'technicien R&D', 'opérateur de saisie', 'téléconseiller', 'electronique', 'électronique']),
+        commercial: expandCategory(['commercial', 'vendeur', 'vendeuse', 'vente', 'caissier', 'représentant', 'attaché commercial', 'libre service', 'produits frais', 'services commerciaux']),
+        administratif: expandCategory(['administratif', 'administrative', 'gestion administrative', 'comptable', 'aide comptable', 'secrétaire', 'employé de bureau', 'standardiste', 'services financiers', 'financier', 'banque', 'souscripteur', 'accueil']),
+        industrie: expandCategory(['industrie', 'opérateur', 'production', 'maintenance', 'mécanicien', 'menuisier', 'magasinier', 'conducteur', 'contrôleur', 'construction électrique', 'machines automatiques', 'engins de levage', 'aquaculteur', 'agricole']),
+        sante: expandCategory(['infirmier', 'aide soignant', 'pharmacie', 'médical', 'santé', 'sante', 'esthéticien', 'cosméticien', 'vétérinaire']),
+        enseignement: expandCategory(['formateur', 'enseignant', 'éducation', 'education', 'formation']),
+        tourisme: expandCategory(['tourisme', 'hôtel', 'hotel', 'restauration', 'cuisinier', 'serveur', 'barman', 'chef de partie', 'chef de restauration', 'commis', 'étage', 'réception', 'ménage', 'femme de ménage', 'poissonnier', 'chauffeur touristique', 'polyvalent de restauration', 'responsable restauration']) + ',raison_sociale.ilike.%hotel%,raison_sociale.ilike.%balneaire%',
+        construction: expandCategory(['bâtiment', 'batiment', 'construction', 'travaux', 'dessinateur', 'électricien', 'géologue', 'conducteur des travaux', 'cadre technique']),
       };
-      const kw = filters.keywords.replace('cat:', '');
-      const expanded = CATEGORY_KEYWORDS[kw];
+
+      const expanded = CATEGORY_FILTERS[filters.keywords];
       if (expanded) {
         query = query.or(expanded);
       } else {
