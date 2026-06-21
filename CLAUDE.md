@@ -7,6 +7,8 @@ Site de recrutement pour la region Souss-Massa (Maroc).
 - **Stack** : React 18 + TypeScript + Vite, deploye sur Vercel
 - **Base de donnees** : Supabase (projet `tqrhxhoqqktnhttzmoqt`)
 - **Cle anon Supabase** : `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM`
+- **Vercel** : projet `prj_uSQQIt2HJzVYgnG7fABwbJqIRrLh`, team `team_BjXqSEKNwzykObdXJyuMGgjj`
+- **Deploiement** : auto depuis branche `main` sur GitHub (`baddane/souss-massa-17-02`)
 
 ## Schema de la table `job_offers`
 
@@ -15,7 +17,7 @@ Site de recrutement pour la region Souss-Massa (Maroc).
 | `id` | uuid (auto) | Identifiant unique |
 | `created_at` | timestamp (auto) | Date de creation |
 | `ville` | text | Ville du poste (ex: Agadir, Inezgane, Taroudant, Tiznit) |
-| `ref_offre` | text | Reference ANAPEC de l'offre (ex: AG170225001234) |
+| `ref_offre` | text | Reference ANAPEC de l'offre (ex: AG170225001234) ou reference directe (DIR-DDMMYY-XX-NNN) |
 | `type_contrat` | text | Type de contrat : CDI, CDD, Stage, Alternance, Freelance |
 | `raison_sociale` | text | Nom de l'entreprise |
 | `date_offre` | date | Date de publication de l'offre (format YYYY-MM-DD) |
@@ -41,9 +43,31 @@ Si certaines infos manquent :
 - `type_contrat` : mettre "CDI" par defaut
 - `nbre_postes` : mettre 1 par defaut
 - `date_offre` : mettre la date du jour
-- `source` : mettre "ANAPEC" si ref_offre commence par 2 lettres + chiffres
+- `source` : mettre "ANAPEC" si ref_offre commence par 2 lettres + chiffres, sinon "Direct"
 
-### 2. Generation du slug SEO
+Pour les fichiers Excel ANAPEC :
+- Les donnees sont dans Sheet2, Sheet1 contient juste le resume
+- Colonnes : Agence, Nom Employe, Ref Offre, Type Contrat, Raison Sociale, Date Offre, Etat Offre, Niveau Service, Nbre Postes, Emploi Metier
+- **Filtrer les offres "En cours" uniquement** (ignorer "Suspendu" et "Conclu")
+- La date peut etre un numero de serie Excel : extraire la date depuis la ref_offre (format AGDDMMYY...) qui est plus fiable
+- Mapper les types de contrat : CI → CDD, CI_ND → CDD, Choix Multiple → CDI
+- La ville s'extrait du nom de l'agence (AGADIR → Agadir, INEZGANE AIT MELLOUL → Inezgane)
+
+Pour les demandes directes (email/texte d'une entreprise) :
+- `ref_offre` : generer au format `DIR-DDMMYY-XX-NNN` (XX = initiales entreprise)
+- `source` : "Direct"
+
+### 2. Verification des doublons
+
+**Avant toute insertion**, recuperer les `ref_offre` et `slug` existants dans Supabase :
+```javascript
+fetch(SUPABASE_URL + '/rest/v1/job_offers?select=ref_offre,slug', {
+  headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+})
+```
+Ne jamais inserer une offre dont le `ref_offre` existe deja.
+
+### 3. Generation du slug SEO
 
 Le slug doit etre unique et au format : `{poste}-{ville}[-{entreprise}]`
 
@@ -72,7 +96,7 @@ function slugify(text: string): string {
 }
 ```
 
-### 3. Enrichissement SEO (obligatoire pour chaque offre)
+### 4. Enrichissement SEO (obligatoire pour chaque offre)
 
 #### full_description
 Rediger 2 paragraphes minimum en francais :
@@ -114,21 +138,28 @@ Array de competences specifiques au poste :
 
 #### suggested_salary_range
 Si non fourni, estimer en fonction du poste et du marche marocain :
-- Debutant : "3000-5000 MAD"
-- Junior : "5000-8000 MAD"
-- Confirme : "8000-15000 MAD"
+- Debutant / ouvrier : "2800-4000 MAD"
+- Junior / employe : "3500-5000 MAD"
+- Confirme : "5000-8000 MAD"
+- Qualifie : "8000-15000 MAD"
 - Senior/Manager : "15000-25000 MAD"
 
-### 4. Insertion dans Supabase
+### 5. Insertion dans Supabase
 
-Utiliser l'API Supabase pour inserer :
+Inserer via l'API REST Supabase avec fetch (methode recommandee dans les scripts Node.js) :
+```javascript
+const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 
-```typescript
-import { supabaseOffers } from './src/services/supabase';
-
-const { data, error } = await supabaseOffers
-  .from('job_offers')
-  .insert([
+const res = await fetch(SUPABASE_URL + '/rest/v1/job_offers', {
+  method: 'POST',
+  headers: {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  },
+  body: JSON.stringify([
     {
       ville: "Agadir",
       ref_offre: "AG170225001234",
@@ -145,23 +176,46 @@ const { data, error } = await supabaseOffers
       source: "ANAPEC",
       slug: "developpeur-web-agadir"
     }
-  ]);
+  ])
+});
 ```
 
-On peut aussi inserer via l'API REST Supabase directement :
-```bash
-curl -X POST "https://tqrhxhoqqktnhttzmoqt.supabase.co/rest/v1/job_offers" \
-  -H "apikey: SUPABASE_ANON_KEY" \
-  -H "Authorization: Bearer SUPABASE_ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '[{ ... }]'
-```
+### 6. Mise a jour de la sitemap statique
 
-### 5. Verification apres insertion
+Apres chaque insertion, regenerer `public/sitemap.xml` depuis Supabase :
+```javascript
+const res = await fetch(SUPABASE_URL + '/rest/v1/job_offers?select=slug,date_offre&order=date_offre.desc', {
+  headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+});
+const offers = await res.json();
+// Generer le XML avec les 3 pages statiques + toutes les offres
+// Ecrire dans public/sitemap.xml
+```
+Puis commiter et pousser le fichier `public/sitemap.xml` sur main.
+
+### 7. Verification apres insertion
 
 - Verifier que le slug est accessible : `https://soussmassa-rh.com/emploi/{slug}`
-- La sitemap se met a jour automatiquement (Edge Function `/api/sitemap`)
+- La sitemap dynamique se met a jour automatiquement (Edge Function `/api/sitemap`)
 - Le JSON-LD JobPosting est genere automatiquement par `components/SEO.tsx`
+
+## Categories et recherche
+
+La page d'accueil a 8 categories qui mappent vers des recherches elargies dans `jobOffersService.ts`.
+Quand un mot-cle correspond a une categorie, la recherche s'elargit a tous les metiers associes :
+
+| Categorie | Mot-cle | Metiers inclus |
+|-----------|---------|---------------|
+| Informatique & IT | `informatique` | developpeur, technicien R&D, operateur de saisie, teleconseiller, electronique |
+| Commerce & Vente | `commercial` | commercial, vendeur, caissier, representant, attache commercial, libre service, produits frais |
+| Administration | `administratif` | gestion administrative, comptable, aide comptable, secretaire, employe de bureau, standardiste, services financiers, banque, souscripteur, accueil |
+| Industrie | `industrie` | operateur, production, maintenance, mecanicien, menuisier, magasinier, conducteur, controleur, aquaculteur, agricole |
+| Sante | `sante` | infirmier, aide soignant, pharmacie, estheticien |
+| Education | `enseignement` | formateur, enseignant |
+| Tourisme & Hotellerie | `tourisme` | cuisinier, serveur, barman, chef de partie, commis, etage, menage, femme de menage, poissonnier, chauffeur touristique, restauration, reception + raison_sociale contenant hotel/balneaire |
+| BTP & Construction | `construction` | batiment, dessinateur, electricien, geologue, conducteur travaux, cadre technique |
+
+Pour ajouter de nouveaux metiers a une categorie, modifier `CATEGORY_FILTERS` dans `src/services/jobOffersService.ts`.
 
 ## Structure des fichiers cles
 
@@ -177,15 +231,17 @@ components/
   Header.tsx        # Navigation
 
 pages/
-  Home.tsx          # Page d'accueil
-  Offers.tsx        # Liste des offres
+  Home.tsx          # Page d'accueil (categories, recherche, offres recentes)
+  Offers.tsx        # Liste des offres avec filtres (recherche, ville, contrat)
   JobDetail.tsx     # Detail d'une offre (route /emploi/:slug)
-  Contact.tsx       # Formulaire de contact
-  Admin.tsx         # Dashboard admin (candidatures + messages)
+  Contact.tsx       # Formulaire de contact (stocke dans table `messages`)
+  Admin.tsx         # Dashboard admin (candidatures + messages, mot de passe: souss2026)
 
 services/
-  supabase.ts       # Client Supabase
-  jobOffersService.ts  # CRUD offres d'emploi
+  supabase.ts       # Client Supabase (2 instances: supabaseOffers + supabaseSite)
+  jobOffersService.ts  # CRUD offres + recherche par categories (CATEGORY_FILTERS)
+
+constants.ts        # Liste des villes (CITIES)
 ```
 
 ## SEO - Points critiques
@@ -193,8 +249,10 @@ services/
 1. **Slug unique** : chaque offre a un permalink `/emploi/{slug}` indexe par Google
 2. **JSON-LD JobPosting** : schema structure genere automatiquement sur chaque page d'offre
 3. **Sitemap dynamique** : `/sitemap.xml` (Edge Function) inclut toutes les offres automatiquement
-4. **Meta tags** : title, description, Open Graph, Twitter Card via composant SEO
-5. **Canonical URL** : toujours `https://soussmassa-rh.com/emploi/{slug}`
+4. **Sitemap statique** : `public/sitemap.xml` sert de fallback et doit etre mis a jour apres chaque ajout d'offres
+5. **Meta tags** : title, description, Open Graph, Twitter Card via composant SEO
+6. **Canonical URL** : toujours `https://soussmassa-rh.com/emploi/{slug}`
+7. **Categories** : les mots-cles de categorie (`tourisme`, `commercial`, etc.) affichent un titre SEO propre au lieu du mot-cle brut
 
 ## Commandes utiles
 
@@ -211,3 +269,6 @@ npm run preview      # Preview du build
 - Les arrays PostgreSQL (`seo_keywords`, `required_skills`) s'inserent comme des arrays JSON normaux
 - Le site est un SPA : toutes les routes passent par `index.html` (voir `vercel.json`)
 - Pas de systeme de login : l'admin est protege par un simple mot de passe cote client
+- Pour les fichiers Excel ANAPEC, installer `xlsx` (`npm install xlsx`) pour parser les fichiers .xls
+- Toujours commiter et pousser sur `main` apres modification (deploiement auto Vercel)
+- Apres insertion d'offres, toujours mettre a jour `public/sitemap.xml` et commiter
