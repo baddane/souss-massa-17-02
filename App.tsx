@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,6 +11,7 @@ import Offers from './pages/Offers';
 import JobDetail from './pages/JobDetail';
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
 
 function ScrollToTop() {
@@ -36,7 +37,7 @@ const App: React.FC = () => {
                 <Route path="/emploi/:slug" element={<JobDetail />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/admin" element={<Admin />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
             <Footer />

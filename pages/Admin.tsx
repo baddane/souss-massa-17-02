@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
 
 const ADMIN_PASSWORD = 'souss2026';
@@ -197,6 +198,9 @@ const Admin: React.FC = () => {
   if (!authed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
         <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm space-y-4">
           <h1 className="text-xl font-bold text-gray-900 text-center">Administration</h1>
           <p className="text-sm text-gray-500 text-center">Accès réservé au recruteur</p>
@@ -223,6 +227,9 @@ const Admin: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Administration</h1>

@@ -25,7 +25,18 @@ export default async function handler() {
       { url: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];
 
-    const urls = staticPages
+    const sectorPages = [
+      'informatique', 'commercial', 'administratif', 'industrie',
+      'sante', 'enseignement', 'tourisme', 'construction',
+    ].map(s => ({ url: `/offres?sector=${s}`, priority: '0.7', changefreq: 'daily' }));
+
+    const cityPages = [
+      'Agadir', 'Inezgane', 'Taroudant', 'Marrakech', 'Essaouira',
+    ].map(c => ({ url: `/offres?city=${c}`, priority: '0.7', changefreq: 'daily' }));
+
+    const allPages = [...staticPages, ...sectorPages, ...cityPages];
+
+    const urls = allPages
       .map(p => `  <url>
     <loc>${SITE_URL}${p.url}</loc>
     <lastmod>${today}</lastmod>

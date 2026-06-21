@@ -4,6 +4,18 @@ export default function handler() {
   const txt = `User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Crawl-delay: 2
 
 Sitemap: https://soussmassa-rh.com/sitemap.xml`;
 
