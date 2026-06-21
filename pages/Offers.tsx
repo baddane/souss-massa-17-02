@@ -15,6 +15,18 @@ const CONTRACT_TYPES = [
   { value: 'Alternance', label: 'Alternance' },
 ];
 
+const SECTORS = [
+  { value: '', label: 'Tous les secteurs' },
+  { value: 'informatique', label: 'Informatique & IT' },
+  { value: 'commercial', label: 'Commerce & Vente' },
+  { value: 'administratif', label: 'Administration' },
+  { value: 'industrie', label: 'Industrie' },
+  { value: 'sante', label: 'Santé' },
+  { value: 'enseignement', label: 'Éducation' },
+  { value: 'tourisme', label: 'Tourisme & Hôtellerie' },
+  { value: 'construction', label: 'BTP & Construction' },
+];
+
 const Offers: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [allOffers, setAllOffers] = useState<any[]>([]);
@@ -24,6 +36,7 @@ const Offers: React.FC = () => {
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [city, setCity] = useState(searchParams.get('city') || '');
   const [contractType, setContractType] = useState<string>('');
+  const [sector, setSector] = useState(searchParams.get('sector') || '');
   const [page, setPage] = useState(1);
 
   const [applyOffer, setApplyOffer] = useState<any>(null);
@@ -42,13 +55,14 @@ const Offers: React.FC = () => {
         setLoading(true);
         setLoadError(false);
         const jobTitle = searchParams.get('jobTitle') || '';
-        const hasFilters = search || city || jobTitle || contractType;
+        const hasFilters = search || city || jobTitle || contractType || sector;
         if (hasFilters) {
           const filters = {
             city: city || undefined,
             contractType: contractType || undefined,
             jobTitle: jobTitle || undefined,
             keywords: search || undefined,
+            sector: sector || undefined,
           };
           const offers = await jobOffersService.searchJobOffers(filters);
           setAllOffers(offers);
@@ -66,7 +80,7 @@ const Offers: React.FC = () => {
     }, search ? 400 : 0);
 
     return () => clearTimeout(timer);
-  }, [search, city, contractType, searchParams]);
+  }, [search, city, contractType, sector, searchParams]);
 
   const handleApply = (offer: any) => {
     setApplyOffer(offer);
@@ -84,7 +98,11 @@ const Offers: React.FC = () => {
 
   const seoCity = searchParams.get('city') || '';
   const seoQuery = searchParams.get('q') || '';
-  const seoTitle = seoCity
+  const seoSector = sector || '';
+  const sectorLabel = SECTORS.find(s => s.value === seoSector)?.label || '';
+  const seoTitle = seoSector
+    ? `Offres d'emploi ${sectorLabel} - Souss-Massa`
+    : seoCity
     ? `Offres d'emploi a ${seoCity} - Souss-Massa`
     : seoQuery
     ? `Offres d'emploi : ${seoQuery} - Souss-Massa`
@@ -127,6 +145,15 @@ const Offers: React.FC = () => {
             className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             {CONTRACT_TYPES.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={sector}
+            onChange={(e) => setSector(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          >
+            {SECTORS.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
