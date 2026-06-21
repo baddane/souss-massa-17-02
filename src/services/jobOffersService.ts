@@ -41,9 +41,15 @@ export const jobOffersService = {
     }
 
     if (filters.keywords) {
-      query = query.or(
-        `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
-      );
+      if (filters.keywords === 'cat:tourisme') {
+        query = query.or(
+          `emploi_metier.ilike.%tourisme%,emploi_metier.ilike.%hotel%,emploi_metier.ilike.%restauration%,emploi_metier.ilike.%cuisinier%,emploi_metier.ilike.%serveur%,emploi_metier.ilike.%barman%,emploi_metier.ilike.%chef de partie%,emploi_metier.ilike.%chef de restauration%,emploi_metier.ilike.%commis%,emploi_metier.ilike.%étage%,emploi_metier.ilike.%réception%,raison_sociale.ilike.%hotel%,raison_sociale.ilike.%balneaire%`
+        );
+      } else {
+        query = query.or(
+          `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
+        );
+      }
     }
 
     const { data, error } = await query;
