@@ -21,10 +21,7 @@ const Offers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  const initialQuery = searchParams.get('q') || '';
-  const isCategory = initialQuery.startsWith('cat:');
-  const categoryLabel = isCategory ? initialQuery.replace('cat:', '') : '';
-  const [search, setSearch] = useState(isCategory ? '' : initialQuery);
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   const [city, setCity] = useState(searchParams.get('city') || '');
   const [contractType, setContractType] = useState<string>('');
   const [page, setPage] = useState(1);
@@ -45,13 +42,13 @@ const Offers: React.FC = () => {
         setLoading(true);
         setLoadError(false);
         const jobTitle = searchParams.get('jobTitle') || '';
-        const hasFilters = search || city || jobTitle || contractType || isCategory;
+        const hasFilters = search || city || jobTitle || contractType;
         if (hasFilters) {
           const filters = {
             city: city || undefined,
             contractType: contractType || undefined,
             jobTitle: jobTitle || undefined,
-            keywords: (isCategory ? initialQuery : search) || undefined,
+            keywords: search || undefined,
           };
           const offers = await jobOffersService.searchJobOffers(filters);
           setAllOffers(offers);
@@ -90,10 +87,8 @@ const Offers: React.FC = () => {
   const seoQuery = searchParams.get('q') || '';
   const seoTitle = seoCity
     ? `Offres d'emploi a ${seoCity} - Souss-Massa`
-    : isCategory
-    ? `Offres d'emploi : ${CATEGORY_LABELS[categoryLabel] || categoryLabel} - Souss-Massa`
     : seoQuery
-    ? `Offres d'emploi : ${seoQuery} - Souss-Massa`
+    ? `Offres d'emploi : ${CATEGORY_LABELS[seoQuery] || seoQuery} - Souss-Massa`
     : "Toutes les offres d'emploi - Souss-Massa";
 
   return (

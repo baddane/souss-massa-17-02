@@ -12,7 +12,7 @@ const POPULAR_CATEGORIES = [
   { label: 'Industrie', icon: '🏭', query: 'industrie' },
   { label: 'Sante', icon: '🏥', query: 'sante' },
   { label: 'Education', icon: '📚', query: 'enseignement' },
-  { label: 'Tourisme & Hotellerie', icon: '🏨', query: 'cat:tourisme' },
+  { label: 'Tourisme & Hotellerie', icon: '🏨', query: 'tourisme' },
   { label: 'BTP & Construction', icon: '🏗️', query: 'construction' },
 ];
 
