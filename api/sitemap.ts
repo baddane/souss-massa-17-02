@@ -1,10 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
 const SITE_URL = process.env.SITE_URL || 'https://soussmassa-rh.com';
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: IncomingMessage, res: ServerResponse) {
   try {
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre&order=date_offre.desc`,
@@ -49,9 +49,9 @@ ${urls}
 
     res.setHeader('Content-Type', 'application/xml');
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
-    return res.status(200).send(xml);
-  } catch (err) {
-    res.setHeader('Content-Type', 'application/xml');
+    res.statusCode = 200;
+    res.end(xml);
+  } catch {
     const today = new Date().toISOString().split('T')[0];
     const fallback = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -66,6 +66,8 @@ ${urls}
     <priority>0.9</priority>
   </url>
 </urlset>`;
-    return res.status(200).send(fallback);
+    res.setHeader('Content-Type', 'application/xml');
+    res.statusCode = 200;
+    res.end(fallback);
   }
 }

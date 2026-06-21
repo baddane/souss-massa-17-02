@@ -1,33 +1,48 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'http';
 import nodemailer from 'nodemailer';
 
 const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+function parseBody(req: IncomingMessage): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+    req.on('end', () => { try { resolve(JSON.parse(body)); } catch { reject(new Error('Invalid JSON')); } });
+    req.on('error', reject);
+  });
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.statusCode = 405;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
   }
 
   const gmailUser = process.env.GMAIL_USER || RECIPIENT_EMAIL;
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
   if (!gmailAppPassword) {
-    return res.status(500).json({ error: 'Email service not configured' });
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Email service not configured' }));
+    return;
   }
 
   try {
-    const { candidateName, candidateEmail, candidatePhone, jobTitle, jobRef, cvBase64, cvFileName } = req.body;
+    const { candidateName, candidateEmail, candidatePhone, jobTitle, jobRef, cvBase64, cvFileName } = await parseBody(req);
 
     if (!candidateName || !candidateEmail || !jobTitle) {
-      return res.status(400).json({ error: 'Nom, email et poste sont requis' });
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'Nom, email et poste sont requis' }));
+      return;
     }
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
-      },
+      auth: { user: gmailUser, pass: gmailAppPassword },
     });
 
     const attachments = cvBase64 && cvFileName
@@ -43,22 +58,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
           <h2 style="color: #1d4ed8;">Nouvelle candidature — SoussMassa-RH</h2>
           <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px; font-weight: bold; color: #374151;">Poste</td><td style="padding: 8px;">${jobTitle}</td></tr>
-            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold; color: #374151;">Référence</td><td style="padding: 8px;">${jobRef || 'N/A'}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold; color: #374151;">Candidat</td><td style="padding: 8px;">${candidateName}</td></tr>
-            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold; color: #374151;">Email</td><td style="padding: 8px;"><a href="mailto:${candidateEmail}">${candidateEmail}</a></td></tr>
-            <tr><td style="padding: 8px; font-weight: bold; color: #374151;">Téléphone</td><td style="padding: 8px;">${candidatePhone || 'Non renseigné'}</td></tr>
-            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold; color: #374151;">CV</td><td style="padding: 8px;">${cvFileName ? '📎 En pièce jointe' : 'Non fourni'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Poste</td><td style="padding: 8px;">${jobTitle}</td></tr>
+            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold;">Référence</td><td style="padding: 8px;">${jobRef || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Candidat</td><td style="padding: 8px;">${candidateName}</td></tr>
+            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold;">Email</td><td style="padding: 8px;"><a href="mailto:${candidateEmail}">${candidateEmail}</a></td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Téléphone</td><td style="padding: 8px;">${candidatePhone || 'Non renseigné'}</td></tr>
+            <tr style="background: #f9fafb;"><td style="padding: 8px; font-weight: bold;">CV</td><td style="padding: 8px;">${cvFileName ? 'En pièce jointe' : 'Non fourni'}</td></tr>
           </table>
-          <p style="margin-top: 16px; color: #6b7280; font-size: 12px;">Envoyé depuis SoussMassa-RH</p>
         </div>
       `,
       attachments,
     });
 
-    return res.status(200).json({ success: true });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ success: true }));
   } catch (error: any) {
     console.error('Email send error:', error);
-    return res.status(500).json({ error: error?.message || 'Erreur envoi email' });
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: error?.message || 'Erreur envoi email' }));
   }
 }
