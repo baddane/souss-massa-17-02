@@ -6,7 +6,7 @@ export const jobOffersService = {
     const { data, error } = await supabaseOffers
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .order('date_offre', { ascending: false });
 
     if (error) {
@@ -41,7 +41,7 @@ export const jobOffersService = {
     let query = supabaseOffers
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .order('date_offre', { ascending: false });
 
     if (filters.city) {

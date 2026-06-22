@@ -321,7 +321,11 @@ const Admin: React.FC = () => {
       .from('candidatures')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error) setCandidatures(data || []);
+    if (error) {
+      console.error('Erreur chargement candidatures:', error);
+    } else {
+      setCandidatures(data || []);
+    }
     setLoading(false);
   };
 
@@ -331,7 +335,11 @@ const Admin: React.FC = () => {
       .from('messages')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error) setMessages(data || []);
+    if (error) {
+      console.error('Erreur chargement messages:', error);
+    } else {
+      setMessages(data || []);
+    }
     setMessagesLoading(false);
   };
 
@@ -341,7 +349,11 @@ const Admin: React.FC = () => {
       .from('job_offers')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error) setJobOffers(data || []);
+    if (error) {
+      console.error('Erreur chargement offres:', error);
+    } else {
+      setJobOffers(data || []);
+    }
     setOffersLoading(false);
   };
 

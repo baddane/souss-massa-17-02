@@ -27,7 +27,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -74,7 +74,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .ilike('ville', `%${city}%`)
       .order('created_at', { ascending: false });
 
@@ -91,7 +91,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .eq('type_contrat', contractType)
       .order('created_at', { ascending: false });
 
@@ -108,7 +108,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .ilike('emploi_metier', `%${jobTitle}%`)
       .order('created_at', { ascending: false });
 
@@ -145,7 +145,7 @@ export const jobOffersService = {
     let query = supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .order('created_at', { ascending: false });
 
     if (filters.city) {
@@ -188,7 +188,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -205,7 +205,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
-      .eq('statut', 'active')
+      .or('statut.eq.active,statut.is.null')
       .overlaps('required_skills', skills)
       .order('created_at', { ascending: false });
 
@@ -223,12 +223,12 @@ export const jobOffersService = {
     const { count: totalOffers } = await supabase
       .from('job_offers')
       .select('*', { count: 'exact', head: true })
-      .eq('statut', 'active');
+      .or('statut.eq.active,statut.is.null');
 
     const { data: allOffers } = await supabase
       .from('job_offers')
       .select('type_contrat, ville, emploi_metier')
-      .eq('statut', 'active');
+      .or('statut.eq.active,statut.is.null');
 
     const offers = allOffers || [];
 
