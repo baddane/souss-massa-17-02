@@ -27,6 +27,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -73,6 +74,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .ilike('ville', `%${city}%`)
       .order('created_at', { ascending: false });
 
@@ -89,6 +91,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .eq('type_contrat', contractType)
       .order('created_at', { ascending: false });
 
@@ -105,6 +108,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .ilike('emploi_metier', `%${jobTitle}%`)
       .order('created_at', { ascending: false });
 
@@ -141,6 +145,7 @@ export const jobOffersService = {
     let query = supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (filters.city) {
@@ -183,6 +188,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -199,6 +205,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .overlaps('required_skills', skills)
       .order('created_at', { ascending: false });
 
@@ -215,13 +222,13 @@ export const jobOffersService = {
     // Compter le nombre total d'offres
     const { count: totalOffers } = await supabase
       .from('job_offers')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('statut', 'active');
 
-    // Note: .group() is not available in supabase-js client.
-    // To get grouped stats, use an RPC call or fetch all records and aggregate client-side.
     const { data: allOffers } = await supabase
       .from('job_offers')
-      .select('type_contrat, ville, emploi_metier');
+      .select('type_contrat, ville, emploi_metier')
+      .eq('statut', 'active');
 
     const offers = allOffers || [];
 

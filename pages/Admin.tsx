@@ -58,7 +58,7 @@ interface JobOfferRow {
   required_skills: string[];
   source: string;
   slug: string;
-  is_archived?: boolean;
+  statut?: string;
   is_featured?: boolean;
 }
 
@@ -277,7 +277,7 @@ const Admin: React.FC = () => {
   const [offersSearch, setOffersSearch] = useState('');
   const [offersFilterCity, setOffersFilterCity] = useState('');
   const [offersFilterContract, setOffersFilterContract] = useState('');
-  const [offersShowArchived, setOffersShowArchived] = useState(false);
+  const [offersStatutFilter, setOffersStatutFilter] = useState<string>('active');
   const [editingOffer, setEditingOffer] = useState<JobOfferRow | null>(null);
   const [editForm, setEditForm] = useState<OfferForm>(EMPTY_OFFER_FORM);
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -427,6 +427,7 @@ const Admin: React.FC = () => {
         suggested_salary_range: offerForm.suggested_salary_range.trim() || null,
         source: offerForm.source,
         slug,
+        statut: 'active',
       }]);
 
       if (error) {
@@ -450,10 +451,9 @@ const Admin: React.FC = () => {
     if (!error) setJobOffers(prev => prev.filter(o => o.id !== id));
   };
 
-  const toggleArchive = async (offer: JobOfferRow) => {
-    const newVal = !offer.is_archived;
-    const { error } = await supabaseOffers.from('job_offers').update({ is_archived: newVal }).eq('id', offer.id);
-    if (!error) setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_archived: newVal } : o));
+  const changeOfferStatut = async (offer: JobOfferRow, newStatut: string) => {
+    const { error } = await supabaseOffers.from('job_offers').update({ statut: newStatut }).eq('id', offer.id);
+    if (!error) setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, statut: newStatut } : o));
   };
 
   const toggleFeatured = async (offer: JobOfferRow) => {
@@ -570,8 +570,8 @@ const Admin: React.FC = () => {
 
   const filteredOffers = useMemo(() => {
     return jobOffers.filter(o => {
-      if (!offersShowArchived && o.is_archived) return false;
-      if (offersShowArchived && !o.is_archived) return false;
+      const statut = o.statut || 'active';
+      if (offersStatutFilter && statut !== offersStatutFilter) return false;
       if (offersFilterCity && o.ville !== offersFilterCity) return false;
       if (offersFilterContract && o.type_contrat !== offersFilterContract) return false;
       if (offersSearch) {
@@ -580,13 +580,14 @@ const Admin: React.FC = () => {
       }
       return true;
     });
-  }, [jobOffers, offersSearch, offersFilterCity, offersFilterContract, offersShowArchived]);
+  }, [jobOffers, offersSearch, offersFilterCity, offersFilterContract, offersStatutFilter]);
 
   const offersStats = useMemo(() => {
-    const total = jobOffers.filter(o => !o.is_archived).length;
-    const archived = jobOffers.filter(o => o.is_archived).length;
-    const featured = jobOffers.filter(o => o.is_featured && !o.is_archived).length;
-    return { total, archived, featured };
+    const active = jobOffers.filter(o => (o.statut || 'active') === 'active').length;
+    const suspendu = jobOffers.filter(o => o.statut === 'suspendu').length;
+    const conclu = jobOffers.filter(o => o.statut === 'conclu').length;
+    const featured = jobOffers.filter(o => o.is_featured && (o.statut || 'active') === 'active').length;
+    return { active, suspendu, conclu, featured };
   }, [jobOffers]);
 
   const unreadMessages = messages.filter(m => !m.is_read).length;
@@ -636,7 +637,7 @@ const Admin: React.FC = () => {
         </button>
         <button onClick={() => setActiveTab('offres')}
           className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'offres' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
-          Offres ({offersStats.total})
+          Offres ({offersStats.active})
         </button>
         <button onClick={() => setActiveTab('creer-offre')}
           className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'creer-offre' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -813,14 +814,18 @@ const Admin: React.FC = () => {
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-            <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
-              <p className="text-2xl font-bold text-gray-900">{offersStats.total}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 text-center cursor-pointer hover:border-blue-300" onClick={() => setOffersStatutFilter('active')}>
+              <p className="text-2xl font-bold text-gray-900">{offersStats.active}</p>
               <p className="text-xs text-gray-500">Actives</p>
             </div>
-            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 text-center">
-              <p className="text-2xl font-bold text-orange-700">{offersStats.archived}</p>
-              <p className="text-xs text-orange-600">Archivées</p>
+            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 text-center cursor-pointer hover:border-orange-400" onClick={() => setOffersStatutFilter('suspendu')}>
+              <p className="text-2xl font-bold text-orange-700">{offersStats.suspendu}</p>
+              <p className="text-xs text-orange-600">Suspendues</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-300 text-center cursor-pointer hover:border-gray-400" onClick={() => setOffersStatutFilter('conclu')}>
+              <p className="text-2xl font-bold text-gray-600">{offersStats.conclu}</p>
+              <p className="text-xs text-gray-500">Conclues</p>
             </div>
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-center">
               <p className="text-2xl font-bold text-yellow-700">{offersStats.featured}</p>
@@ -842,10 +847,13 @@ const Admin: React.FC = () => {
               <option value="">Tous les contrats</option>
               {CONTRACT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <button onClick={() => setOffersShowArchived(!offersShowArchived)}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${offersShowArchived ? 'bg-orange-100 text-orange-700 border border-orange-300' : 'bg-gray-50 text-gray-600 border border-gray-300'}`}>
-              {offersShowArchived ? 'Archivées' : 'Actives'}
-            </button>
+            <select value={offersStatutFilter} onChange={e => setOffersStatutFilter(e.target.value)}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium">
+              <option value="active">Actives</option>
+              <option value="suspendu">Suspendues</option>
+              <option value="conclu">Conclues</option>
+              <option value="">Toutes</option>
+            </select>
           </div>
 
           {/* List */}
@@ -853,19 +861,23 @@ const Admin: React.FC = () => {
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
           ) : filteredOffers.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <p className="text-gray-500">{offersShowArchived ? 'Aucune offre archivée' : 'Aucune offre trouvée'}</p>
+              <p className="text-gray-500">Aucune offre trouvée</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredOffers.map(o => (
-                <div key={o.id} className={`bg-white rounded-xl border p-5 transition-colors ${o.is_archived ? 'border-orange-200 bg-orange-50/30' : o.is_featured ? 'border-yellow-300 bg-yellow-50/20' : 'border-gray-200 hover:border-blue-300'}`}>
+              {filteredOffers.map(o => {
+                const statut = o.statut || 'active';
+                const cardBorder = statut === 'suspendu' ? 'border-orange-200 bg-orange-50/30' : statut === 'conclu' ? 'border-gray-300 bg-gray-50/50' : o.is_featured ? 'border-yellow-300 bg-yellow-50/20' : 'border-gray-200 hover:border-blue-300';
+                return (
+                <div key={o.id} className={`bg-white rounded-xl border p-5 transition-colors ${cardBorder}`}>
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <h3 className="font-bold text-gray-900 text-lg">{o.emploi_metier}</h3>
                         <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">{o.type_contrat}</span>
                         {o.is_featured && <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">En vedette</span>}
-                        {o.is_archived && <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">Archivée</span>}
+                        {statut === 'suspendu' && <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-medium">Suspendue</span>}
+                        {statut === 'conclu' && <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">Conclue</span>}
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs mb-2">
                         <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{o.raison_sociale}</span>
@@ -897,10 +909,24 @@ const Admin: React.FC = () => {
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-center ${o.is_featured ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                         {o.is_featured ? 'Retirer vedette' : 'En vedette'}
                       </button>
-                      <button onClick={() => toggleArchive(o)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-center ${o.is_archived ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}`}>
-                        {o.is_archived ? 'Désarchiver' : 'Archiver'}
-                      </button>
+                      {statut === 'active' && (
+                        <>
+                          <button onClick={() => changeOfferStatut(o, 'suspendu')}
+                            className="px-4 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg text-sm font-medium transition-colors text-center">
+                            Suspendre
+                          </button>
+                          <button onClick={() => changeOfferStatut(o, 'conclu')}
+                            className="px-4 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors text-center">
+                            Conclure
+                          </button>
+                        </>
+                      )}
+                      {(statut === 'suspendu' || statut === 'conclu') && (
+                        <button onClick={() => changeOfferStatut(o, 'active')}
+                          className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors text-center">
+                          Réactiver
+                        </button>
+                      )}
                       <button onClick={() => deleteJobOffer(o.id)}
                         className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors text-center">
                         Supprimer
@@ -908,7 +934,7 @@ const Admin: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                ); })}
             </div>
           )}
           <p className="text-center text-xs text-gray-400 mt-8">

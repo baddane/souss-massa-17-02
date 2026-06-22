@@ -6,8 +6,9 @@ export const jobOffersService = {
     const { data, error } = await supabaseOffers
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('date_offre', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching job offers from external DB:', error);
       return [];
@@ -40,6 +41,7 @@ export const jobOffersService = {
     let query = supabaseOffers
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('date_offre', { ascending: false });
 
     if (filters.city) {
