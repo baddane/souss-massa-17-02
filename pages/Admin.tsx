@@ -1,8 +1,77 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
+import { slugify } from '../components/SEO';
 
 const ADMIN_PASSWORD = 'souss2026';
+
+const SOUSS_MASSA_CITIES = ['Agadir', 'Inezgane', 'Taroudant', 'Tiznit', 'Ouarzazate', 'Chtouka Ait Baha', 'Tata'];
+const CONTRACT_TYPES = ['CDI', 'CDD', 'Stage', 'Alternance', 'Freelance'];
+const SOURCE_OPTIONS = ['Direct', 'ANAPEC'];
+
+interface NewOfferForm {
+  emploi_metier: string;
+  ville: string;
+  type_contrat: string;
+  raison_sociale: string;
+  date_offre: string;
+  nbre_postes: number;
+  ref_offre: string;
+  full_description: string;
+  meta_description: string;
+  seo_keywords: string;
+  required_skills: string;
+  suggested_salary_range: string;
+  source: string;
+}
+
+const EMPTY_OFFER_FORM: NewOfferForm = {
+  emploi_metier: '',
+  ville: 'Agadir',
+  type_contrat: 'CDI',
+  raison_sociale: '',
+  date_offre: new Date().toISOString().split('T')[0],
+  nbre_postes: 1,
+  ref_offre: '',
+  full_description: '',
+  meta_description: '',
+  seo_keywords: '',
+  required_skills: '',
+  suggested_salary_range: '',
+  source: 'Direct',
+};
+
+function generateRefOffre(entreprise: string): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yy = String(now.getFullYear()).slice(-2);
+  const initiales = entreprise
+    .split(/\s+/)
+    .map(w => w[0]?.toUpperCase() || '')
+    .join('')
+    .slice(0, 2) || 'XX';
+  const num = String(Math.floor(Math.random() * 900) + 100);
+  return `DIR-${dd}${mm}${yy}-${initiales}-${num}`;
+}
+
+async function generateUniqueSlug(poste: string, ville: string, entreprise: string): Promise<string> {
+  const base = slugify(`${poste} ${ville}`);
+  const { data: existing } = await supabaseOffers
+    .from('job_offers')
+    .select('slug')
+    .like('slug', `${base}%`);
+
+  const slugs = new Set((existing || []).map((r: { slug: string }) => r.slug));
+  if (!slugs.has(base)) return base;
+
+  const withCompany = slugify(`${poste} ${ville} ${entreprise}`);
+  if (!slugs.has(withCompany)) return withCompany;
+
+  let i = 2;
+  while (slugs.has(`${withCompany}-${i}`)) i++;
+  return `${withCompany}-${i}`;
+}
 
 const STATUS_OPTIONS = [
   { value: 'nouvelle', label: 'Nouvelle', color: 'bg-blue-100 text-blue-800' },
@@ -46,7 +115,7 @@ interface Message {
 const Admin: React.FC = () => {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'creer-offre'>('candidatures');
   const [candidatures, setCandidatures] = useState<Candidature[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +126,94 @@ const Admin: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+
+  const [offerForm, setOfferForm] = useState<NewOfferForm>(EMPTY_OFFER_FORM);
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
+  const [offerSuccess, setOfferSuccess] = useState<string | null>(null);
+  const [offerError, setOfferError] = useState<string | null>(null);
+
+  const updateOfferField = useCallback(<K extends keyof NewOfferForm>(field: K, value: NewOfferForm[K]) => {
+    setOfferForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleOfferSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOfferError(null);
+    setOfferSuccess(null);
+
+    if (!offerForm.emploi_metier.trim() || !offerForm.raison_sociale.trim()) {
+      setOfferError('Le poste et l\'entreprise sont obligatoires.');
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(offerForm.date_offre)) {
+      setOfferError('La date doit être au format YYYY-MM-DD.');
+      return;
+    }
+
+    setOfferSubmitting(true);
+
+    try {
+      const refOffre = offerForm.ref_offre.trim() || generateRefOffre(offerForm.raison_sociale);
+
+      const { data: existingRef } = await supabaseOffers
+        .from('job_offers')
+        .select('ref_offre')
+        .eq('ref_offre', refOffre)
+        .limit(1);
+
+      if (existingRef && existingRef.length > 0) {
+        setOfferError(`Une offre avec la référence "${refOffre}" existe déjà.`);
+        setOfferSubmitting(false);
+        return;
+      }
+
+      const slug = await generateUniqueSlug(offerForm.emploi_metier, offerForm.ville, offerForm.raison_sociale);
+
+      const seoKeywords = offerForm.seo_keywords
+        ? offerForm.seo_keywords.split(',').map(k => k.trim()).filter(Boolean)
+        : [`emploi ${offerForm.ville.toLowerCase()}`, `${offerForm.emploi_metier.toLowerCase()} maroc`, `recrutement souss-massa`];
+
+      const requiredSkills = offerForm.required_skills
+        ? offerForm.required_skills.split(',').map(k => k.trim()).filter(Boolean)
+        : [];
+
+      const metaDesc = offerForm.meta_description.trim() ||
+        `${offerForm.emploi_metier} à ${offerForm.ville} - ${offerForm.type_contrat} chez ${offerForm.raison_sociale}. Postulez maintenant sur SoussMassa-RH.`.slice(0, 160);
+
+      const payload = {
+        emploi_metier: offerForm.emploi_metier.trim(),
+        ville: offerForm.ville,
+        type_contrat: offerForm.type_contrat,
+        raison_sociale: offerForm.raison_sociale.trim(),
+        date_offre: offerForm.date_offre,
+        nbre_postes: offerForm.nbre_postes,
+        ref_offre: refOffre,
+        full_description: offerForm.full_description.trim(),
+        meta_description: metaDesc,
+        seo_keywords: seoKeywords,
+        required_skills: requiredSkills,
+        suggested_salary_range: offerForm.suggested_salary_range.trim() || null,
+        source: offerForm.source,
+        slug,
+      };
+
+      const { error } = await supabaseOffers
+        .from('job_offers')
+        .insert([payload]);
+
+      if (error) {
+        setOfferError(`Erreur Supabase : ${error.message}`);
+      } else {
+        setOfferSuccess(`Offre "${offerForm.emploi_metier}" publiée avec succès ! Slug : ${slug}`);
+        setOfferForm(EMPTY_OFFER_FORM);
+      }
+    } catch (err: any) {
+      setOfferError(`Erreur : ${err.message || 'Erreur inconnue'}`);
+    } finally {
+      setOfferSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_auth');
@@ -269,6 +426,16 @@ const Admin: React.FC = () => {
               {unreadMessages}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('creer-offre')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'creer-offre'
+              ? 'bg-white text-green-700 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          + Créer une offre
         </button>
       </div>
 
@@ -497,6 +664,190 @@ const Admin: React.FC = () => {
             {messages.length} message{messages.length !== 1 ? 's' : ''} · {unreadMessages} non lu{unreadMessages !== 1 ? 's' : ''}
           </p>
         </>
+      )}
+
+      {activeTab === 'creer-offre' && (
+        <form onSubmit={handleOfferSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          <h2 className="text-lg font-bold text-gray-900">Nouvelle offre d'emploi</h2>
+
+          {offerError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {offerError}
+            </div>
+          )}
+          {offerSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              {offerSuccess}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Intitulé du poste *</label>
+              <input
+                type="text"
+                value={offerForm.emploi_metier}
+                onChange={e => updateOfferField('emploi_metier', e.target.value)}
+                placeholder="Ex: Développeur Web, Comptable..."
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Entreprise *</label>
+              <input
+                type="text"
+                value={offerForm.raison_sociale}
+                onChange={e => updateOfferField('raison_sociale', e.target.value)}
+                placeholder="Ex: SARL XYZ"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+              <select
+                value={offerForm.ville}
+                onChange={e => updateOfferField('ville', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {SOUSS_MASSA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type de contrat</label>
+              <select
+                value={offerForm.type_contrat}
+                onChange={e => updateOfferField('type_contrat', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {CONTRACT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+              <select
+                value={offerForm.source}
+                onChange={e => updateOfferField('source', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de l'offre</label>
+              <input
+                type="date"
+                value={offerForm.date_offre}
+                onChange={e => updateOfferField('date_offre', e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de postes</label>
+              <input
+                type="number"
+                min={1}
+                value={offerForm.nbre_postes}
+                onChange={e => updateOfferField('nbre_postes', parseInt(e.target.value) || 1)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Référence (auto si vide)</label>
+              <input
+                type="text"
+                value={offerForm.ref_offre}
+                onChange={e => updateOfferField('ref_offre', e.target.value)}
+                placeholder="Ex: AG170225001234"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description complète *</label>
+            <textarea
+              value={offerForm.full_description}
+              onChange={e => updateOfferField('full_description', e.target.value)}
+              placeholder={"Missions principales :\n- Mission 1\n- Mission 2\n\nProfil recherché :\n- Compétence 1\n- Compétence 2"}
+              rows={8}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Meta description SEO (max 160 car., auto si vide)</label>
+            <input
+              type="text"
+              maxLength={160}
+              value={offerForm.meta_description}
+              onChange={e => updateOfferField('meta_description', e.target.value)}
+              placeholder="Générée automatiquement si laissée vide"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-400 mt-1">{offerForm.meta_description.length}/160</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mots-clés SEO (séparés par des virgules)</label>
+              <input
+                type="text"
+                value={offerForm.seo_keywords}
+                onChange={e => updateOfferField('seo_keywords', e.target.value)}
+                placeholder="emploi agadir, développeur maroc, cdi agadir"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-400 mt-1">Générés automatiquement si laissés vides</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Compétences requises (séparées par des virgules)</label>
+              <input
+                type="text"
+                value={offerForm.required_skills}
+                onChange={e => updateOfferField('required_skills', e.target.value)}
+                placeholder="JavaScript, React, Node.js, Git"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fourchette salariale</label>
+            <input
+              type="text"
+              value={offerForm.suggested_salary_range}
+              onChange={e => updateOfferField('suggested_salary_range', e.target.value)}
+              placeholder="Ex: 5000-8000 MAD"
+              className="w-full max-w-xs px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={offerSubmitting}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {offerSubmitting ? 'Publication en cours...' : 'Publier l\'offre'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOfferForm(EMPTY_OFFER_FORM); setOfferError(null); setOfferSuccess(null); }}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              Réinitialiser
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );
