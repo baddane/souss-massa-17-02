@@ -459,19 +459,37 @@ const Admin: React.FC = () => {
   // ── Manage offers actions ──
   const deleteJobOffer = async (id: string) => {
     if (!confirm('Supprimer définitivement cette offre ?')) return;
-    const { error } = await supabaseOffers.from('job_offers').delete().eq('id', id);
-    if (!error) setJobOffers(prev => prev.filter(o => o.id !== id));
+    const { error, count } = await supabaseOffers.from('job_offers').delete({ count: 'exact' }).eq('id', id);
+    if (error) {
+      alert(`Erreur suppression : ${error.message}`);
+    } else if (count === 0) {
+      alert('Erreur : la suppression a été bloquée par les permissions de la base de données (RLS). Ajoutez une politique DELETE pour le rôle anon dans Supabase.');
+    } else {
+      setJobOffers(prev => prev.filter(o => o.id !== id));
+    }
   };
 
   const changeOfferStatut = async (offer: JobOfferRow, newStatut: string) => {
-    const { error } = await supabaseOffers.from('job_offers').update({ statut: newStatut }).eq('id', offer.id);
-    if (!error) setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, statut: newStatut } : o));
+    const { error, count } = await supabaseOffers.from('job_offers').update({ statut: newStatut }, { count: 'exact' }).eq('id', offer.id);
+    if (error) {
+      alert(`Erreur changement statut : ${error.message}`);
+    } else if (count === 0) {
+      alert('Erreur : la modification a été bloquée par les permissions de la base de données (RLS). Ajoutez une politique UPDATE pour le rôle anon dans Supabase.');
+    } else {
+      setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, statut: newStatut } : o));
+    }
   };
 
   const toggleFeatured = async (offer: JobOfferRow) => {
     const newVal = !offer.is_featured;
-    const { error } = await supabaseOffers.from('job_offers').update({ is_featured: newVal }).eq('id', offer.id);
-    if (!error) setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_featured: newVal } : o));
+    const { error, count } = await supabaseOffers.from('job_offers').update({ is_featured: newVal }, { count: 'exact' }).eq('id', offer.id);
+    if (error) {
+      alert(`Erreur : ${error.message}`);
+    } else if (count === 0) {
+      alert('Erreur : la modification a été bloquée par les permissions de la base de données (RLS).');
+    } else {
+      setJobOffers(prev => prev.map(o => o.id === offer.id ? { ...o, is_featured: newVal } : o));
+    }
   };
 
   const openEditOffer = (offer: JobOfferRow) => {
@@ -510,7 +528,7 @@ const Admin: React.FC = () => {
       const metaDesc = editForm.meta_description.trim() ||
         `${editForm.emploi_metier} à ${editForm.ville} - ${editForm.type_contrat} chez ${editForm.raison_sociale}. Postulez maintenant sur SoussMassa-RH.`.slice(0, 160);
 
-      const { error } = await supabaseOffers.from('job_offers').update({
+      const { error, count } = await supabaseOffers.from('job_offers').update({
         emploi_metier: editForm.emploi_metier.trim(),
         ville: editForm.ville,
         type_contrat: editForm.type_contrat,
@@ -524,10 +542,12 @@ const Admin: React.FC = () => {
         suggested_salary_range: editForm.suggested_salary_range.trim() || null,
         source: editForm.source,
         slug,
-      }).eq('id', editingOffer.id);
+      }, { count: 'exact' }).eq('id', editingOffer.id);
 
       if (error) {
         setEditError(`Erreur Supabase : ${error.message}`);
+      } else if (count === 0) {
+        setEditError('Erreur : la modification a été bloquée par les permissions (RLS). Ajoutez une politique UPDATE pour anon dans Supabase.');
       } else {
         setJobOffers(prev => prev.map(o => o.id === editingOffer.id ? {
           ...o,
