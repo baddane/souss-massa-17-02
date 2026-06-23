@@ -4,6 +4,22 @@ import { supabaseOffers } from '../src/services/supabase';
 import { slugify } from '../components/SEO';
 
 const ADMIN_PASSWORD = 'souss2026';
+const SITE_URL = 'https://soussmassa-rh.com';
+
+function generateWhatsAppUrl(offer: { emploi_metier: string; ville: string; type_contrat: string; raison_sociale: string; nbre_postes: number; slug: string }) {
+  const postes = offer.nbre_postes > 1 ? `${offer.nbre_postes} postes` : '1 poste';
+  const message = `🟢 *Nouvelle offre d'emploi*
+
+📌 *${offer.emploi_metier}*
+🏢 ${offer.raison_sociale}
+📍 ${offer.ville}
+📄 ${offer.type_contrat} — ${postes}
+
+👉 Postulez ici : ${SITE_URL}/emploi/${offer.slug}
+
+_Retrouvez toutes les offres sur ${SITE_URL}_`;
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+}
 
 const SOUSS_MASSA_CITIES = ['Agadir', 'Inezgane', 'Taroudant', 'Tiznit', 'Ouarzazate', 'Chtouka Ait Baha', 'Tata'];
 const CONTRACT_TYPES = ['CDI', 'CDD', 'Stage', 'Alternance', 'Freelance'];
@@ -270,6 +286,7 @@ const Admin: React.FC = () => {
   const [offerSubmitting, setOfferSubmitting] = useState(false);
   const [offerSuccess, setOfferSuccess] = useState<string | null>(null);
   const [offerError, setOfferError] = useState<string | null>(null);
+  const [lastCreatedOffer, setLastCreatedOffer] = useState<{ emploi_metier: string; ville: string; type_contrat: string; raison_sociale: string; nbre_postes: number; slug: string } | null>(null);
 
   // Manage offers
   const [jobOffers, setJobOffers] = useState<JobOfferRow[]>([]);
@@ -445,6 +462,14 @@ const Admin: React.FC = () => {
       if (error) {
         setOfferError(`Erreur Supabase : ${error.message}`);
       } else {
+        setLastCreatedOffer({
+          emploi_metier: offerForm.emploi_metier.trim(),
+          ville: offerForm.ville,
+          type_contrat: offerForm.type_contrat,
+          raison_sociale: offerForm.raison_sociale.trim(),
+          nbre_postes: offerForm.nbre_postes,
+          slug,
+        });
         setOfferSuccess(`Offre "${offerForm.emploi_metier}" publiée ! Slug : ${slug}`);
         setOfferForm(EMPTY_OFFER_FORM);
         loadJobOffers();
@@ -937,6 +962,10 @@ const Admin: React.FC = () => {
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors text-center">
                         Modifier
                       </button>
+                      <a href={generateWhatsAppUrl(o)} target="_blank" rel="noopener noreferrer"
+                        className="px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-bold hover:bg-[#1da851] transition-colors text-center">
+                        WhatsApp
+                      </a>
                       <button onClick={() => toggleFeatured(o)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-center ${o.is_featured ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                         {o.is_featured ? 'Retirer vedette' : 'En vedette'}
@@ -980,14 +1009,27 @@ const Admin: React.FC = () => {
         <form onSubmit={handleOfferSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
           <h2 className="text-lg font-bold text-gray-900">Nouvelle offre d'emploi</h2>
           {offerError && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{offerError}</div>}
-          {offerSuccess && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">{offerSuccess}</div>}
+          {offerSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              <p>{offerSuccess}</p>
+              {lastCreatedOffer && (
+                <a href={generateWhatsAppUrl(lastCreatedOffer)} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[#25D366] text-white rounded-lg text-sm font-bold hover:bg-[#1da851] transition-colors">
+                  <svg viewBox="0 0 32 32" width="18" height="18" fill="white">
+                    <path d="M16.004 2.667A13.26 13.26 0 0 0 2.67 15.923a13.16 13.16 0 0 0 1.795 6.636L2.667 29.333l7.005-1.77a13.3 13.3 0 0 0 6.332 1.607h.005c7.32 0 13.324-5.95 13.324-13.267A13.21 13.21 0 0 0 16.004 2.667Zm0 24.27a11.03 11.03 0 0 1-5.618-1.535l-.403-.24-4.178 1.094 1.115-4.07-.263-.418a10.93 10.93 0 0 1-1.685-5.84c0-6.065 4.94-11.003 11.037-11.003a11.01 11.01 0 0 1 11.026 11.023c0 6.065-4.95 11.003-11.031 10.99Zm6.048-8.24c-.332-.166-1.964-.97-2.269-1.08-.305-.111-.527-.166-.749.167-.222.332-.86 1.08-1.054 1.302-.194.222-.389.25-.72.083-.332-.166-1.403-.517-2.672-1.648-.987-.88-1.654-1.966-1.848-2.298-.194-.332-.02-.512.146-.678.15-.148.332-.389.499-.583.166-.194.222-.332.332-.555.111-.222.056-.416-.028-.583-.083-.166-.749-1.803-1.026-2.468-.27-.649-.545-.56-.749-.571l-.638-.011a1.225 1.225 0 0 0-.888.416c-.305.332-1.165 1.136-1.165 2.773 0 1.636 1.193 3.217 1.358 3.44.167.221 2.348 3.582 5.688 5.023.795.343 1.415.548 1.899.702.798.253 1.524.218 2.098.132.64-.095 1.964-.803 2.24-1.58.278-.776.278-1.44.195-1.58-.083-.138-.305-.222-.638-.388Z"/>
+                  </svg>
+                  Partager sur WhatsApp
+                </a>
+              )}
+            </div>
+          )}
           <OfferFormFields form={offerForm} onChange={updateOfferField} />
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={offerSubmitting}
               className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {offerSubmitting ? 'Publication en cours...' : "Publier l'offre"}
             </button>
-            <button type="button" onClick={() => { setOfferForm(EMPTY_OFFER_FORM); setOfferError(null); setOfferSuccess(null); }}
+            <button type="button" onClick={() => { setOfferForm(EMPTY_OFFER_FORM); setOfferError(null); setOfferSuccess(null); setLastCreatedOffer(null); }}
               className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
               Réinitialiser
             </button>
