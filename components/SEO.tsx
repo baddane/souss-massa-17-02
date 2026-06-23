@@ -48,6 +48,25 @@ const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'websit
 
 export default SEO;
 
+const CITY_POSTAL_CODES: Record<string, string> = {
+  'Agadir': '80000',
+  'Inezgane': '86350',
+  'Taroudant': '83000',
+  'Tiznit': '85000',
+  'Ouarzazate': '45000',
+  'Chtouka Ait Baha': '86100',
+  'Tata': '84000',
+  'Essaouira': '44000',
+  'Marrakech': '40000',
+};
+
+function parseSalaryRange(range?: string): { min: number; max: number } | null {
+  if (!range) return null;
+  const match = range.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (!match) return null;
+  return { min: parseInt(match[1], 10), max: parseInt(match[2], 10) };
+}
+
 export function generateJobPostingJsonLd(offer: {
   emploi_metier: string;
   raison_sociale: string;
@@ -59,12 +78,19 @@ export function generateJobPostingJsonLd(offer: {
   suggested_salary_range?: string;
   slug: string;
 }) {
-  return {
+  const posted = new Date(offer.date_offre);
+  const validThrough = new Date(posted);
+  validThrough.setDate(validThrough.getDate() + 60);
+
+  const salary = parseSalaryRange(offer.suggested_salary_range);
+
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: `${offer.emploi_metier} - ${offer.ville}`,
     description: offer.full_description || offer.meta_description || offer.emploi_metier,
     datePosted: offer.date_offre,
+    validThrough: validThrough.toISOString().split('T')[0],
     hiringOrganization: {
       '@type': 'Organization',
       name: offer.raison_sociale,
@@ -73,7 +99,9 @@ export function generateJobPostingJsonLd(offer: {
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
+        streetAddress: offer.ville,
         addressLocality: offer.ville,
+        postalCode: CITY_POSTAL_CODES[offer.ville] || '80000',
         addressRegion: 'Souss-Massa',
         addressCountry: 'MA',
       },
@@ -81,6 +109,21 @@ export function generateJobPostingJsonLd(offer: {
     employmentType: mapContractType(offer.type_contrat),
     url: `${SITE_URL}/emploi/${offer.slug}`,
   };
+
+  if (salary) {
+    jsonLd.baseSalary = {
+      '@type': 'MonetaryAmount',
+      currency: 'MAD',
+      value: {
+        '@type': 'QuantitativeValue',
+        minValue: salary.min,
+        maxValue: salary.max,
+        unitText: 'MONTH',
+      },
+    };
+  }
+
+  return jsonLd;
 }
 
 function mapContractType(type: string): string {
