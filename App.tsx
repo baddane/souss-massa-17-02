@@ -12,6 +12,7 @@ import JobDetail from './pages/JobDetail';
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import WhatsAppWidget from './components/WhatsAppWidget';
 import { AuthProvider } from './contexts/AuthContext';
 
 function ScrollToTop() {
@@ -41,6 +42,7 @@ const App: React.FC = () => {
               </Routes>
             </main>
             <Footer />
+            <WhatsAppWidget />
           </div>
           <ToastContainer
             position="top-center"

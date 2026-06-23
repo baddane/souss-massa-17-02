@@ -59,6 +59,15 @@ html {
   background: #64748b;
 }
 
+/* ─── Animation fade-in ─── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
 /* ─── Styles d'impression (offres imprimables) ─── */
 @media print {
   header,
