@@ -357,10 +357,26 @@ services/
 src/services/
   jobOffersService.ts  # Copie alternative — DOIT RESTER SYNCHRONISE avec services/
 
-constants.ts        # Liste des villes (CITIES)
+constants.ts        # Liste des villes (CITIES, SOUSS_MASSA_CITIES)
 scripts/
-  scrape-anapec.ts  # Scraper ANAPEC avec enrichissement IA (Gemini) et normalizeDate()
+  scrape-anapec.ts   # Scraper ANAPEC (selecteurs non valides, ne traduit pas) — squelette
+  scrape-rekrute.cjs # Import rekrute Souss-Massa : scraping + normalisation + dedup
+  insert-offers.cjs  # Insertion generique d'offres (records deja traduits) dans Supabase
+  gen-sitemap.cjs    # Regeneration de public/sitemap.xml depuis Supabase
 ```
+
+### Importer de nouvelles offres (rekrute.com)
+
+Pipeline documente dans **`IMPORT_OFFRES.md`**. En resume :
+1. `node scripts/scrape-rekrute.cjs` → ecrit les nouvelles offres FR (dedoublonnees
+   contre la base) dans `scripts/import/pending-rekrute.json`.
+2. Claude lit ce fichier, **traduit FR/EN/AR** + enrichit, ecrit
+   `scripts/import/translated-offers.json` (records complets avec colonnes `_en`/`_ar`).
+3. `node scripts/insert-offers.cjs scripts/import/translated-offers.json` → insertion.
+4. `node scripts/gen-sitemap.cjs` → regenere la sitemap. Puis commit/push sur `main`.
+
+Quand l'utilisateur dit « traduis et importe `scripts/import/pending-rekrute.json` »,
+suivre les etapes 2 a 4 (meme gabarit de traduction que les offres existantes).
 
 ## Site multilingue (FR / EN / AR)
 

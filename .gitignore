@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Fichiers d'import temporaires (pipeline rekrute, voir IMPORT_OFFRES.md)
+scripts/import/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
