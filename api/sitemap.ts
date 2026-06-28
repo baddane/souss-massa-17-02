@@ -26,7 +26,7 @@ function toISODate(raw: string | null | undefined): string | null {
 export default async function handler() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre&order=date_offre.desc`,
+      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&order=date_offre.desc`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -49,9 +49,15 @@ export default async function handler() {
       'sante', 'enseignement', 'tourisme', 'construction',
     ].map(s => ({ url: `/offres?sector=${s}`, priority: '0.7', changefreq: 'daily' }));
 
-    const cityPages = [
-      'Agadir', 'Inezgane', 'Taroudant', 'Marrakech', 'Essaouira',
-    ].map(c => ({ url: `/offres?city=${c}`, priority: '0.7', changefreq: 'daily' }));
+    // Pages ville derivees des villes reellement presentes dans les offres (Souss-Massa)
+    const cities = Array.from(
+      new Set((offers as any[]).map(o => o.ville).filter(Boolean))
+    ).sort();
+    const cityPages = cities.map(c => ({
+      url: `/offres?city=${encodeURIComponent(c)}`,
+      priority: '0.7',
+      changefreq: 'daily',
+    }));
 
     const allPages = [...staticPages, ...sectorPages, ...cityPages];
 
