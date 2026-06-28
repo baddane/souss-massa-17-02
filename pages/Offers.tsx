@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { jobOffersService } from '../services/jobOffersService';
+import { SOUSS_MASSA_CITIES } from '../constants';
 import SEO from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
 import {
@@ -17,7 +18,7 @@ const OFFERS_PER_PAGE = 20;
 
 const CONTRACT_TYPES = ['', 'CDI', 'CDD', 'Stage', 'Alternance'];
 const SECTOR_VALUES = ['', 'informatique', 'commercial', 'administratif', 'industrie', 'sante', 'enseignement', 'tourisme', 'construction'];
-const CITY_VALUES = ['Agadir', 'Marrakech', 'Essaouira', 'Taroudant', 'Inezgane'];
+const CITY_VALUES = SOUSS_MASSA_CITIES;
 
 const Offers: React.FC = () => {
   const { t, lang } = useT();

@@ -13,7 +13,7 @@ const SECTOR_LINKS = [
   { key: 'enseignement', sector: 'enseignement' },
 ];
 
-const CITY_LINKS = ['Agadir', 'Inezgane', 'Taroudant', 'Marrakech', 'Essaouira'];
+const CITY_LINKS = ['Agadir', 'Inezgane', 'Aït Melloul', 'Taroudant', 'Tiznit'];
 
 const Footer: React.FC = () => {
   const { t } = useT();
