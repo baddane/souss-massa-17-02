@@ -432,6 +432,30 @@ Gabarits utilises pour le parc existant (a reutiliser pour rester coherent) :
 
 Le site reste fonctionnel meme si une offre n'est pas encore traduite (repli FR).
 
+## Espace entreprise (comptes + validation)
+
+Les entreprises peuvent creer un compte et deposer des offres, validees par l'admin.
+
+- **Auth** : Supabase Auth (email/mot de passe). Profil dans la table
+  `comptes_entreprise` (id = auth.users.id ; `statut` = `en_attente`/`valide`/`refuse`).
+- **Pages** : `/inscription-entreprise`, `/connexion-entreprise`, `/espace-entreprise`
+  (pages/CompanyRegister|CompanyLogin|CompanyDashboard.tsx). Service :
+  `src/services/companyService.ts` (`companyAuth`, `companyService`, `moderationService`).
+- **Offres entreprise** : inserees dans `job_offers` avec `source='entreprise'`,
+  `company_id`, et `statut='en_attente'` (invisibles du public tant que non validees).
+- **Moderation** : onglets « Entreprises » et « Offres a valider » dans `pages/Admin.tsx`.
+  Valider un compte → email via `api/notify-company.ts` (rappel identifiant + lien).
+  Valider une offre → `statut='active'` (publiee).
+- **Visibilite publique** : `jobOffersService` (les 2 copies), `api/sitemap.ts` et
+  `scripts/gen-sitemap.cjs` ne renvoient que les offres `statut='active'`.
+
+> **PREREQUIS CRITIQUE** : desactiver la confirmation d'email Supabase
+> (Dashboard → Authentication → Sign In / Providers → Email → decocher
+> « Confirm email »). Sinon, apres inscription, l'entreprise ne peut pas se
+> connecter (« Email not confirmed ») — la validation se fait par l'admin, pas
+> par email Supabase. L'email de notification utilise `GMAIL_APP_PASSWORD` (deja
+> configure pour les candidatures).
+
 ## Commandes utiles
 
 ```bash

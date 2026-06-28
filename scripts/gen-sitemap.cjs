@@ -22,7 +22,7 @@ function toISODate(raw) {
 }
 
 async function main() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&order=date_offre.desc`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&statut=eq.active&order=date_offre.desc`, {
     headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
   });
   const offers = await res.json();

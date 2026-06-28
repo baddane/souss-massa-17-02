@@ -36,6 +36,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -67,6 +68,7 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*')
       .eq('slug', slug)
+      .eq('statut', 'active')
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -83,6 +85,7 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*')
       .ilike('ville', `%${city}%`)
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -99,6 +102,7 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*')
       .eq('type_contrat', contractType)
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -115,6 +119,7 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*')
       .ilike('emploi_metier', `%${jobTitle}%`)
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -150,6 +155,7 @@ export const jobOffersService = {
     let query = supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (filters.city) {
@@ -192,6 +198,7 @@ export const jobOffersService = {
     const { data, error } = await supabase
       .from('job_offers')
       .select('*')
+      .eq('statut', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -209,6 +216,7 @@ export const jobOffersService = {
       .from('job_offers')
       .select('*')
       .overlaps('required_skills', skills)
+      .eq('statut', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {

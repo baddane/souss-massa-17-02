@@ -39,6 +39,14 @@ const Header: React.FC = () => {
               {t('nav.contact')}
             </Link>
             <Link
+              to="/espace-entreprise"
+              className={`text-sm font-semibold transition-colors ${
+                location.pathname.includes('entreprise') ? 'text-blue-700' : 'text-gray-600 hover:text-blue-700'
+              }`}
+            >
+              {t('nav.companyArea')}
+            </Link>
+            <Link
               to="/offres"
               className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
             >
@@ -70,6 +78,9 @@ const Header: React.FC = () => {
           </Link>
           <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.contact')}
+          </Link>
+          <Link to="/espace-entreprise" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+            {t('nav.companyArea')}
           </Link>
           <Link to="/offres" className="block bg-orange-500 text-white text-center py-3 rounded-lg font-bold">
             {t('nav.findJob')}

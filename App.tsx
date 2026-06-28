@@ -12,6 +12,9 @@ import JobDetail from './pages/JobDetail';
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import CompanyRegister from './pages/CompanyRegister';
+import CompanyLogin from './pages/CompanyLogin';
+import CompanyDashboard from './pages/CompanyDashboard';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
@@ -36,6 +39,9 @@ const AppShell: React.FC = () => {
             <Route path="/offres" element={<Offers />} />
             <Route path="/emploi/:slug" element={<JobDetail />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/inscription-entreprise" element={<CompanyRegister />} />
+            <Route path="/connexion-entreprise" element={<CompanyLogin />} />
+            <Route path="/espace-entreprise" element={<CompanyDashboard />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

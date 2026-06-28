@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
+import { moderationService, CompanyProfile } from '../src/services/companyService';
 
 const ADMIN_PASSWORD = 'souss2026';
+
+const COMPANY_STATUT_LABEL: Record<string, { label: string; color: string }> = {
+  en_attente: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800' },
+  valide: { label: 'Validé', color: 'bg-green-100 text-green-800' },
+  refuse: { label: 'Refusé', color: 'bg-red-100 text-red-700' },
+};
 
 const STATUS_OPTIONS = [
   { value: 'nouvelle', label: 'Nouvelle', color: 'bg-blue-100 text-blue-800' },
@@ -46,9 +53,11 @@ interface Message {
 const Admin: React.FC = () => {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres'>('candidatures');
   const [candidatures, setCandidatures] = useState<Candidature[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
+  const [pendingOffers, setPendingOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
@@ -77,7 +86,54 @@ const Admin: React.FC = () => {
     if (!authed) return;
     loadCandidatures();
     loadMessages();
+    loadCompanies();
+    loadPendingOffers();
   }, [authed]);
+
+  const loadCompanies = async () => {
+    setCompanies(await moderationService.getCompanies());
+  };
+
+  const loadPendingOffers = async () => {
+    setPendingOffers(await moderationService.getPendingOffers());
+  };
+
+  const validateCompany = async (c: CompanyProfile) => {
+    try {
+      await moderationService.setCompanyStatus(c.id, 'valide');
+      // Notification email (rappel identifiants)
+      try {
+        await fetch('/api/notify-company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: c.email }),
+        });
+        await moderationService.markNotified(c.id);
+      } catch (e) {
+        console.warn('Email de validation non envoyé:', e);
+      }
+      setCompanies(prev => prev.map(x => x.id === c.id ? { ...x, statut: 'valide', notified: true } : x));
+    } catch (e) {
+      alert("Erreur lors de la validation.");
+    }
+  };
+
+  const refuseCompany = async (id: string) => {
+    if (!confirm('Refuser cette entreprise ?')) return;
+    await moderationService.setCompanyStatus(id, 'refuse');
+    setCompanies(prev => prev.map(x => x.id === id ? { ...x, statut: 'refuse' } : x));
+  };
+
+  const validateOffer = async (id: string) => {
+    await moderationService.setOfferStatus(id, 'active');
+    setPendingOffers(prev => prev.filter(o => o.id !== id));
+  };
+
+  const refuseOffer = async (id: string) => {
+    if (!confirm('Refuser cette offre ?')) return;
+    await moderationService.setOfferStatus(id, 'refuse');
+    setPendingOffers(prev => prev.filter(o => o.id !== id));
+  };
 
   const loadCandidatures = async () => {
     setLoading(true);
@@ -224,6 +280,7 @@ const Admin: React.FC = () => {
   }
 
   const unreadMessages = messages.filter(m => !m.is_read).length;
+  const pendingCompanies = companies.filter(c => c.statut === 'en_attente').length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -236,7 +293,7 @@ const Admin: React.FC = () => {
           <p className="text-gray-500 text-sm mt-1">Gérez les candidatures et messages</p>
         </div>
         <button
-          onClick={() => { loadCandidatures(); loadMessages(); }}
+          onClick={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
           className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors self-start"
         >
           Rafraîchir
@@ -267,6 +324,32 @@ const Admin: React.FC = () => {
           {unreadMessages > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
               {unreadMessages}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('entreprises')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
+            activeTab === 'entreprises' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Entreprises ({companies.length})
+          {pendingCompanies > 0 && (
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+              {pendingCompanies}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('offres')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
+            activeTab === 'offres' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Offres à valider ({pendingOffers.length})
+          {pendingOffers.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+              {pendingOffers.length}
             </span>
           )}
         </button>
@@ -496,6 +579,97 @@ const Admin: React.FC = () => {
           <p className="text-center text-xs text-gray-400 mt-8">
             {messages.length} message{messages.length !== 1 ? 's' : ''} · {unreadMessages} non lu{unreadMessages !== 1 ? 's' : ''}
           </p>
+        </>
+      )}
+
+      {activeTab === 'entreprises' && (
+        <>
+          {companies.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+              <p className="text-gray-500">Aucune entreprise inscrite</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {companies.map((c) => (
+                <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-bold text-gray-900 text-lg">{c.nom_entreprise}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${COMPANY_STATUT_LABEL[c.statut]?.color || ''}`}>
+                          {COMPANY_STATUT_LABEL[c.statut]?.label || c.statut}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                        <a href={`mailto:${c.email}`} className="text-blue-600 hover:underline">{c.email}</a>
+                        {c.telephone && <a href={`tel:${c.telephone}`} className="text-blue-600 hover:underline">{c.telephone}</a>}
+                        {c.ville && <span className="text-gray-500">{c.ville}</span>}
+                        {c.secteur && <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">{c.secteur}</span>}
+                        <span className="text-gray-400 text-xs">
+                          {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                    {c.statut === 'en_attente' && (
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => validateCompany(c)} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
+                          Valider
+                        </button>
+                        <button onClick={() => refuseCompany(c.id)} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium">
+                          Refuser
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'offres' && (
+        <>
+          {pendingOffers.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+              <p className="text-gray-500">Aucune offre en attente de validation</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingOffers.map((o) => (
+                <div key={o.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-blue-800 text-lg">{o.emploi_metier}</h3>
+                      <p className="text-gray-700 font-medium text-sm">{o.raison_sociale}</p>
+                      <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{o.type_contrat}</span>
+                        <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{o.ville}</span>
+                        {o.suggested_salary_range && <span className="bg-yellow-50 text-yellow-800 px-2 py-0.5 rounded">{o.suggested_salary_range}</span>}
+                        <span className="bg-gray-50 text-gray-400 px-2 py-0.5 rounded">Réf : {o.ref_offre}</span>
+                      </div>
+                      <p className="text-gray-600 text-sm mt-3 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">{o.full_description}</p>
+                      {o.required_skills && o.required_skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {o.required_skills.map((s: string, i: number) => (
+                            <span key={i} className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full">{s}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-row lg:flex-col gap-2 flex-shrink-0">
+                      <button onClick={() => validateOffer(o.id)} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
+                        Valider
+                      </button>
+                      <button onClick={() => refuseOffer(o.id)} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium">
+                        Refuser
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

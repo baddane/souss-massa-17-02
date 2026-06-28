@@ -26,7 +26,7 @@ function toISODate(raw: string | null | undefined): string | null {
 export default async function handler() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&order=date_offre.desc`,
+      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&statut=eq.active&order=date_offre.desc`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
