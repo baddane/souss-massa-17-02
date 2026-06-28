@@ -359,24 +359,28 @@ src/services/
 
 constants.ts        # Liste des villes (CITIES, SOUSS_MASSA_CITIES)
 scripts/
-  scrape-anapec.ts   # Scraper ANAPEC (selecteurs non valides, ne traduit pas) — squelette
-  scrape-rekrute.cjs # Import rekrute Souss-Massa : scraping + normalisation + dedup
-  insert-offers.cjs  # Insertion generique d'offres (records deja traduits) dans Supabase
-  gen-sitemap.cjs    # Regeneration de public/sitemap.xml depuis Supabase
+  scrape-anapec.ts          # Scraper ANAPEC (selecteurs non valides) — squelette
+  scrape-rekrute.cjs        # Source rekrute.com : scraping + normalisation + dedup
+  scrape-marocannonces.cjs  # Source marocannonces.com (Agadir/Taroudant/Tiznit)
+  insert-offers.cjs         # Insertion generique d'offres (records traduits) dans Supabase
+  gen-sitemap.cjs           # Regeneration de public/sitemap.xml depuis Supabase
 ```
 
-### Importer de nouvelles offres (rekrute.com)
+### Importer de nouvelles offres (rekrute.com + marocannonces.com)
 
-Pipeline documente dans **`IMPORT_OFFRES.md`**. En resume :
-1. `node scripts/scrape-rekrute.cjs` → ecrit les nouvelles offres FR (dedoublonnees
-   contre la base) dans `scripts/import/pending-rekrute.json`.
-2. Claude lit ce fichier, **traduit FR/EN/AR** + enrichit, ecrit
+Pipeline documente dans **`IMPORT_OFFRES.md`**, lancable via le slash command
+**`/import-offres`** (traite tous les `scripts/import/pending-*.json`). En resume :
+1. `node scripts/scrape-rekrute.cjs` et/ou `node scripts/scrape-marocannonces.cjs`
+   → ecrivent les nouvelles offres FR (dedoublonnees) dans `scripts/import/pending-*.json`.
+2. Claude lit ces fichiers, **traduit FR/EN/AR** + enrichit (pour marocannonces,
+   redige aussi une description FR propre si l'annonce est courte/en arabe), ecrit
    `scripts/import/translated-offers.json` (records complets avec colonnes `_en`/`_ar`).
 3. `node scripts/insert-offers.cjs scripts/import/translated-offers.json` → insertion.
 4. `node scripts/gen-sitemap.cjs` → regenere la sitemap. Puis commit/push sur `main`.
 
-Quand l'utilisateur dit « traduis et importe `scripts/import/pending-rekrute.json` »,
-suivre les etapes 2 a 4 (meme gabarit de traduction que les offres existantes).
+Emploi.ma : non branche (Cloudflare + injoignable depuis l'environnement).
+Quand l'utilisateur dit « traduis et importe `scripts/import/pending-*.json` »,
+suivre les etapes 2 a 4 (meme gabarit que les offres existantes).
 
 ## Site multilingue (FR / EN / AR)
 

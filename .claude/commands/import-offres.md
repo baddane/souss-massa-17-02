@@ -1,5 +1,5 @@
 ---
-description: Importer les nouvelles offres rekrute Souss-Massa (scrape + traduction FR/EN/AR + insertion + sitemap + push)
+description: Importer les nouvelles offres Souss-Massa (rekrute + marocannonces) — scrape + traduction FR/EN/AR + insertion + sitemap + push
 ---
 
 Tu vas exécuter, de bout en bout, le pipeline d'import d'offres documenté dans
@@ -9,20 +9,29 @@ intermédiaire (sauf erreur bloquante) :
 ## 1. Pré-requis
 - Si `node_modules` est absent, lance `npm install` d'abord.
 
-## 2. Scraper
+## 2. Scraper (les deux sources)
 - Lance : `node scripts/scrape-rekrute.cjs`
-- Il écrit les NOUVELLES offres (dédoublonnées contre la base) dans
-  `scripts/import/pending-rekrute.json`.
-- **Si 0 nouvelle offre** : annonce-le et **arrête-toi là** (rien à faire).
+- Lance : `node scripts/scrape-marocannonces.cjs`
+- Chacun écrit ses NOUVELLES offres (dédoublonnées contre la base) dans
+  `scripts/import/pending-rekrute.json` et `scripts/import/pending-marocannonces.json`.
+- **Si AUCUN fichier `pending-*.json` n'a d'offre** : annonce-le et **arrête-toi**.
 
 ## 3. Traduire + enrichir (qualité maximale, c'est toi qui traduis)
-Lis `scripts/import/pending-rekrute.json`. Pour CHAQUE offre, produis un record
-complet et écris le tableau dans `scripts/import/translated-offers.json`.
+Traite **chaque** fichier `scripts/import/pending-*.json` non vide. Pour CHAQUE
+offre, produis un record complet ; agrège le tout dans
+`scripts/import/translated-offers.json`.
 
 Champs à reprendre tels quels depuis le pending : `id`, `ville`, `ref_offre`,
 `type_contrat`, `raison_sociale`, `date_offre`, `nbre_postes`, `emploi_metier`,
-`full_description`, `slug`, plus `source: "rekrute"`, `statut: "active"`,
-`is_featured: false`.
+`slug`, `source` (garde la valeur du pending : `"rekrute"` ou `"marocannonces"`),
+plus `statut: "active"`, `is_featured: false`.
+
+Pour `full_description` (FR) :
+- Source rekrute : la description du pending est déjà propre → reprends-la.
+- Source marocannonces : l'annonce peut être courte, informelle ou en arabe.
+  **Rédige une description FR propre** (1-2 paragraphes, style des offres
+  existantes) à partir de l'intitulé, `fonction`, `niveau`, ville, salaire et du
+  texte brut, sans inventer de faits non présents.
 
 Champs à PRODUIRE :
 - `emploi_metier_en`, `emploi_metier_ar` : traduction de l'intitulé.
@@ -30,8 +39,9 @@ Champs à PRODUIRE :
   de la description (anglais et arabe parfaits, pas de calque).
 - `required_skills` (FR, 4-6 compétences déduites du poste/fonction),
   `required_skills_en`, `required_skills_ar` (même ordre).
-- `suggested_salary_range` : fourchette estimée selon le poste/séniorité
-  (marché marocain, format `"X-Y MAD"`).
+- `suggested_salary_range` : reprends celui du pending s'il existe (non nul),
+  sinon estime une fourchette selon le poste/séniorité (marché marocain,
+  format `"X-Y MAD"`).
 - `seo_keywords` (FR) : `["emploi {ville-sans-accent}", "{metier-sans-accent} maroc",
   "recrutement souss-massa", "{contrat-minuscule} {ville-sans-accent}", "{1er mot de fonction}"]`.
 - `meta_description` (FR) : `"{emploi_metier} à {ville} - {type_contrat} chez {raison_sociale}. Postulez en ligne."` (≤160 car.).

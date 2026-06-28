@@ -1,12 +1,26 @@
-# 📥 Importer des offres rekrute.com (Souss-Massa)
+# 📥 Importer des offres d'emploi (Souss-Massa)
 
-Mode d'emploi pour ajouter de nouvelles offres d'emploi depuis **rekrute.com**
-(région Souss-Massa / Agadir), **traduites en FR / EN / AR** et conformes à
-l'affichage du site.
+Mode d'emploi pour ajouter de nouvelles offres d'emploi (région Souss-Massa /
+Agadir), **traduites en FR / EN / AR** et conformes à l'affichage du site.
 
 > Tu lances les commandes ci-dessous **ici même** (dans une session Claude Code),
 > quand tu veux. Le scraping et l'insertion sont automatiques ; la **traduction**
 > est faite par Claude (qualité maximale, sans clé API).
+
+## 🌐 Sources disponibles
+
+| Source | Commande de scraping | Sortie |
+|--------|----------------------|--------|
+| **rekrute.com** (indépendant) | `node scripts/scrape-rekrute.cjs` | `scripts/import/pending-rekrute.json` |
+| **marocannonces.com** | `node scripts/scrape-marocannonces.cjs` | `scripts/import/pending-marocannonces.json` |
+
+> **Emploi.ma n'est pas disponible** : le site est protégé par Cloudflare et
+> injoignable depuis l'environnement d'exécution (même via navigateur headless).
+> Aucun scraper fiable n'est possible pour cette source pour l'instant.
+
+Les deux sources alimentent **le même** flux de traduction/insertion. Tu peux
+lancer l'une, l'autre, ou les deux ; le slash command `/import-offres` traite
+automatiquement **tous** les fichiers `scripts/import/pending-*.json` présents.
 
 ---
 
@@ -16,13 +30,13 @@ l'affichage du site.
 # 0. (la 1re fois seulement, ou sur un environnement neuf)
 npm install
 
-# 1. Scraper les NOUVELLES offres Souss-Massa (dédoublonnées contre la base)
-node scripts/scrape-rekrute.cjs
+# 1. Scraper les NOUVELLES offres (dédoublonnées contre la base) — une source au choix :
+node scripts/scrape-rekrute.cjs          # rekrute.com
+node scripts/scrape-marocannonces.cjs    # marocannonces.com
 ```
 
-**2. Dire à Claude (dans le chat) :**
-
-> **« traduis et importe `scripts/import/pending-rekrute.json` »**
+**2. Dire à Claude (dans le chat) :** `/import-offres`
+(ou bien : **« traduis et importe `scripts/import/pending-rekrute.json` »** pour une source précise)
 
 Claude va alors :
 - lire les nouvelles offres,
@@ -70,8 +84,11 @@ C'est tout. ✅
 - **rekrute peut limiter le débit** (HTTP 503) : le scraper réessaie 3× avec
   back-off. S'il s'arrête tôt, relance-le simplement quelques minutes plus tard —
   les offres déjà importées seront ignorées.
-- **Source** : seul rekrute.com est branché. (ANAPEC nécessiterait d'abord de
-  valider sa vraie structure HTML — non fait.)
+- **marocannonces** : seules **Agadir, Taroudant, Tiznit** sont filtrables sur le
+  site (autres communes Souss-Massa non proposées). Annonces souvent plus courtes /
+  d'employeurs « confidentiel » → l'enrichissement par Claude complète la fiche.
+- **Emploi.ma** : non branché (Cloudflare + injoignable depuis l'environnement).
+- **ANAPEC** : non branché (structure HTML à valider d'abord).
 - Les fichiers de `scripts/import/` sont **temporaires** et ignorés par git.
 
 ---
@@ -80,8 +97,9 @@ C'est tout. ✅
 
 ```
 scripts/
-  scrape-rekrute.cjs   # étape 1 — scraping + normalisation + dédup
-  insert-offers.cjs    # étape 3 — insertion générique depuis un JSON traduit
-  gen-sitemap.cjs      # étape 4 — régénération de public/sitemap.xml
-  import/              # sorties temporaires (git-ignoré)
+  scrape-rekrute.cjs        # source rekrute.com — scraping + normalisation + dédup
+  scrape-marocannonces.cjs  # source marocannonces.com — idem
+  insert-offers.cjs         # insertion générique depuis un JSON traduit
+  gen-sitemap.cjs           # régénération de public/sitemap.xml
+  import/                   # sorties temporaires (git-ignoré)
 ```
