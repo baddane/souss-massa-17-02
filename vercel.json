@@ -30,5 +30,8 @@
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/keepalive", "schedule": "0 6 * * *" }
   ]
 }
