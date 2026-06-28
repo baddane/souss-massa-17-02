@@ -30,6 +30,14 @@ Site de recrutement pour la region Souss-Massa (Maroc).
 | `required_skills` | text[] | Competences requises (array PostgreSQL) |
 | `source` | text | Source de l'offre (ex: ANAPEC, Direct) |
 | `slug` | text (unique) | Slug SEO pour l'URL permanente |
+| `emploi_metier_en` / `emploi_metier_ar` | text | Traduction EN / AR de l'intitule (optionnel) |
+| `full_description_en` / `full_description_ar` | text | Traduction EN / AR de la description (optionnel) |
+| `meta_description_en` / `meta_description_ar` | text | Traduction EN / AR de la meta description (optionnel) |
+| `required_skills_en` / `required_skills_ar` | text[] | Traduction EN / AR des competences (optionnel) |
+
+> **Multilingue** : les colonnes `_en` / `_ar` sont des traductions optionnelles. Le frontend
+> affiche la traduction correspondant a la langue active et **retombe sur le francais** (colonne
+> de base) si elle est absente. Voir la section "Site multilingue (FR / EN / AR)" plus bas.
 
 ### Contraintes base de donnees
 
@@ -354,11 +362,61 @@ scripts/
   scrape-anapec.ts  # Scraper ANAPEC avec enrichissement IA (Gemini) et normalizeDate()
 ```
 
+## Site multilingue (FR / EN / AR)
+
+Le frontend est trilingue : **francais (defaut), anglais, arabe** (avec RTL).
+
+### Architecture i18n (sans dependance externe)
+
+- `src/i18n/translations.ts` : dictionnaires `fr` / `en` / `ar` pour TOUT le texte d'interface
+  (menus, boutons, formulaires, filtres, libelles secteurs/villes/contrats, textes SEO).
+- `src/i18n/LanguageContext.tsx` : provider React (`LanguageProvider`), hook `useT()`, et les
+  helpers de localisation :
+  - `localizeOffer(offer, lang)` : renvoie l'offre avec les champs `_en`/`_ar` resolus, **repli
+    automatique sur le francais** si la traduction manque.
+  - `cityLabel`, `contractShort`, `contractLong`, `positionsLabel`, `offersCountLabel`,
+    `formatDateLocalized` : formatage localise.
+- `components/LanguageSwitcher.tsx` : selecteur FR / EN / العربية (header desktop + mobile).
+- Detection de la langue du navigateur au 1er chargement, choix memorise dans `localStorage`
+  (cle `ssm_lang`). `dir="rtl"` applique sur `<html>` en arabe.
+
+### Regles i18n a respecter
+
+- **Aucun texte d'interface en dur** dans les composants : toujours passer par `t('cle')`.
+  Si tu ajoutes une chaine visible, ajoute la cle dans **les 3 langues** de `translations.ts`.
+- Le contenu dynamique des offres se traduit en base via les colonnes `_en` / `_ar`
+  (jamais en dur dans le code). Le frontend retombe sur le francais si absent.
+- En RTL, utiliser les classes logiques Tailwind (`ps-*`, `pe-*`, `ms-*`, `me-*`, `start-*`,
+  `end-*`, `text-start`/`text-end`) plutot que `pl/pr/left/right`.
+
+### Traduire une NOUVELLE offre (apres insertion FR)
+
+Apres avoir insere une offre en francais, remplir ses colonnes de traduction. Pour chaque offre :
+1. Traduire `emploi_metier` → `emploi_metier_en`, `emploi_metier_ar`.
+2. Traduire chaque element de `required_skills` → `required_skills_en`, `required_skills_ar`
+   (meme ordre).
+3. Generer `full_description_en` / `full_description_ar` et `meta_description_en` /
+   `meta_description_ar`. Les descriptions FR suivent un gabarit regulier : on peut regenerer
+   les versions EN/AR depuis les champs structures (raison_sociale, ville, nbre_postes,
+   type_contrat, intitule traduit, competences traduites, suggested_salary_range).
+
+Gabarits utilises pour le parc existant (a reutiliser pour rester coherent) :
+- **EN** : `{company}, based in {ville}, is hiring {for a|for N} {title} position(s) on a
+  {permanent (CDI)|fixed-term (CDD)} contract. Offered salary: {salaire}.\n\nThe ideal candidate
+  has skills in {skills}. Position based in {ville}, Souss-Massa region.`
+- **AR** : `تشغّل شركة {company} الكائنة بمدينة {ville_ar} {N? } منصب {title_ar} بموجب {عقد دائم|عقد
+  محدد المدة}. الأجر المقترح: {salaire_ar}.\n\nالمرشّح المثالي يتوفّر على مهارات في {skills_ar}.
+  المنصب بمدينة {ville_ar}، جهة سوس ماسة.`
+- Villes en arabe : Agadir → أكادير, Inezgane → إنزكان (ajouter les autres si besoin, cote SQL
+  et dans `translations.ts` cle `city.*`).
+
+Le site reste fonctionnel meme si une offre n'est pas encore traduite (repli FR).
+
 ## Commandes utiles
 
 ```bash
 npm run dev          # Serveur de developpement
-npm run build        # Build production
+npm run build        # Build production (tsc + vite)
 npm run preview      # Preview du build
 ```
 
@@ -375,3 +433,6 @@ npm run preview      # Preview du build
 - Toujours commiter et pousser sur `main` apres modification (deploiement auto Vercel)
 - Apres insertion d'offres, toujours mettre a jour `public/sitemap.xml` et commiter
 - Quand on modifie CATEGORY_FILTERS, mettre a jour les DEUX fichiers : `services/` et `src/services/`
+- **Multilingue** : tout nouveau texte d'interface doit etre ajoute dans les 3 langues de
+  `src/i18n/translations.ts` (jamais de texte en dur). Apres insertion d'une offre FR, remplir
+  ses colonnes `_en` / `_ar` (voir section "Site multilingue"). Le site retombe sur le FR si absent.
