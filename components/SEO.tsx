@@ -1,5 +1,12 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLanguage } from '../src/i18n/LanguageContext';
+
+const OG_LOCALE: Record<string, string> = {
+  fr: 'fr_MA',
+  en: 'en_US',
+  ar: 'ar_MA',
+};
 
 interface SEOProps {
   title?: string;
@@ -15,12 +22,14 @@ const DEFAULT_DESCRIPTION = 'Trouvez votre emploi idéal dans la région Souss-M
 const SITE_URL = 'https://soussmassa-rh.com';
 
 const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'website', image, jsonLd }) => {
+  const { lang } = useLanguage();
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Emploi et Recrutement Souss-Massa`;
   const desc = description || DEFAULT_DESCRIPTION;
   const url = canonical ? `${SITE_URL}${canonical}` : SITE_URL;
 
   return (
     <Helmet>
+      <html lang={lang} dir={lang === 'ar' ? 'rtl' : 'ltr'} />
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
       <link rel="canonical" href={url} />
@@ -31,7 +40,7 @@ const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'websit
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content={SITE_NAME} />
       {image && <meta property="og:image" content={image} />}
-      <meta property="og:locale" content="fr_MA" />
+      <meta property="og:locale" content={OG_LOCALE[lang] || 'fr_MA'} />
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />

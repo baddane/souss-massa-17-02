@@ -18,6 +18,15 @@ export interface JobOffer {
   required_skills: string[];
   source?: string;
   slug: string;
+  // Traductions (FR par defaut dans les colonnes ci-dessus ; EN/AR optionnelles)
+  emploi_metier_en?: string;
+  emploi_metier_ar?: string;
+  full_description_en?: string;
+  full_description_ar?: string;
+  meta_description_en?: string;
+  meta_description_ar?: string;
+  required_skills_en?: string[];
+  required_skills_ar?: string[];
 }
 
 // Service pour les offres d'emploi

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { supabaseOffers } from '../src/services/supabase';
+import { useT } from '../src/i18n/LanguageContext';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [cvFile, setCvFile] = useState<File | null>(null);
+  const { t } = useT();
 
   if (!isOpen) return null;
 
@@ -25,11 +27,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
     const file = e.target.files?.[0];
     if (!file) return;
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error('Format accepté : PDF ou Word (.doc, .docx)');
+      toast.error(t('apply.formatError'));
       return;
     }
     if (file.size > MAX_CV_SIZE) {
-      toast.error('Le CV ne doit pas dépasser 5 Mo');
+      toast.error(t('apply.sizeError'));
       return;
     }
     setCvFile(file);
@@ -38,11 +40,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email) {
-      toast.warning('Nom et email sont requis.');
+      toast.warning(t('apply.nameEmailRequired'));
       return;
     }
     if (!cvFile) {
-      toast.warning('Veuillez joindre votre CV.');
+      toast.warning(t('apply.cvRequired'));
       return;
     }
 
@@ -76,13 +78,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
 
       if (insertError) throw insertError;
 
-      toast.success('Candidature envoyée avec succès !');
+      toast.success(t('apply.sentSuccess'));
       setForm({ name: '', email: '', phone: '' });
       setCvFile(null);
       onClose();
     } catch (err: any) {
       console.error('Erreur candidature:', err);
-      toast.error(err?.message || "Erreur lors de l'envoi. Réessayez.");
+      toast.error(err?.message || t('apply.sendError'));
     } finally {
       setSending(false);
     }
@@ -97,7 +99,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
       >
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Postuler</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('apply.title')}</h2>
             <p className="text-sm text-gray-500 mt-1">{jobTitle} — {companyName}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -105,19 +107,19 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('apply.fullName')} *</label>
             <input
               type="text"
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Votre nom"
+              placeholder={t('apply.yourName')}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('apply.email')} *</label>
             <input
               type="email"
               required
@@ -129,7 +131,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('apply.phone')}</label>
             <input
               type="tel"
               value={form.phone}
@@ -140,7 +142,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CV (PDF ou Word) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('apply.cvLabel')} *</label>
             <div
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
@@ -151,7 +153,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
                   <span className="text-xs text-gray-400">({(cvFile.size / 1024 / 1024).toFixed(1)} Mo)</span>
                 </div>
               ) : (
-                <span className="text-gray-400 text-sm">Cliquez pour joindre votre CV</span>
+                <span className="text-gray-400 text-sm">{t('apply.cvHint')}</span>
               )}
               <input
                 ref={fileInputRef}
@@ -168,12 +170,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
             disabled={sending}
             className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-colors disabled:opacity-60"
           >
-            {sending ? 'Envoi en cours...' : 'Envoyer ma candidature'}
+            {sending ? t('apply.sending') : t('apply.submit')}
           </button>
         </form>
 
         <p className="text-xs text-gray-400 text-center">
-          Votre CV sera envoyé directement au recruteur.
+          {t('apply.privacyNote')}
         </p>
       </div>
     </div>

@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { jobOffersService, formatJobOffer } from '../services/jobOffersService';
+import { jobOffersService } from '../services/jobOffersService';
 import { toast } from 'react-toastify';
 import SEO, { generateJobPostingJsonLd } from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
+import {
+  useT,
+  localizeOffer,
+  cityLabel,
+  contractShort,
+  contractLong,
+  positionsLabel,
+  formatDateLocalized,
+} from '../src/i18n/LanguageContext';
 
 const JobDetail: React.FC = () => {
+  const { t, lang } = useT();
   const { slug } = useParams<{ slug: string }>();
-  const [offer, setOffer] = useState<any>(null);
+  const [rawOffer, setRawOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const offer = rawOffer ? localizeOffer(rawOffer, lang) : null;
 
   useEffect(() => {
     if (!slug) return;
     const load = async () => {
       try {
         const data = await jobOffersService.getJobOfferBySlug(slug);
-        setOffer(data);
+        setRawOffer(data);
       } catch {
-        setOffer(null);
+        setRawOffer(null);
       } finally {
         setLoading(false);
       }
@@ -41,10 +52,10 @@ const JobDetail: React.FC = () => {
   if (!offer) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Offre introuvable</h1>
-        <p className="text-gray-500 mb-6">Cette offre n'existe plus ou a été retirée.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('job.notFoundTitle')}</h1>
+        <p className="text-gray-500 mb-6">{t('job.notFoundText')}</p>
         <Link to="/offres" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700">
-          Voir toutes les offres
+          {t('job.seeAllOffers')}
         </Link>
       </div>
     );
@@ -56,8 +67,8 @@ const JobDetail: React.FC = () => {
   return (
     <>
       <SEO
-        title={`${offer.emploi_metier} ${offer.ville} - ${offer.raison_sociale}`}
-        description={offer.meta_description || `Offre ${offer.type_contrat} : ${offer.emploi_metier} à ${offer.ville} chez ${offer.raison_sociale}. Postulez maintenant.`}
+        title={`${offer.emploi_metier} ${cityLabel(t, offer.ville)} - ${offer.raison_sociale}`}
+        description={offer.meta_description || `${contractShort(t, offer.type_contrat)} · ${offer.emploi_metier} · ${cityLabel(t, offer.ville)} · ${offer.raison_sociale}`}
         canonical={`/emploi/${offer.slug}`}
         type="article"
         jsonLd={jsonLd}
@@ -65,20 +76,20 @@ const JobDetail: React.FC = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <nav className="text-sm text-gray-500 mb-6">
-          <Link to="/" className="hover:text-blue-600">Accueil</Link>
+          <Link to="/" className="hover:text-blue-600">{t('job.breadcrumbHome')}</Link>
           <span className="mx-2">/</span>
-          <Link to="/offres" className="hover:text-blue-600">Offres</Link>
+          <Link to="/offres" className="hover:text-blue-600">{t('job.breadcrumbOffers')}</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-900">{offer.emploi_metier} - {offer.ville}</span>
+          <span className="text-gray-900">{offer.emploi_metier} - {cityLabel(t, offer.ville)}</span>
         </nav>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
             <h1 className="text-2xl md:text-3xl font-bold">{offer.emploi_metier}</h1>
-            <p className="text-blue-100 text-lg mt-1">{offer.raison_sociale} — {offer.ville}</p>
+            <p className="text-blue-100 text-lg mt-1">{offer.raison_sociale} — {cityLabel(t, offer.ville)}</p>
             <div className="flex flex-wrap gap-3 mt-3">
-              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.type_contrat}</span>
-              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{formatJobOffer.formatNumberOfPositions(offer.nbre_postes)}</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{contractShort(t, offer.type_contrat)}</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{positionsLabel(t, offer.nbre_postes)}</span>
               {offer.suggested_salary_range && (
                 <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">{offer.suggested_salary_range}</span>
               )}
@@ -90,12 +101,12 @@ const JobDetail: React.FC = () => {
               onClick={() => setShowApplyModal(true)}
               className="w-full py-4 rounded-xl font-bold text-lg bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all"
             >
-              Postuler maintenant
+              {t('job.applyNow')}
             </button>
 
             {descParagraphs.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900">Description du poste</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t('job.description')}</h2>
                 {descParagraphs.map((p: string, i: number) => (
                   <p key={i} className="text-gray-600 leading-relaxed">{p}</p>
                 ))}
@@ -104,7 +115,7 @@ const JobDetail: React.FC = () => {
 
             {offer.required_skills && offer.required_skills.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Compétences requises</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">{t('job.requiredSkills')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {offer.required_skills.map((skill: string, i: number) => (
                     <span key={i} className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
@@ -116,26 +127,26 @@ const JobDetail: React.FC = () => {
             )}
 
             <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="font-bold text-gray-900 mb-3">Informations</h3>
+              <h3 className="font-bold text-gray-900 mb-3">{t('job.information')}</h3>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <dt className="text-gray-500">Entreprise</dt>
+                  <dt className="text-gray-500">{t('job.company')}</dt>
                   <dd className="font-medium text-gray-900">{offer.raison_sociale}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Lieu</dt>
-                  <dd className="font-medium text-gray-900">{offer.ville}</dd>
+                  <dt className="text-gray-500">{t('job.location')}</dt>
+                  <dd className="font-medium text-gray-900">{cityLabel(t, offer.ville)}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Type de contrat</dt>
-                  <dd className="font-medium text-gray-900">{formatJobOffer.formatContractType(offer.type_contrat)}</dd>
+                  <dt className="text-gray-500">{t('job.contractType')}</dt>
+                  <dd className="font-medium text-gray-900">{contractLong(t, offer.type_contrat)}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Date de publication</dt>
-                  <dd className="font-medium text-gray-900">{formatJobOffer.formatDate(offer.date_offre)}</dd>
+                  <dt className="text-gray-500">{t('job.publicationDate')}</dt>
+                  <dd className="font-medium text-gray-900">{formatDateLocalized(offer.date_offre, lang)}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Nombre de postes</dt>
+                  <dt className="text-gray-500">{t('job.numberOfPositions')}</dt>
                   <dd className="font-medium text-gray-900">{offer.nbre_postes}</dd>
                 </div>
               </dl>
@@ -146,7 +157,7 @@ const JobDetail: React.FC = () => {
                 onClick={() => setShowApplyModal(true)}
                 className="flex-1 py-4 rounded-xl font-bold text-lg bg-orange-500 text-white hover:bg-orange-600 transition-all"
               >
-                Postuler maintenant
+                {t('job.applyNow')}
               </button>
               <button
                 onClick={() => {
@@ -154,18 +165,18 @@ const JobDetail: React.FC = () => {
                     navigator.share({ title: offer.emploi_metier, url: window.location.href });
                   } else {
                     navigator.clipboard.writeText(window.location.href);
-                    toast.success('Lien copié !');
+                    toast.success(t('job.linkCopied'));
                   }
                 }}
                 className="px-6 py-4 border-2 border-gray-200 rounded-xl font-bold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all"
               >
-                Partager
+                {t('job.share')}
               </button>
             </div>
 
             <div className="text-center">
               <Link to="/offres" className="text-blue-600 font-medium hover:underline">
-                Voir toutes les offres d'emploi
+                {t('job.seeAllJobs')}
               </Link>
             </div>
           </div>
