@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobOffersService } from '../services/jobOffersService';
-import { CITIES } from '../constants';
+import { SOUSS_MASSA_CITIES } from '../constants';
 import SEO, { generateJobPostingJsonLd } from '../components/SEO';
 import {
   useT,
@@ -120,7 +120,7 @@ const Home: React.FC = () => {
                 onChange={(e) => setSelectedCity(e.target.value)}
               >
                 <option value="">{t('city.any')}</option>
-                {CITIES.map((city) => (
+                {SOUSS_MASSA_CITIES.map((city) => (
                   <option key={city} value={city}>{cityLabel(t, city)}</option>
                 ))}
               </select>

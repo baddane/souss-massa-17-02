@@ -15,4 +15,5 @@ export declare const MOCK_APPLICATIONS: {
 }[];
 export declare const MOCK_ARTICLES: Article[];
 export declare const CITIES: string[];
+export declare const SOUSS_MASSA_CITIES: string[];
 export declare const SECTORS: string[];

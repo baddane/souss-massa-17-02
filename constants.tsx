@@ -155,3 +155,19 @@ export const MOCK_ARTICLES: Article[] = [
 
 export const CITIES = ['Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir', 'Fès', 'Meknès', 'Oujda'];
 export const SECTORS = ['Informatique', 'Marketing', 'Finance', 'RH', 'Industrie', 'Commerce', 'Santé', 'Tourisme'];
+
+// Communes de la region Souss-Massa uniquement (utilisees pour les filtres ville du site).
+// Region administrative : prefectures d'Agadir Ida-Outanane et Inezgane-Ait Melloul,
+// provinces de Chtouka-Ait Baha, Taroudant, Tiznit et Tata.
+export const SOUSS_MASSA_CITIES = [
+  'Agadir',
+  'Inezgane',
+  'Aït Melloul',
+  'Dcheira El Jihad',
+  'Biougra',
+  'Aït Baha',
+  'Taroudant',
+  'Oulad Teima',
+  'Tiznit',
+  'Tata',
+];
