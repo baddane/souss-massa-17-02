@@ -1,7 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useT, cityLabel } from '../src/i18n/LanguageContext';
+
+const SECTOR_LINKS = [
+  { key: 'informatique', sector: 'informatique' },
+  { key: 'commercial', sector: 'commercial' },
+  { key: 'tourisme', sector: 'tourisme' },
+  { key: 'industrie', sector: 'industrie' },
+  { key: 'administratif', sector: 'administratif' },
+  { key: 'sante', sector: 'sante' },
+  { key: 'construction', sector: 'construction' },
+  { key: 'enseignement', sector: 'enseignement' },
+];
+
+const CITY_LINKS = ['Agadir', 'Inezgane', 'Taroudant', 'Marrakech', 'Essaouira'];
 
 const Footer: React.FC = () => {
+  const { t } = useT();
+
   return (
     <footer className="bg-gray-900 text-gray-400 py-12">
       <div className="max-w-6xl mx-auto px-4">
@@ -12,47 +28,44 @@ const Footer: React.FC = () => {
               <span className="text-lg font-light text-blue-400">-RH</span>
             </Link>
             <p className="text-sm mt-2 leading-relaxed">
-              Le portail emploi de reference dans la region Souss-Massa. CDI, CDD, Stage a Agadir et environs.
+              {t('footer.tagline')}
             </p>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold text-sm mb-3">Par secteur</h3>
+            <h3 className="text-white font-semibold text-sm mb-3">{t('footer.bySector')}</h3>
             <nav className="flex flex-col gap-1.5 text-sm">
-              <Link to="/offres?sector=informatique" className="hover:text-white transition-colors">Informatique & IT</Link>
-              <Link to="/offres?sector=commercial" className="hover:text-white transition-colors">Commerce & Vente</Link>
-              <Link to="/offres?sector=tourisme" className="hover:text-white transition-colors">Tourisme & Hotellerie</Link>
-              <Link to="/offres?sector=industrie" className="hover:text-white transition-colors">Industrie</Link>
-              <Link to="/offres?sector=administratif" className="hover:text-white transition-colors">Administration</Link>
-              <Link to="/offres?sector=sante" className="hover:text-white transition-colors">Sante</Link>
-              <Link to="/offres?sector=construction" className="hover:text-white transition-colors">BTP & Construction</Link>
-              <Link to="/offres?sector=enseignement" className="hover:text-white transition-colors">Education</Link>
+              {SECTOR_LINKS.map(({ key, sector }) => (
+                <Link key={sector} to={`/offres?sector=${sector}`} className="hover:text-white transition-colors">
+                  {t(`sector.${key}`)}
+                </Link>
+              ))}
             </nav>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold text-sm mb-3">Par ville</h3>
+            <h3 className="text-white font-semibold text-sm mb-3">{t('footer.byCity')}</h3>
             <nav className="flex flex-col gap-1.5 text-sm">
-              <Link to="/offres?city=Agadir" className="hover:text-white transition-colors">Emploi Agadir</Link>
-              <Link to="/offres?city=Inezgane" className="hover:text-white transition-colors">Emploi Inezgane</Link>
-              <Link to="/offres?city=Taroudant" className="hover:text-white transition-colors">Emploi Taroudant</Link>
-              <Link to="/offres?city=Marrakech" className="hover:text-white transition-colors">Emploi Marrakech</Link>
-              <Link to="/offres?city=Essaouira" className="hover:text-white transition-colors">Emploi Essaouira</Link>
+              {CITY_LINKS.map((city) => (
+                <Link key={city} to={`/offres?city=${city}`} className="hover:text-white transition-colors">
+                  {t('footer.jobsIn', { city: cityLabel(t, city) })}
+                </Link>
+              ))}
             </nav>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold text-sm mb-3">Navigation</h3>
+            <h3 className="text-white font-semibold text-sm mb-3">{t('footer.navigation')}</h3>
             <nav className="flex flex-col gap-1.5 text-sm">
-              <Link to="/" className="hover:text-white transition-colors">Accueil</Link>
-              <Link to="/offres" className="hover:text-white transition-colors">Toutes les offres</Link>
-              <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
+              <Link to="/" className="hover:text-white transition-colors">{t('footer.home')}</Link>
+              <Link to="/offres" className="hover:text-white transition-colors">{t('nav.allOffers')}</Link>
+              <Link to="/contact" className="hover:text-white transition-colors">{t('nav.contact')}</Link>
             </nav>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-10 pt-6 text-center text-xs">
-          <p>&copy; {new Date().getFullYear()} soussmassa-rh.com — Tous droits reserves</p>
+          <p>&copy; {new Date().getFullYear()} soussmassa-rh.com — {t('footer.rights')}</p>
         </div>
       </div>
     </footer>

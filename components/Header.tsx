@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useT } from '../src/i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { t } = useT();
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -25,7 +28,7 @@ const Header: React.FC = () => {
                 location.pathname === '/offres' ? 'text-blue-700' : 'text-gray-600 hover:text-blue-700'
               }`}
             >
-              Toutes les offres
+              {t('nav.allOffers')}
             </Link>
             <Link
               to="/contact"
@@ -33,20 +36,21 @@ const Header: React.FC = () => {
                 location.pathname === '/contact' ? 'text-blue-700' : 'text-gray-600 hover:text-blue-700'
               }`}
             >
-              Contact
+              {t('nav.contact')}
             </Link>
             <Link
               to="/offres"
               className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
             >
-              Trouver un emploi
+              {t('nav.findJob')}
             </Link>
+            <LanguageSwitcher />
           </nav>
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden p-2 text-gray-600"
-            aria-label="Menu"
+            aria-label={t('nav.menu')}
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isMenuOpen ? (
@@ -62,14 +66,15 @@ const Header: React.FC = () => {
       {isMenuOpen && (
         <nav className="md:hidden bg-white border-t border-gray-100 py-3 px-4 space-y-2">
           <Link to="/offres" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
-            Toutes les offres
+            {t('nav.allOffers')}
           </Link>
           <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
-            Contact
+            {t('nav.contact')}
           </Link>
           <Link to="/offres" className="block bg-orange-500 text-white text-center py-3 rounded-lg font-bold">
-            Trouver un emploi
+            {t('nav.findJob')}
           </Link>
+          <LanguageSwitcher variant="mobile" />
         </nav>
       )}
     </header>

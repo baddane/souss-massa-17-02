@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -22,36 +23,46 @@ function ScrollToTop() {
   return null;
 }
 
+const AppShell: React.FC = () => {
+  const { isRTL } = useLanguage();
+  return (
+    <Router>
+      <ScrollToTop />
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main id="main-content" className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/offres" element={<Offers />} />
+            <Route path="/emploi/:slug" element={<JobDetail />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        rtl={isRTL}
+      />
+    </Router>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <div className="min-h-screen flex flex-col bg-gray-50">
-            <Header />
-            <main id="main-content" className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/offres" element={<Offers />} />
-                <Route path="/emploi/:slug" element={<JobDetail />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-          <ToastContainer
-            position="top-center"
-            autoClose={3000}
-            hideProgressBar
-            newestOnTop
-            closeOnClick
-            pauseOnHover
-          />
-        </Router>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
+      </LanguageProvider>
     </HelmetProvider>
   );
 };
