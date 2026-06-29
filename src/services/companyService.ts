@@ -64,6 +64,12 @@ export const companyAuth = {
     return data.user;
   },
 
+  async signInWithGoogle() {
+    const redirectTo = `${window.location.origin}/espace-entreprise`;
+    const { error } = await supabaseOffers.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+    if (error) throw error;
+  },
+
   async signOut() {
     await supabaseOffers.auth.signOut();
   },
@@ -76,6 +82,20 @@ export const companyAuth = {
 
 // ---- Profil entreprise ----
 export const companyService = {
+  // Cree le profil entreprise pour un utilisateur deja authentifie (ex: connexion Google)
+  async createProfile(userId: string, email: string, profile: { nom_entreprise: string; telephone?: string; ville?: string; secteur?: string }) {
+    const { error } = await supabaseOffers.from('comptes_entreprise').insert({
+      id: userId,
+      email,
+      nom_entreprise: profile.nom_entreprise,
+      telephone: profile.telephone || null,
+      ville: profile.ville || null,
+      secteur: profile.secteur || null,
+      statut: 'en_attente',
+    });
+    if (error) throw error;
+  },
+
   async getProfile(userId: string): Promise<CompanyProfile | null> {
     const { data, error } = await supabaseOffers
       .from('comptes_entreprise')

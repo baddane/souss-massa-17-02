@@ -18,15 +18,19 @@ const CompanyDashboard: React.FC = () => {
   const { t, lang } = useT();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [account, setAccount] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [offers, setOffers] = useState<any[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
   const [sending, setSending] = useState(false);
+  const [profForm, setProfForm] = useState({ nom_entreprise: '', telephone: '', ville: '', secteur: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     (async () => {
       const user = await companyAuth.currentUser();
       if (!user) { navigate('/connexion-entreprise'); return; }
+      setAccount({ id: user.id, email: user.email || '' });
       const prof = await companyService.getProfile(user.id);
       setProfile(prof);
       if (prof && prof.statut === 'valide') {
@@ -37,6 +41,21 @@ const CompanyDashboard: React.FC = () => {
   }, [navigate]);
 
   const logout = async () => { await companyAuth.signOut(); navigate('/connexion-entreprise'); };
+
+  // Utilisateur authentifie (ex: Google) mais sans profil entreprise : on le cree.
+  const completeProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account || !profForm.nom_entreprise) { toast.warning(t('company.error.fillRequired')); return; }
+    setSavingProfile(true);
+    try {
+      await companyService.createProfile(account.id, account.email, profForm);
+      setProfile(await companyService.getProfile(account.id));
+    } catch {
+      toast.error(t('company.error.generic'));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const submitOffer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +105,43 @@ const CompanyDashboard: React.FC = () => {
     </div>
   );
 
-  if (!profile || profile.statut === 'en_attente') {
+  // Compte authentifie (ex: Google) sans profil entreprise → completer le profil
+  if (!profile) {
+    return (
+      <Shell>
+        <form onSubmit={completeProfile} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 max-w-lg">
+          <h2 className="text-lg font-bold text-gray-900">{t('company.completeProfile.title')}</h2>
+          <p className="text-sm text-gray-500">{t('company.completeProfile.subtitle')}</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.companyName')} *</label>
+            <input type="text" required value={profForm.nom_entreprise} onChange={(e) => setProfForm({ ...profForm, nom_entreprise: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.phone')}</label>
+              <input type="tel" value={profForm.telephone} onChange={(e) => setProfForm({ ...profForm, telephone: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.city')}</label>
+              <select value={profForm.ville} onChange={(e) => setProfForm({ ...profForm, ville: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">—</option>
+                {SOUSS_MASSA_CITIES.map((c) => <option key={c} value={c}>{cityLabel(t, c)}</option>)}
+              </select>
+            </div>
+          </div>
+          <button type="submit" disabled={savingProfile}
+            className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60">
+            {savingProfile ? t('company.register.submitting') : t('company.completeProfile.submit')}
+          </button>
+        </form>
+      </Shell>
+    );
+  }
+
+  if (profile.statut === 'en_attente') {
     return (
       <Shell>
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
