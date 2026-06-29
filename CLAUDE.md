@@ -28,8 +28,10 @@ Site de recrutement pour la region Souss-Massa (Maroc).
 | `meta_description` | text | Meta description pour le SEO (max 160 caracteres) |
 | `suggested_salary_range` | text | Fourchette salariale suggeree (ex: 5000-8000 MAD) |
 | `required_skills` | text[] | Competences requises (array PostgreSQL) |
-| `source` | text | Source de l'offre (ex: ANAPEC, Direct) |
+| `source` | text | Source de l'offre (ex: ANAPEC, Direct, rekrute, marocannonces, entreprise) |
 | `slug` | text (unique) | Slug SEO pour l'URL permanente |
+| `statut` | text | Moderation : `active` (visible public), `en_attente` (offre entreprise a valider), `refuse` |
+| `company_id` | uuid | Auteur si offre deposee par une entreprise (= `comptes_entreprise.id`), sinon null |
 | `emploi_metier_en` / `emploi_metier_ar` | text | Traduction EN / AR de l'intitule (optionnel) |
 | `full_description_en` / `full_description_ar` | text | Traduction EN / AR de la description (optionnel) |
 | `meta_description_en` / `meta_description_ar` | text | Traduction EN / AR de la meta description (optionnel) |
@@ -334,28 +336,33 @@ Le footer (`components/Footer.tsx`) a 4 colonnes :
 
 ```
 api/
-  sitemap.ts        # Edge Function - sitemap dynamique (lit job_offers depuis Supabase)
+  sitemap.ts        # Edge Function - sitemap dynamique (offres statut='active' uniquement)
   robots.ts         # Edge Function - robots.txt (bloque /admin et /api/)
   apply.ts          # Serverless function - envoi candidature par email
+  notify-company.ts # Serverless - email a l'entreprise quand l'admin valide son compte
+  keepalive.ts      # Edge Function - ping Supabase (cron Vercel) pour eviter la pause free-tier
 
 components/
   SEO.tsx           # Composant SEO + generateJobPostingJsonLd + slugify
-  ApplyModal.tsx    # Modal de candidature avec upload CV
-  Header.tsx        # Navigation
-  Footer.tsx        # Footer 4 colonnes (secteurs, villes, navigation)
+  ApplyModal.tsx    # Modal de candidature + upload CV (stocke cv_path, bucket prive)
+  Header.tsx        # Navigation + CTA « Deposer une offre » (gauche) + LanguageSwitcher
+  Footer.tsx        # Footer 4 colonnes (secteurs, villes Souss-Massa, navigation)
 
 pages/
-  Home.tsx          # Page d'accueil (categories linkent vers ?sector=, recherche, offres recentes)
+  Home.tsx          # Accueil (categories ?sector=, recherche, villes Souss-Massa, offres recentes)
   Offers.tsx        # Liste des offres avec 4 filtres (recherche, ville, contrat, secteur)
   JobDetail.tsx     # Detail d'une offre (route /emploi/:slug)
   Contact.tsx       # Formulaire de contact (stocke dans table `messages`)
-  Admin.tsx         # Dashboard admin (candidatures + messages, mot de passe: souss2026, noindex)
+  Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), onglets :
+                    #   Candidatures, Messages, Entreprises, Offres a valider, + Nouvelle offre (SEO)
+  CompanyRegister/CompanyLogin/CompanyDashboard.tsx  # Espace entreprise (voir section dediee)
   NotFound.tsx      # Page 404 (noindex)
 
 services/
-  jobOffersService.ts  # CRUD offres + recherche par secteur (CATEGORY_FILTERS) — FICHIER PRINCIPAL
+  jobOffersService.ts  # CRUD offres (lecture publique = statut='active') — FICHIER PRINCIPAL
 src/services/
   jobOffersService.ts  # Copie alternative — DOIT RESTER SYNCHRONISE avec services/
+  companyService.ts    # Auth entreprise + profil + creation d'offre + moderation admin
 
 constants.ts        # Liste des villes (CITIES, SOUSS_MASSA_CITIES)
 scripts/
@@ -456,6 +463,46 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > par email Supabase. L'email de notification utilise `GMAIL_APP_PASSWORD` (deja
 > configure pour les candidatures).
 
+## Securite (RLS, donnees candidats, auth admin)
+
+Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc
+sur les **politiques RLS** Supabase, pas sur le code client.
+
+### Donnees personnelles (candidatures, messages, CV) — durci
+- **`candidatures`** et **`messages`** : RLS active, **ecriture seule** pour le public
+  (`INSERT` anon : postuler / contacter) ; **lecture / maj / suppression reservees a l'admin**
+  authentifie (`is_admin()`).
+- **CV** : bucket `cvs` **prive**. La candidature stocke le **chemin** (`cv_path`), pas une URL
+  publique. L'admin telecharge via **URL signee** (`storage.createSignedUrl`, ~120 s).
+  L'upload reste possible en anon (policy INSERT conservee).
+
+### Admin authentifie (plus de mot de passe en clair)
+- `pages/Admin.tsx` se connecte via **Supabase Auth** (`signInWithPassword`) puis verifie
+  l'appartenance a la table **`app_admins`** via la fonction SECURITY DEFINER **`public.is_admin()`**.
+- Compte admin : **`admin@soussmassa-rh.com`** (id dans `app_admins`). Les lectures
+  candidatures/messages/CV ne marchent **que** connecte en admin.
+
+### Offres publiques
+- Le public ne voit que les offres **`statut='active'`** (jobOffersService x2, `api/sitemap.ts`,
+  `scripts/gen-sitemap.cjs`). Les offres entreprise (`en_attente`) et `refuse` sont masquees.
+
+### Points NON encore durcis (dette connue, niveau « eleve »)
+- **`job_offers`** et **`comptes_entreprise`** : `INSERT/UPDATE/DELETE` encore ouverts a anon
+  (necessaire aux scripts d'import et au modele actuel). A terme : verrouiller les ecritures
+  (Edge Functions + `service_role`) et empecher l'auto-validation du `statut` cote client.
+- Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
+
+> Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)
+> et **tester les 4 parcours publics** (upload CV, postuler, contact, inscription entreprise)
+> pour verifier qu'on n'a rien casse.
+
+## Keepalive Supabase (cron Vercel)
+
+Le free-tier Supabase met le projet en pause apres ~7 jours d'inactivite. Un **cron Vercel**
+(`vercel.json` > `crons`) appelle quotidiennement **`/api/keepalive`** (requete minimale sur
+`job_offers`) pour garder le projet actif. Pensez a verifier que le cron est actif :
+Vercel → projet → Settings → Cron Jobs.
+
 ## Commandes utiles
 
 ```bash
@@ -472,7 +519,8 @@ npm run preview      # Preview du build
 - Ne jamais utiliser les numeros de serie Excel pour les dates : extraire depuis `ref_offre`
 - Les arrays PostgreSQL (`seo_keywords`, `required_skills`) s'inserent comme des arrays JSON normaux
 - Le site est un SPA : toutes les routes passent par `index.html` (voir `vercel.json`)
-- Pas de systeme de login : l'admin est protege par un simple mot de passe cote client
+- **Admin** : login via **Supabase Auth** (compte `admin@soussmassa-rh.com`, table `app_admins`,
+  fonction `is_admin()`). L'ancien mot de passe en clair `souss2026` n'existe plus (voir « Securite »).
 - Pour les fichiers Excel ANAPEC, installer `xlsx` (`npm install xlsx`) pour parser les fichiers .xls
 - Toujours commiter et pousser sur `main` apres modification (deploiement auto Vercel)
 - Apres insertion d'offres, toujours mettre a jour `public/sitemap.xml` et commiter
