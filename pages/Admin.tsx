@@ -196,6 +196,16 @@ const Admin: React.FC = () => {
     setCompanies(prev => prev.map(x => x.id === id ? { ...x, statut: 'refuse' } : x));
   };
 
+  const deleteCompany = async (c: CompanyProfile) => {
+    if (!confirm(`Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`)) return;
+    try {
+      await moderationService.deleteCompany(c.id);
+      setCompanies(prev => prev.filter(x => x.id !== c.id));
+    } catch (e: any) {
+      alert('Erreur lors de la suppression : ' + (e?.message || e));
+    }
+  };
+
   const validateOffer = async (id: string) => {
     await moderationService.setOfferStatus(id, 'active');
     setPendingOffers(prev => prev.filter(o => o.id !== id));
@@ -763,16 +773,21 @@ const Admin: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    {c.statut === 'en_attente' && (
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => validateCompany(c)} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
-                          Valider
-                        </button>
-                        <button onClick={() => refuseCompany(c.id)} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium">
-                          Refuser
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2 flex-shrink-0">
+                      {c.statut === 'en_attente' && (
+                        <>
+                          <button onClick={() => validateCompany(c)} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
+                            Valider
+                          </button>
+                          <button onClick={() => refuseCompany(c.id)} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium">
+                            Refuser
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => deleteCompany(c)} className="px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-bold">
+                        Supprimer
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

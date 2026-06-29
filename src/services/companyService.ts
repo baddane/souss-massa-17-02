@@ -175,6 +175,12 @@ export const moderationService = {
     await supabaseOffers.from('comptes_entreprise').update({ notified: true }).eq('id', id);
   },
 
+  // Supprime définitivement une entreprise, quel que soit son statut (même validée)
+  async deleteCompany(id: string) {
+    const { error } = await supabaseOffers.from('comptes_entreprise').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   async getPendingOffers() {
     const { data, error } = await supabaseOffers
       .from('job_offers')
