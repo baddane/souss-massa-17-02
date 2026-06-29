@@ -66,7 +66,10 @@ const Admin: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte'>('candidatures');
+  const [acctEmail, setAcctEmail] = useState('');
+  const [acctPwd, setAcctPwd] = useState('');
+  const [savingAcct, setSavingAcct] = useState(false);
   const [offerForm, setOfferForm] = useState({ ...emptyOfferForm });
   const [creatingOffer, setCreatingOffer] = useState(false);
   const [lastCreated, setLastCreated] = useState<{ slug: string } | null>(null);
@@ -119,6 +122,28 @@ const Admin: React.FC = () => {
   const logout = async () => {
     await supabaseOffers.auth.signOut();
     setAuthed(false);
+  };
+
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (acctPwd.length < 8) { alert('Le mot de passe doit faire au moins 8 caractères.'); return; }
+    setSavingAcct(true);
+    const { error } = await supabaseOffers.auth.updateUser({ password: acctPwd });
+    setSavingAcct(false);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    setAcctPwd('');
+    alert('Mot de passe mis à jour ✅');
+  };
+
+  const changeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acctEmail.includes('@')) { alert('Email invalide.'); return; }
+    setSavingAcct(true);
+    const { error } = await supabaseOffers.auth.updateUser({ email: acctEmail.trim() });
+    setSavingAcct(false);
+    if (error) { alert('Erreur : ' + error.message); return; }
+    alert("Un email de confirmation a été envoyé à la NOUVELLE adresse. L'identifiant ne changera qu'une fois ce lien validé.");
+    setAcctEmail('');
   };
 
   const openCv = async (c: Candidature) => {
@@ -474,6 +499,14 @@ const Admin: React.FC = () => {
           }`}
         >
           + Nouvelle offre
+        </button>
+        <button
+          onClick={() => setActiveTab('compte')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'compte' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Mon compte
         </button>
       </div>
 
@@ -913,6 +946,45 @@ const Admin: React.FC = () => {
             L'offre est publiée immédiatement (statut « active ») et visible sur le site. Pensez à régénérer la sitemap.
           </p>
         </form>
+      )}
+
+      {activeTab === 'compte' && (
+        <div className="max-w-md space-y-6">
+          <form onSubmit={changePassword} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+            <h3 className="text-sm font-bold text-gray-900">Changer le mot de passe</h3>
+            <input
+              type="password"
+              value={acctPwd}
+              onChange={(e) => setAcctPwd(e.target.value)}
+              placeholder="Nouveau mot de passe (8 caractères min.)"
+              autoComplete="new-password"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            />
+            <button type="submit" disabled={savingAcct}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60">
+              {savingAcct ? 'Enregistrement…' : 'Mettre à jour le mot de passe'}
+            </button>
+          </form>
+
+          <form onSubmit={changeEmail} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+            <h3 className="text-sm font-bold text-gray-900">Changer l'email (identifiant)</h3>
+            <input
+              type="email"
+              value={acctEmail}
+              onChange={(e) => setAcctEmail(e.target.value)}
+              placeholder="nouvelle@adresse.com"
+              autoComplete="email"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            />
+            <p className="text-xs text-gray-400">
+              Utilise une vraie adresse : un lien de confirmation y sera envoyé. L'identifiant ne change qu'après validation de ce lien.
+            </p>
+            <button type="submit" disabled={savingAcct}
+              className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-900 transition-colors disabled:opacity-60">
+              {savingAcct ? 'Envoi…' : "Changer l'email"}
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );
