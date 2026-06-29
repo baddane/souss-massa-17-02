@@ -5,8 +5,6 @@ import { moderationService, CompanyProfile } from '../src/services/companyServic
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
-const ADMIN_PASSWORD = 'souss2026';
-
 const CONTRACT_TYPES = ['CDI', 'CDD', 'Stage', 'Alternance', 'Freelance'];
 const emptyOfferForm = {
   emploi_metier: '', raison_sociale: '', ville: 'Agadir', type_contrat: 'CDI',
@@ -45,6 +43,7 @@ interface Candidature {
   candidate_email: string;
   candidate_phone: string | null;
   cv_url: string | null;
+  cv_path: string | null;
   cv_filename: string | null;
   status: string;
   notes: string | null;
@@ -63,7 +62,10 @@ interface Message {
 
 const Admin: React.FC = () => {
   const [authed, setAuthed] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle'>('candidatures');
   const [offerForm, setOfferForm] = useState({ ...emptyOfferForm });
   const [creatingOffer, setCreatingOffer] = useState(false);
@@ -81,19 +83,50 @@ const Admin: React.FC = () => {
   const [notesValue, setNotesValue] = useState('');
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
 
+  // Verifie une session admin existante (Supabase Auth + appartenance app_admins)
   useEffect(() => {
-    const saved = sessionStorage.getItem('admin_auth');
-    if (saved === ADMIN_PASSWORD) setAuthed(true);
+    (async () => {
+      const { data: { session } } = await supabaseOffers.auth.getSession();
+      if (session) {
+        const { data: isAdmin } = await supabaseOffers.rpc('is_admin');
+        if (isAdmin) setAuthed(true);
+        else await supabaseOffers.auth.signOut();
+      }
+      setAuthChecking(false);
+    })();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    setLoggingIn(true);
+    try {
+      const { error } = await supabaseOffers.auth.signInWithPassword({ email: loginEmail.trim(), password });
+      if (error) throw error;
+      const { data: isAdmin } = await supabaseOffers.rpc('is_admin');
+      if (!isAdmin) {
+        await supabaseOffers.auth.signOut();
+        alert("Ce compte n'est pas administrateur.");
+        return;
+      }
       setAuthed(true);
-      sessionStorage.setItem('admin_auth', password);
-    } else {
-      alert('Mot de passe incorrect');
+    } catch {
+      alert('Identifiants incorrects.');
+    } finally {
+      setLoggingIn(false);
     }
+  };
+
+  const logout = async () => {
+    await supabaseOffers.auth.signOut();
+    setAuthed(false);
+  };
+
+  const openCv = async (c: Candidature) => {
+    const path = c.cv_path || (c.cv_url ? c.cv_url.replace(/^.*\/cvs\//, '') : '');
+    if (!path) { alert('CV indisponible.'); return; }
+    const { data, error } = await supabaseOffers.storage.from('cvs').createSignedUrl(path, 120);
+    if (error || !data) { alert('Impossible de générer le lien du CV.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener');
   };
 
   useEffect(() => {
@@ -310,6 +343,10 @@ const Admin: React.FC = () => {
     return { total, nouvelle, preselection, entretien };
   }, [candidatures]);
 
+  if (authChecking) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -320,18 +357,28 @@ const Admin: React.FC = () => {
           <h1 className="text-xl font-bold text-gray-900 text-center">Administration</h1>
           <p className="text-sm text-gray-500 text-center">Accès réservé au recruteur</p>
           <input
+            type="email"
+            value={loginEmail}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            placeholder="Email administrateur"
+            autoComplete="username"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+            autoFocus
+          />
+          <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
+            autoComplete="current-password"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-            autoFocus
           />
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+            disabled={loggingIn}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            Accéder
+            {loggingIn ? 'Connexion…' : 'Accéder'}
           </button>
         </form>
       </div>
@@ -351,12 +398,20 @@ const Admin: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
           <p className="text-gray-500 text-sm mt-1">Gérez les candidatures et messages</p>
         </div>
-        <button
-          onClick={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors self-start"
-        >
-          Rafraîchir
-        </button>
+        <div className="flex gap-2 self-start">
+          <button
+            onClick={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
+          >
+            Rafraîchir
+          </button>
+          <button
+            onClick={logout}
+            className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+          >
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -535,15 +590,13 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="flex flex-row lg:flex-col gap-2 flex-shrink-0">
-                      {c.cv_url && (
-                        <a
-                          href={c.cv_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {(c.cv_path || c.cv_url) && (
+                        <button
+                          onClick={() => openCv(c)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors text-center"
                         >
                           CV {c.cv_filename?.split('.').pop()?.toUpperCase()}
-                        </a>
+                        </button>
                       )}
                       <select
                         value={c.status}

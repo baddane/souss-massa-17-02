@@ -59,10 +59,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabaseOffers.storage
-        .from('cvs')
-        .getPublicUrl(filePath);
-
+      // Bucket prive : on stocke le chemin (cv_path), l'admin genere une URL signee.
       const { error: insertError } = await supabaseOffers
         .from('candidatures')
         .insert({
@@ -72,7 +69,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           candidate_name: form.name,
           candidate_email: form.email,
           candidate_phone: form.phone || null,
-          cv_url: urlData.publicUrl,
+          cv_path: filePath,
           cv_filename: cvFile.name,
         });
 
