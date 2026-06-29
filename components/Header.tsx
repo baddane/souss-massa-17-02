@@ -21,7 +21,17 @@ const Header: React.FC = () => {
             <span className="text-xl font-light text-gray-400">-RH</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-5">
+            {/* CTA employeur (secondaire, contour) — depose une offre = creation de compte */}
+            <Link
+              to="/inscription-entreprise"
+              className="inline-flex items-center gap-1.5 border-2 border-blue-600 text-blue-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              {t('nav.postOffer')}
+            </Link>
             <Link
               to="/offres"
               className={`text-sm font-semibold transition-colors ${
@@ -38,14 +48,7 @@ const Header: React.FC = () => {
             >
               {t('nav.contact')}
             </Link>
-            <Link
-              to="/espace-entreprise"
-              className={`text-sm font-semibold transition-colors ${
-                location.pathname.includes('entreprise') ? 'text-blue-700' : 'text-gray-600 hover:text-blue-700'
-              }`}
-            >
-              {t('nav.companyArea')}
-            </Link>
+            {/* CTA candidat (primaire) */}
             <Link
               to="/offres"
               className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
@@ -73,14 +76,17 @@ const Header: React.FC = () => {
 
       {isMenuOpen && (
         <nav className="md:hidden bg-white border-t border-gray-100 py-3 px-4 space-y-2">
+          <Link to="/inscription-entreprise" className="flex items-center justify-center gap-1.5 border-2 border-blue-600 text-blue-700 text-center py-2.5 rounded-lg font-bold">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            {t('nav.postOffer')}
+          </Link>
           <Link to="/offres" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.allOffers')}
           </Link>
           <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.contact')}
-          </Link>
-          <Link to="/espace-entreprise" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
-            {t('nav.companyArea')}
           </Link>
           <Link to="/offres" className="block bg-orange-500 text-white text-center py-3 rounded-lg font-bold">
             {t('nav.findJob')}

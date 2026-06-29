@@ -194,6 +194,7 @@ export const translations: Record<Lang, Dict> = {
 
     // Espace entreprise
     'nav.companyArea': 'Espace entreprise',
+    'nav.postOffer': 'Déposer une offre',
     'company.register.title': 'Créer un compte entreprise',
     'company.register.subtitle': "Publiez vos offres d'emploi en quelques clics. Votre compte sera activé après validation par notre équipe.",
     'company.companyName': "Nom de l'entreprise",
@@ -413,6 +414,7 @@ export const translations: Record<Lang, Dict> = {
 
     // Employer area
     'nav.companyArea': 'Employers',
+    'nav.postOffer': 'Post a job',
     'company.register.title': 'Create an employer account',
     'company.register.subtitle': 'Post your job offers in a few clicks. Your account will be activated after review by our team.',
     'company.companyName': 'Company name',
@@ -632,6 +634,7 @@ export const translations: Record<Lang, Dict> = {
 
     // فضاء المقاولات
     'nav.companyArea': 'فضاء المقاولات',
+    'nav.postOffer': 'نشر عرض عمل',
     'company.register.title': 'إنشاء حساب مقاولة',
     'company.register.subtitle': 'انشر عروض عملك ببضع نقرات. سيتم تفعيل حسابك بعد مصادقة فريقنا.',
     'company.companyName': 'اسم المقاولة',
