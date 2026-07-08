@@ -1,7 +1,8 @@
 // Parsing de CV 100% côté client, SANS LLM.
-// - Extraction de texte : PDF (pdf.js) + Word .docx (mammoth) + .txt. Images NON supportées (OCR requis).
+// - Extraction de texte : PDF (pdf.js) + Word .docx (mammoth) + .txt + images (OCR tesseract.js, FR).
 // - Extraction de champs : regex + dictionnaires (email, téléphone, ville, diplôme, compétences, expérience…).
 // Les libs sont chargées en import dynamique → chunks séparés (n'alourdit pas le bundle du site public).
+// L'OCR télécharge un pack de langue FR au 1er usage et prend quelques secondes par image.
 
 export interface ParsedCv {
   nom_complet: string;
@@ -105,7 +106,21 @@ export async function extractText(file: File): Promise<{ text: string; supported
     return { text: res.value || '', supported: true };
   }
 
-  // Images (jpg/png/…) et .doc legacy : pas d'extraction sans OCR → saisie manuelle
+  // Images : OCR via tesseract.js (moteur OCR, PAS un LLM). Charge un pack de langue FR
+  // au 1er usage (téléchargé depuis le CDN tesseract). Lent (quelques s/image).
+  if (type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif|tiff?)$/i.test(name)) {
+    try {
+      const mod: any = await import('tesseract.js');
+      const recognize = mod.recognize || mod.default?.recognize;
+      const { data } = await recognize(file, 'fra');
+      const text = (data?.text || '').trim();
+      return { text, supported: text.length > 0 };
+    } catch {
+      return { text: '', supported: false };
+    }
+  }
+
+  // Ancien .doc et formats inconnus : pas d'extraction → saisie manuelle
   return { text: '', supported: false };
 }
 
