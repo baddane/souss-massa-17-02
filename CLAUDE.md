@@ -354,7 +354,8 @@ pages/
   JobDetail.tsx     # Detail d'une offre (route /emploi/:slug)
   Contact.tsx       # Formulaire de contact (stocke dans table `messages`)
   Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), onglets :
-                    #   Candidatures, Messages, Entreprises, Offres a valider, + Nouvelle offre (SEO)
+                    #   Candidatures, Messages, Entreprises (valider/refuser/SUPPRIMER meme validee),
+                    #   Offres a valider, + Nouvelle offre (SEO), CVtheque (voir section), Mon compte
   CompanyRegister/CompanyLogin/CompanyDashboard.tsx  # Espace entreprise (voir section dediee)
   NotFound.tsx      # Page 404 (noindex)
 
@@ -362,7 +363,9 @@ services/
   jobOffersService.ts  # CRUD offres (lecture publique = statut='active') — FICHIER PRINCIPAL
 src/services/
   jobOffersService.ts  # Copie alternative — DOIT RESTER SYNCHRONISE avec services/
-  companyService.ts    # Auth entreprise + profil + creation d'offre + moderation admin
+  companyService.ts    # Auth entreprise + profil + creation d'offre + moderation admin (dont deleteCompany)
+  cvParser.ts          # Parsing CV 100% client SANS LLM (pdf.js + mammoth en import dynamique + regex)
+  cvthequeService.ts   # CVtheque : upload bucket prive + parse + recherche + edit + suppression
 
 constants.ts        # Liste des villes (CITIES, SOUSS_MASSA_CITIES)
 scripts/
@@ -463,6 +466,32 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > par email Supabase. L'email de notification utilise `GMAIL_APP_PASSWORD` (deja
 > configure pour les candidatures).
 
+## CVtheque (base de CV admin, parsing SANS LLM)
+
+Onglet **CVtheque** dans `pages/Admin.tsx` : l'admin importe des CV, ils sont stockes,
+parses et classes dans une table dediee pour un **moteur de recherche dynamique**. Totalement
+**separe** des candidatures/CV des postulants.
+
+- **Stockage** : bucket prive **`cvtheque`** (distinct de `cvs`). Fichiers PDF, Word (.docx),
+  image, .txt. Lecture via **URL signee** (~120 s).
+- **Table** : **`cvtheque`** (voir migration `supabase/migrations/006_cvtheque.sql`). Champs :
+  `nom_complet, email, telephone, ville, quartier, poste, diplome, niveau_etudes,
+  competences[], langues[], experience_years, keywords[], raw_text, notes` + `search_tsv`
+  (tsvector FR alimente par **trigger** `cvtheque_search_update`, pas une colonne generee — le
+  cast `'french'::regconfig` n'est pas immutable).
+- **Parsing 100% cote client, SANS LLM** (`src/services/cvParser.ts`) :
+  - Texte : **pdf.js** (PDF) et **mammoth** (.docx), charges en **import dynamique** → chunks
+    separes, le bundle du site public n'est PAS impacte. Images / ancien `.doc` : pas d'OCR →
+    fiche a completer a la main.
+  - Champs : **regex + dictionnaires** (email, tel MA, ville, quartier, diplome/niveau,
+    competences, langues, annees d'experience). Precision imparfaite → **fiche editable**.
+- **Service** : `src/services/cvthequeService.ts` (`uploadAndParse`, `search`, `signedUrl`,
+  `update`, `remove`). Recherche = full-text FR (`textSearch('search_tsv', q, {config:'french'})`)
+  + filtres `ilike` (poste/ville/diplome), `contains` (competence), `gte` (experience min).
+- **Securite** : RLS **admin-only** (`is_admin()`) sur la table (`cvtheque_admin_all`) et le
+  bucket (`cvtheque_obj_select/insert/delete`). Aucune donnee personnelle exposee au public.
+- **Dependances ajoutees** : `pdfjs-dist`, `mammoth` (uniquement chargees a la demande dans l'admin).
+
 ## Securite (RLS, donnees candidats, auth admin)
 
 Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc
@@ -475,6 +504,9 @@ sur les **politiques RLS** Supabase, pas sur le code client.
 - **CV** : bucket `cvs` **prive**. La candidature stocke le **chemin** (`cv_path`), pas une URL
   publique. L'admin telecharge via **URL signee** (`storage.createSignedUrl`, ~120 s).
   L'upload reste possible en anon (policy INSERT conservee).
+- **CVtheque** (base documentaire admin) : table `cvtheque` + bucket `cvtheque`, **separes**
+  des candidatures et du bucket `cvs`. Tout est **reserve a l'admin** (`is_admin()`) — RLS sur la
+  table (policy `cvtheque_admin_all`) ET sur le storage (`cvtheque_obj_*`). Voir section dediee.
 
 ### Admin authentifie (plus de mot de passe en clair)
 - `pages/Admin.tsx` se connecte via **Supabase Auth** (`signInWithPassword`) puis verifie
@@ -487,9 +519,11 @@ sur les **politiques RLS** Supabase, pas sur le code client.
   `scripts/gen-sitemap.cjs`). Les offres entreprise (`en_attente`) et `refuse` sont masquees.
 
 ### Points NON encore durcis (dette connue, niveau « eleve »)
-- **`job_offers`** et **`comptes_entreprise`** : `INSERT/UPDATE/DELETE` encore ouverts a anon
-  (necessaire aux scripts d'import et au modele actuel). A terme : verrouiller les ecritures
-  (Edge Functions + `service_role`) et empecher l'auto-validation du `statut` cote client.
+- **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a anon (necessaire aux scripts
+  d'import). **`comptes_entreprise`** : `INSERT/UPDATE` encore ouverts a anon, mais **`DELETE`
+  est desormais reserve a l'admin** (`is_admin()`, policy `ce_delete`, migration `005`). A terme :
+  verrouiller les ecritures (Edge Functions + `service_role`) et empecher l'auto-validation du
+  `statut` cote client.
 - Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
 
 > Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)
