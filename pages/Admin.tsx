@@ -1086,7 +1086,7 @@ const Admin: React.FC = () => {
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900">Ajouter des CV à la CVthèque</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  PDF et Word (.docx) sont lus et classés automatiquement. Images et anciens .doc sont importés mais à compléter à la main. Stockage privé, séparé des CV des candidats.
+                  PDF et Word (.docx) sont lus et classés automatiquement. Les images sont lues par OCR (quelques secondes, téléchargement d'un pack FR au 1er usage). Anciens .doc : à compléter à la main. Stockage privé, séparé des CV des candidats.
                 </p>
               </div>
               <label className={`px-4 py-2.5 rounded-lg text-sm font-bold cursor-pointer text-center whitespace-nowrap ${cvUploading ? 'bg-gray-200 text-gray-500 cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
