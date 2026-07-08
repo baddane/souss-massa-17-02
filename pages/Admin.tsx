@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
 import { moderationService, CompanyProfile } from '../src/services/companyService';
+import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -66,7 +67,7 @@ const Admin: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque'>('candidatures');
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -85,6 +86,11 @@ const Admin: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [cvItems, setCvItems] = useState<CvthequeRow[]>([]);
+  const [cvLoading, setCvLoading] = useState(false);
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvFilters, setCvFilters] = useState({ q: '', ville: '', poste: '', diplome: '', competence: '', minExp: '' });
+  const [cvEditing, setCvEditing] = useState<CvthequeRow | null>(null);
 
   // Verifie une session admin existante (Supabase Auth + appartenance app_admins)
   useEffect(() => {
@@ -154,12 +160,74 @@ const Admin: React.FC = () => {
     window.open(data.signedUrl, '_blank', 'noopener');
   };
 
+  // ---- CVthèque ----
+  const loadCvtheque = async () => {
+    setCvLoading(true);
+    const items = await cvthequeService.search({
+      q: cvFilters.q || undefined,
+      ville: cvFilters.ville || undefined,
+      poste: cvFilters.poste || undefined,
+      diplome: cvFilters.diplome || undefined,
+      competence: cvFilters.competence || undefined,
+      minExperience: cvFilters.minExp ? Number(cvFilters.minExp) : undefined,
+    });
+    setCvItems(items);
+    setCvLoading(false);
+  };
+
+  const handleCvUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setCvUploading(true);
+    let unsupported = 0, failed = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const { supported, error } = await cvthequeService.uploadAndParse(file);
+        if (error) failed++;
+        else if (!supported) unsupported++;
+      } catch { failed++; }
+    }
+    setCvUploading(false);
+    await loadCvtheque();
+    if (failed) alert(`${failed} fichier(s) en erreur lors de l'import.`);
+    if (unsupported) alert(`${unsupported} fichier(s) importé(s) mais non lisibles automatiquement (image ou ancien .doc). Complétez les champs à la main via « Éditer ».`);
+  };
+
+  const openCvFile = async (row: CvthequeRow) => {
+    const url = await cvthequeService.signedUrl(row.file_path);
+    if (!url) { alert('Impossible de générer le lien du CV.'); return; }
+    window.open(url, '_blank', 'noopener');
+  };
+
+  const deleteCv = async (row: CvthequeRow) => {
+    if (!confirm(`Supprimer la fiche de « ${row.nom_complet || row.file_name} » ? Le fichier sera aussi supprimé.`)) return;
+    const ok = await cvthequeService.remove(row.id, row.file_path);
+    if (ok) setCvItems(prev => prev.filter(x => x.id !== row.id));
+  };
+
+  const saveCvEdit = async () => {
+    if (!cvEditing) return;
+    const patch: Partial<CvthequeRow> = {
+      nom_complet: cvEditing.nom_complet, email: cvEditing.email, telephone: cvEditing.telephone,
+      ville: cvEditing.ville, quartier: cvEditing.quartier, poste: cvEditing.poste,
+      diplome: cvEditing.diplome, niveau_etudes: cvEditing.niveau_etudes,
+      competences: cvEditing.competences, langues: cvEditing.langues,
+      experience_years: cvEditing.experience_years, keywords: cvEditing.keywords,
+      notes: cvEditing.notes,
+    };
+    const ok = await cvthequeService.update(cvEditing.id, patch);
+    if (ok) {
+      setCvItems(prev => prev.map(x => x.id === cvEditing.id ? { ...x, ...patch } as CvthequeRow : x));
+      setCvEditing(null);
+    }
+  };
+
   useEffect(() => {
     if (!authed) return;
     loadCandidatures();
     loadMessages();
     loadCompanies();
     loadPendingOffers();
+    loadCvtheque();
   }, [authed]);
 
   const loadCompanies = async () => {
@@ -509,6 +577,14 @@ const Admin: React.FC = () => {
           }`}
         >
           + Nouvelle offre
+        </button>
+        <button
+          onClick={() => setActiveTab('cvtheque')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'cvtheque' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          CVthèque ({cvItems.length})
         </button>
         <button
           onClick={() => setActiveTab('compte')}
@@ -1000,6 +1076,176 @@ const Admin: React.FC = () => {
             </button>
           </form>
         </div>
+      )}
+
+      {activeTab === 'cvtheque' && (
+        <>
+          {/* Import */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">Ajouter des CV à la CVthèque</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  PDF et Word (.docx) sont lus et classés automatiquement. Images et anciens .doc sont importés mais à compléter à la main. Stockage privé, séparé des CV des candidats.
+                </p>
+              </div>
+              <label className={`px-4 py-2.5 rounded-lg text-sm font-bold cursor-pointer text-center whitespace-nowrap ${cvUploading ? 'bg-gray-200 text-gray-500 cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                {cvUploading ? 'Import en cours…' : '+ Importer des CV'}
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,image/*"
+                  className="hidden"
+                  disabled={cvUploading}
+                  onChange={(e) => { handleCvUpload(e.target.files); e.currentTarget.value = ''; }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Moteur de recherche */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <input
+                type="search"
+                value={cvFilters.q}
+                onChange={(e) => setCvFilters(f => ({ ...f, q: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === 'Enter') loadCvtheque(); }}
+                placeholder="Mot-clé (poste, compétence, diplôme…)"
+                className="md:col-span-2 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              />
+              <input type="text" value={cvFilters.poste} onChange={(e) => setCvFilters(f => ({ ...f, poste: e.target.value }))} placeholder="Poste" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={cvFilters.ville} onChange={(e) => setCvFilters(f => ({ ...f, ville: e.target.value }))} placeholder="Ville / quartier" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={cvFilters.diplome} onChange={(e) => setCvFilters(f => ({ ...f, diplome: e.target.value }))} placeholder="Diplôme" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={cvFilters.competence} onChange={(e) => setCvFilters(f => ({ ...f, competence: e.target.value }))} placeholder="Compétence exacte" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-3">
+              <label className="text-sm text-gray-600 flex items-center gap-2">
+                Expérience min.
+                <input type="number" min={0} value={cvFilters.minExp} onChange={(e) => setCvFilters(f => ({ ...f, minExp: e.target.value }))} placeholder="0" className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                ans
+              </label>
+              <button onClick={loadCvtheque} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Rechercher</button>
+              <button
+                onClick={() => { setCvFilters({ q: '', ville: '', poste: '', diplome: '', competence: '', minExp: '' }); setTimeout(loadCvtheque, 0); }}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+              >
+                Réinitialiser
+              </button>
+            </div>
+          </div>
+
+          {/* Résultats */}
+          {cvLoading ? (
+            <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
+          ) : cvItems.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+              <p className="text-gray-500">Aucun CV dans la CVthèque</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {cvItems.map((cv) => (
+                <div key={cv.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center flex-wrap gap-2 mb-1">
+                        <h3 className="font-bold text-gray-900 text-lg">{cv.nom_complet || cv.file_name || 'CV sans nom'}</h3>
+                        {cv.poste && <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">{cv.poste}</span>}
+                        {typeof cv.experience_years === 'number' && <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{cv.experience_years} an{cv.experience_years > 1 ? 's' : ''} d'exp.</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mb-2">
+                        {cv.email && <a href={`mailto:${cv.email}`} className="text-blue-600 hover:underline">{cv.email}</a>}
+                        {cv.telephone && <a href={`tel:${cv.telephone}`} className="text-blue-600 hover:underline">{cv.telephone}</a>}
+                        {cv.ville && <span>{cv.ville}</span>}
+                        {cv.quartier && <span className="text-gray-500">{cv.quartier}</span>}
+                        {(cv.diplome || cv.niveau_etudes) && <span className="text-gray-500">{cv.diplome || cv.niveau_etudes}</span>}
+                      </div>
+                      {cv.competences && cv.competences.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {cv.competences.slice(0, 12).map((s, i) => (
+                            <span key={i} className="bg-gray-50 border border-gray-200 text-gray-600 px-2 py-0.5 rounded text-xs">{s}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-row lg:flex-col gap-2 flex-shrink-0">
+                      <button onClick={() => openCvFile(cv)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Voir CV</button>
+                      <button onClick={() => setCvEditing(cv)} className="px-4 py-2 text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium">Éditer</button>
+                      <button onClick={() => deleteCv(cv)} className="px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-medium">Supprimer</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-center text-xs text-gray-400 mt-8">{cvItems.length} CV affiché{cvItems.length !== 1 ? 's' : ''}</p>
+
+          {/* Modal d'édition */}
+          {cvEditing && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setCvEditing(null)}>
+              <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900">Éditer la fiche</h3>
+                  <button onClick={() => setCvEditing(null)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    ['nom_complet', 'Nom complet'], ['poste', 'Poste'], ['email', 'Email'], ['telephone', 'Téléphone'],
+                    ['ville', 'Ville'], ['quartier', 'Quartier'], ['diplome', 'Diplôme'], ['niveau_etudes', "Niveau d'études"],
+                  ] as [keyof CvthequeRow, string][]).map(([key, label]) => (
+                    <label key={key} className="text-xs font-semibold text-gray-500">
+                      {label}
+                      <input
+                        type="text"
+                        value={(cvEditing[key] as string) || ''}
+                        onChange={(e) => setCvEditing(v => v ? { ...v, [key]: e.target.value } : v)}
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-normal focus:ring-2 focus:ring-blue-500"
+                      />
+                    </label>
+                  ))}
+                  <label className="text-xs font-semibold text-gray-500">
+                    Années d'expérience
+                    <input
+                      type="number" min={0}
+                      value={cvEditing.experience_years ?? ''}
+                      onChange={(e) => setCvEditing(v => v ? { ...v, experience_years: e.target.value === '' ? null : Number(e.target.value) } : v)}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-normal focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                {([
+                  ['competences', 'Compétences (séparées par des virgules)'],
+                  ['langues', 'Langues (séparées par des virgules)'],
+                  ['keywords', 'Mots-clés (séparés par des virgules)'],
+                ] as [keyof CvthequeRow, string][]).map(([key, label]) => (
+                  <label key={key} className="block text-xs font-semibold text-gray-500">
+                    {label}
+                    <input
+                      type="text"
+                      value={((cvEditing[key] as string[]) || []).join(', ')}
+                      onChange={(e) => setCvEditing(v => v ? { ...v, [key]: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } : v)}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-normal focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                ))}
+                <label className="block text-xs font-semibold text-gray-500">
+                  Notes internes
+                  <textarea
+                    value={cvEditing.notes || ''}
+                    onChange={(e) => setCvEditing(v => v ? { ...v, notes: e.target.value } : v)}
+                    rows={2}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 font-normal focus:ring-2 focus:ring-blue-500"
+                  />
+                </label>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={saveCvEdit} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700">Enregistrer</button>
+                  <button onClick={() => setCvEditing(null)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">Annuler</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
