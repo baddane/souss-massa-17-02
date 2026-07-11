@@ -89,7 +89,9 @@ const CompanyDashboard: React.FC = () => {
     return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
   }
 
-  const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  // NB: fonction (pas un composant <Shell>) pour éviter le remontage du sous-arbre
+  // à chaque frappe (qui faisait perdre le focus des inputs).
+  const shell = (children: React.ReactNode) => (
     <div className="max-w-4xl mx-auto px-4 py-10">
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="flex items-center justify-between mb-8">
@@ -107,8 +109,8 @@ const CompanyDashboard: React.FC = () => {
 
   // Compte authentifie (ex: Google) sans profil entreprise → completer le profil
   if (!profile) {
-    return (
-      <Shell>
+    return shell(
+      <>
         <form onSubmit={completeProfile} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 max-w-lg">
           <h2 className="text-lg font-bold text-gray-900">{t('company.completeProfile.title')}</h2>
           <p className="text-sm text-gray-500">{t('company.completeProfile.subtitle')}</p>
@@ -137,35 +139,35 @@ const CompanyDashboard: React.FC = () => {
             {savingProfile ? t('company.register.submitting') : t('company.completeProfile.submit')}
           </button>
         </form>
-      </Shell>
+      </>
     );
   }
 
   if (profile.statut === 'en_attente') {
-    return (
-      <Shell>
+    return shell(
+      <>
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
           <div className="text-4xl mb-3">⏳</div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('company.pending.title')}</h2>
           <p className="text-gray-600">{t('company.pending.text')}</p>
         </div>
-      </Shell>
+      </>
     );
   }
 
   if (profile.statut === 'refuse') {
-    return (
-      <Shell>
+    return shell(
+      <>
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('company.refused.title')}</h2>
           <p className="text-gray-600">{t('company.refused.text')}</p>
         </div>
-      </Shell>
+      </>
     );
   }
 
-  return (
-    <Shell>
+  return shell(
+    <>
       {/* Formulaire de dépôt */}
       <form onSubmit={submitOffer} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 mb-10">
         <h2 className="text-lg font-bold text-gray-900">{t('company.post.title')}</h2>
@@ -239,7 +241,7 @@ const CompanyDashboard: React.FC = () => {
           ))}
         </div>
       )}
-    </Shell>
+    </>
   );
 };
 
