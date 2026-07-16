@@ -2,114 +2,168 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://soussmassa-rh.com/</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/contact</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=informatique</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=commercial</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=administratif</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=industrie</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=sante</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=enseignement</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=tourisme</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?sector=construction</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Agadir</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=A%C3%AFt%20Baha</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Biougra</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Dcheira%20El%20Jihad</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Inezgane</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Taroudant</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/offres?city=Tiznit</loc>
-    <lastmod>2026-07-15</lastmod>
+    <lastmod>2026-07-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/commis-de-bar-h-f-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/comptable-junior-agadir-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/charge-facturation-agadir-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-recrutement-f-h-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/assistante-technique-labo-technicien-labo-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/chef-de-rang-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/commis-de-rang-h-f-agadir</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/chargee-d-accueil-taroudant-taroudant</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-belfaa-qliaa-agadir</loc>
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/responsable-grand-compte-marketing-agadir</loc>
     <lastmod>2026-07-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -127,26 +181,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-grand-compte-marketing-agadir</loc>
-    <lastmod>2026-07-14</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/commerciale-en-francais-agadir</loc>
     <lastmod>2026-07-14</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-client-service-client-agadir-allemand-anglais-agadir</loc>
-    <lastmod>2026-07-13</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-client-expert-televente-fai-agadir-francais-agadir</loc>
-    <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -163,13 +199,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/comptable-agadir-2</loc>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-client-service-client-agadir-allemand-anglais-agadir</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-logistique-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-client-service-client-francophone-agadir-agadir</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -181,13 +217,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-client-televente-agadir-francais-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-logistique-agadir</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-client-service-client-francophone-agadir-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/comptable-agadir-2</loc>
+    <lastmod>2026-07-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-client-expert-televente-fai-agadir-francais-agadir</loc>
+    <lastmod>2026-07-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-client-televente-agadir-francais-agadir</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -205,55 +253,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/merchandiser-a-agadir-agadir</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/pre-vendeur-a-agadir-agadir</loc>
     <lastmod>2026-07-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-de-billetterie-agadir</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-e-des-fonctions-support-h-f-agadir</loc>
-    <lastmod>2026-07-10</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/merchandiser-a-agadir-agadir</loc>
+    <lastmod>2026-07-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/graphiste-designer-agadir</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/vendeur-detail-a-agadir-agadir</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/superviseur-de-vente-detail-agadir-agadir-3</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/application-manager-h-f-agadir</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/technicien-aquacole-agadir-agadir</loc>
     <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -265,7 +277,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/ingenieur-planification-miniere-junior-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/technicien-aquacole-agadir-agadir</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/superviseur-de-vente-detail-agadir-agadir-3</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/vendeur-detail-a-agadir-agadir</loc>
     <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -277,20 +301,26 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/nous-recrutons-vendeur-se-a-l-aeroport-d-agadir-agadir</loc>
-    <lastmod>2026-07-09</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/charge-e-des-fonctions-support-h-f-agadir</loc>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/hote-hotesse-agadir-agadir</loc>
-    <lastmod>2026-07-09</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agent-de-billetterie-agadir</loc>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/chargee-clientele-agadir-agadir</loc>
-    <lastmod>2026-07-09</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/application-manager-h-f-agadir</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/ingenieur-planification-miniere-junior-taroudant</loc>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -307,7 +337,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-developpement-reseau-de-distribution-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/hote-hotesse-agadir-agadir</loc>
     <lastmod>2026-07-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -319,13 +349,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir-4</loc>
-    <lastmod>2026-07-08</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/nous-recrutons-vendeur-se-a-l-aeroport-d-agadir-agadir</loc>
+    <lastmod>2026-07-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-hammam-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/chargee-clientele-agadir-agadir</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/responsable-developpement-reseau-de-distribution-taroudant</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/controleur-de-gestion-taroudant</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -337,19 +379,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/controleur-de-gestion-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-hammam-agadir</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-agadir-et-regions-agadir</loc>
-    <lastmod>2026-07-07</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir-4</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/technico-commercial-pompage-agadir-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-commercial-taroudant-marrakech-taroudant</loc>
     <lastmod>2026-07-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -361,13 +403,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/ingenieur-expertises-structurelles-geotechniques-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/profils-techniques-agadir-agadir</loc>
     <lastmod>2026-07-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/profils-techniques-agadir-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/technico-commercial-pompage-agadir-agadir</loc>
     <lastmod>2026-07-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -385,25 +427,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-commercial-taroudant-marrakech-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-agadir-et-regions-agadir</loc>
     <lastmod>2026-07-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/ingenieur-expertises-structurelles-geotechniques-agadir</loc>
+    <lastmod>2026-07-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/assistante-gouvernante-agadir</loc>
-    <lastmod>2026-07-06</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/commis-de-cuisine-saidia-taroudant</loc>
-    <lastmod>2026-07-06</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/receptionniste-hotel-taghazout-agadir</loc>
     <lastmod>2026-07-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -415,7 +457,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/receptionniste-hotel-taghazout-agadir</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/commis-de-cuisine-saidia-taroudant</loc>
     <lastmod>2026-07-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -433,7 +481,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/responsable-technique-production-fruits-rouges-agadir</loc>
+    <lastmod>2026-07-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/agent-administratif-agadir</loc>
+    <lastmod>2026-07-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-tiznit-2</loc>
     <lastmod>2026-07-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -451,25 +511,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-tiznit-2</loc>
-    <lastmod>2026-07-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-technique-production-fruits-rouges-agadir</loc>
-    <lastmod>2026-07-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/controleur-de-gestion-rh-biougra</loc>
-    <lastmod>2026-07-02</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir-3</loc>
     <lastmod>2026-07-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -481,8 +523,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/stagiaires-h-taroudant</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agents-manutentionnaires-a-agadir-agadir-3</loc>
+    <lastmod>2026-07-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -499,8 +541,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-preleveur-taroudant</loc>
-    <lastmod>2026-06-30</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/stagiaires-h-taroudant</loc>
+    <lastmod>2026-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -517,19 +559,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/assistante-d-accueil-agadir</loc>
-    <lastmod>2026-06-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/stage-remunere-taroudant</loc>
-    <lastmod>2026-06-28</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agent-preleveur-taroudant</loc>
+    <lastmod>2026-06-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/receptionniste-f-agadir</loc>
+    <lastmod>2026-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/assistante-d-accueil-agadir</loc>
     <lastmod>2026-06-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -547,6 +589,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/stage-remunere-taroudant</loc>
+    <lastmod>2026-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/agent-commercial-agadir</loc>
     <lastmod>2026-06-26</lastmod>
     <changefreq>weekly</changefreq>
@@ -559,13 +607,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/gouvernante-generale-superviseur-housekeeping-taroudant</loc>
-    <lastmod>2026-06-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/demi-chef-de-partie-hotel-taghazout-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/charge-e-d-accueil-agadir</loc>
     <lastmod>2026-06-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -577,80 +619,20 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-e-d-accueil-agadir</loc>
-    <lastmod>2026-06-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/chef-de-partie-taghazout-hotel-agadir</loc>
     <lastmod>2026-06-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/comptable-agadir-sarl</loc>
-    <lastmod>2026-06-25</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/demi-chef-de-partie-hotel-taghazout-agadir</loc>
+    <lastmod>2026-06-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/cariste-agadir-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/preparateur-tuyauterie-mzinda-youssoufia-taroudant</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cariste-avec-permis-caces-taroudant</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-operationnel-senior-laayoune-agadir-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/conseiller-client-assistance-technique-agadir-francais-anglais-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/consiller-client-francophone-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/commercial-terrain-agadir-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/aide-comptable-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/superviseur-de-vente-detail-agadir-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/ouvriers-forestiers-agadir</loc>
-    <lastmod>2026-06-25</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/gouvernante-generale-superviseur-housekeeping-taroudant</loc>
+    <lastmod>2026-06-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -667,13 +649,97 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/manutentionnaire-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/responsable-operationnel-senior-laayoune-agadir-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/commercial-terrain-agadir-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/conseiller-client-assistance-technique-agadir-francais-anglais-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/preparateur-tuyauterie-mzinda-youssoufia-taroudant</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/aide-comptable-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/comptable-agadir-sarl</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cariste-avec-permis-caces-taroudant</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/ouvriers-forestiers-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/consiller-client-francophone-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/superviseur-de-vente-detail-agadir-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cariste-agadir-agadir</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/aide-chauffeur-permis-c-a-agadir-agadir</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-agadir</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-logistique-ait-baha-ait-baha</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/technicien-de-maintenance-oulad-dahou-agadir</loc>
+    <lastmod>2026-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/preparateur-de-commandes-a-ain-atik-skhirat-taroudant</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -691,19 +757,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/preparateur-de-commandes-a-ain-atik-skhirat-taroudant</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-agadir</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/aide-chauffeur-permis-c-a-agadir-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/manutentionnaire-agadir</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -721,19 +775,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-logistique-ait-baha-ait-baha</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/chef-cuisinier-tanger-hoceima-nador-taroudant</loc>
     <lastmod>2026-06-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-inezgane</loc>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-taroudant</loc>
     <lastmod>2026-06-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -745,37 +793,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-portefeuille-inezgane</loc>
     <lastmod>2026-06-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/femme-de-menage-agadir-balneaire-nasib-jour-et-nuit</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/commis-de-cuisine-agadir-balneaire-nasib</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-balneaire-nasib-jour-et-nuit</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/barman-agadir-balneaire-nasib-jour-et-nuit</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cariste-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/chef-de-restauration-agadir-balneaire-nasib</loc>
     <lastmod>2026-06-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -787,7 +811,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/chef-de-restauration-agadir-balneaire-nasib</loc>
+    <loc>https://soussmassa-rh.com/emploi/femme-de-menage-agadir-balneaire-nasib-jour-et-nuit</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/barman-agadir-balneaire-nasib-jour-et-nuit</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-balneaire-nasib-jour-et-nuit</loc>
+    <lastmod>2026-06-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/commis-de-cuisine-agadir-balneaire-nasib</loc>
     <lastmod>2026-06-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -799,13 +841,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-la-gestion-administrative-immatriculation-et-facturation-agadir</loc>
-    <lastmod>2026-06-19</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/cariste-agadir</loc>
+    <lastmod>2026-06-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/conseillers-commerciaux-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/chef-cuisinier-region-du-nord-taroudant</loc>
     <lastmod>2026-06-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -823,19 +865,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/chef-cuisinier-region-du-nord-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-la-gestion-administrative-immatriculation-et-facturation-agadir</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/conseillers-commerciaux-agadir</loc>
     <lastmod>2026-06-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/animateur-commercial-gsb-tiznit</loc>
-    <lastmod>2026-06-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-inezgane-ste-al-widad</loc>
     <lastmod>2026-06-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -859,20 +901,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-e-d-affaires-agadir</loc>
-    <lastmod>2026-06-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cadre-technique-de-la-production-agadir</loc>
-    <lastmod>2026-06-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-inezgane</loc>
-    <lastmod>2026-06-16</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-inezgane-ste-al-widad</loc>
+    <lastmod>2026-06-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -895,19 +925,37 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/cadre-technique-de-la-production-agadir</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-inezgane</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/charge-e-d-affaires-agadir</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/responsable-sav-commercial-biougra</loc>
     <lastmod>2026-06-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-bureau-agadir-sahara-cephalopoda</loc>
+    <loc>https://soussmassa-rh.com/emploi/commercial-commerciale-agadir-sahara-cephalopoda</loc>
     <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/maritime-fleet-operations-technician-coordinateur-flotte-maritime-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-bureau-agadir-sahara-cephalopoda</loc>
     <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -919,31 +967,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/poissonnier-inezgane</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/commercial-commerciale-agadir-sahara-cephalopoda</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/operateur-production-industrie-automobile-inezgane</loc>
     <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/controleur-de-gestion-agadir</loc>
-    <lastmod>2026-06-12</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/poissonnier-inezgane</loc>
+    <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/maritime-fleet-operations-technician-coordinateur-flotte-maritime-agadir</loc>
+    <lastmod>2026-06-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-dcheira-el-jihad</loc>
     <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -955,19 +997,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/adjoint-e-directeur-de-production-agadir</loc>
-    <lastmod>2026-06-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/manager-de-rayon-traiteur-experience-exigee-en-distribution-ou-restauration-collective-agadir</loc>
-    <lastmod>2026-06-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-dcheira-el-jihad</loc>
+    <loc>https://soussmassa-rh.com/emploi/chef-d-agence-taroudant</loc>
     <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -979,13 +1009,31 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/developpeur-agadir</loc>
-    <lastmod>2026-06-11</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/manager-de-rayon-traiteur-experience-exigee-en-distribution-ou-restauration-collective-agadir</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/adjoint-e-directeur-de-production-agadir</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/controleur-de-gestion-agadir</loc>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/aide-comptable-agadir-ste-corax-consulting</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/developpeur-agadir</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1003,43 +1051,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-soussia-beton</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-administratif-et-moyens-generaux-agadir</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/representant-aupres-des-particuliers-agadir</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-groupe-d-agence-agadir</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/attache-commercial-entreprises-inezgane</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-methodes-maintenance-agadir</loc>
-    <lastmod>2026-06-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-tradeco-sud-2</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-ainsi-maroc-agadir-2</loc>
     <lastmod>2026-06-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1051,7 +1063,43 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-ainsi-maroc-agadir-2</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-methodes-maintenance-agadir</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/responsable-groupe-d-agence-agadir</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/agent-administratif-et-moyens-generaux-agadir</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-soussia-beton</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/representant-aupres-des-particuliers-agadir</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/attache-commercial-entreprises-inezgane</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-tradeco-sud-2</loc>
     <lastmod>2026-06-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1087,19 +1135,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-r-d-agronomique-et-post-recolte-h-f-biougra</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/responsable-social-h-f-biougra</loc>
     <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/ingenieur-maintenance-materiels-roulants-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/responsable-r-d-agronomique-et-post-recolte-h-f-biougra</loc>
     <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1117,14 +1159,14 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/charge-de-mission-qualite-systeme-environnement-h-f-agadir</loc>
-    <lastmod>2026-05-28</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/ingenieur-maintenance-materiels-roulants-taroudant</loc>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-service-personnel-agadir-ibtihal-assurances</loc>
-    <lastmod>2026-05-25</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/charge-de-mission-qualite-systeme-environnement-h-f-agadir</loc>
+    <lastmod>2026-05-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1135,7 +1177,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-ram-media</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-service-personnel-agadir-ibtihal-assurances</loc>
+    <lastmod>2026-05-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/secretaire-de-direction-agadir-oumnia-it-sys</loc>
     <lastmod>2026-05-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1147,13 +1195,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/secretaire-de-direction-agadir-oumnia-it-sys</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-ram-media</loc>
     <lastmod>2026-05-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/technicien-exploitation-it-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/technicien-en-hydraulique-ou-genie-electrique-agadir</loc>
     <lastmod>2026-05-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1165,19 +1213,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/ingenieur-en-hydraulique-ou-genie-electrique-agadir</loc>
-    <lastmod>2026-05-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/assistante-hotesse-d-accueil-biougra</loc>
     <lastmod>2026-05-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/technicien-en-hydraulique-ou-genie-electrique-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/technicien-exploitation-it-agadir</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/ingenieur-en-hydraulique-ou-genie-electrique-agadir</loc>
     <lastmod>2026-05-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1189,7 +1237,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-balneaire-nasib</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/responsable-restauration-gerant-agadir-balneaire-nasib</loc>
+    <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-balneaire-nasib</loc>
     <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1201,25 +1261,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-balneaire-nasib</loc>
-    <lastmod>2026-05-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/commercial-commerciale-agadir-g-b-s-a-m</loc>
-    <lastmod>2026-05-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/barman-agadir-balneaire-nasib</loc>
     <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-balneaire-nasib</loc>
+    <loc>https://soussmassa-rh.com/emploi/commercial-commerciale-agadir-g-b-s-a-m</loc>
     <lastmod>2026-05-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1243,6 +1291,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://soussmassa-rh.com/emploi/dessinateur-du-batiment-agadir</loc>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://soussmassa-rh.com/emploi/vendeur-vendeuse-inezgane-id-jama-basma</loc>
     <lastmod>2026-05-15</lastmod>
     <changefreq>weekly</changefreq>
@@ -1255,8 +1309,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/dessinateur-du-batiment-agadir</loc>
-    <lastmod>2026-05-15</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-ainsi-maroc-agadir</loc>
+    <lastmod>2026-05-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1267,25 +1321,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-ainsi-maroc-agadir</loc>
-    <lastmod>2026-05-14</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/standardiste-agadir</loc>
-    <lastmod>2026-05-13</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-ste-sapst-hilton-taghazout</loc>
-    <lastmod>2026-05-13</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/serveur-agadir-ste-sapst-hilton-taghazout</loc>
+    <lastmod>2026-05-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/employe-detage-agadir</loc>
     <lastmod>2026-05-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1297,7 +1339,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-detage-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/standardiste-agadir</loc>
+    <lastmod>2026-05-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-ste-sapst-hilton-taghazout</loc>
     <lastmod>2026-05-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1321,7 +1369,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-tradeco-sud</loc>
+    <loc>https://soussmassa-rh.com/emploi/controleur-en-construction-electrique-agadir</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1333,7 +1381,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/controleur-en-construction-electrique-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/technicien-r-d-electronique-agadir</loc>
+    <lastmod>2026-05-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-tradeco-sud</loc>
     <lastmod>2026-05-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1345,13 +1399,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/technicien-r-d-electronique-agadir</loc>
-    <lastmod>2026-05-08</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-skh-capital-sarl</loc>
+    <lastmod>2026-05-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/caissier-agadir-brahim-sekhallou</loc>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/aide-agricole-polyvalent-inezgane</loc>
+    <lastmod>2026-05-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-brahim-sekhallou</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1369,31 +1435,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-brahim-sekhallou</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-skh-capital-sarl</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/caissier-agadir-brahim-sekhallou</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-inezgane</loc>
+    <loc>https://soussmassa-rh.com/emploi/vendeur-vendeuse-inezgane-josef-negose</loc>
     <lastmod>2026-05-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/vendeur-vendeuse-inezgane-josef-negose</loc>
+    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-inezgane</loc>
     <lastmod>2026-05-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1405,13 +1453,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/secretaire-de-redaction-agadir-ste-tilila-bricolage</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-centre-d-affaires-agadir</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-centre-d-affaires-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/secretaire-de-redaction-agadir-ste-tilila-bricolage</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1423,13 +1471,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/secretaire-de-redaction-agadir-marifrigo</loc>
+    <loc>https://soussmassa-rh.com/emploi/conducteur-des-travaux-batiment-tce-agadir</loc>
     <lastmod>2026-04-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/conducteur-des-travaux-batiment-tce-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/secretaire-de-redaction-agadir-marifrigo</loc>
     <lastmod>2026-04-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1447,13 +1495,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/preparateur-en-pharmacie-agadir-pharmacie-el-amine</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-bureau-agadir-sofagec-syndic-sarl</loc>
     <lastmod>2026-04-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-bureau-agadir-sofagec-syndic-sarl</loc>
+    <loc>https://soussmassa-rh.com/emploi/preparateur-en-pharmacie-agadir-pharmacie-el-amine</loc>
     <lastmod>2026-04-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1461,6 +1509,12 @@
   <url>
     <loc>https://soussmassa-rh.com/emploi/employe-de-bureau-agadir-maitre-mustapha-ait-abdelkrim</loc>
     <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-assurances-grand-agadir</loc>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1477,19 +1531,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-assurances-grand-agadir</loc>
-    <lastmod>2026-04-13</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/mecanicien-de-vehicules-particuliers-et-industriels-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-de-tourisme-forfaitiste-agadir</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-de-tourisme-forfaitiste-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/mecanicien-de-vehicules-particuliers-et-industriels-agadir</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1501,25 +1549,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/vendeur-en-produits-frais-agadir-para-med-le-jasmin</loc>
-    <lastmod>2026-04-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-cabinet-medical-el-youbi</loc>
     <lastmod>2026-04-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-residence-intouriste</loc>
-    <lastmod>2026-04-01</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/vendeur-en-produits-frais-agadir-para-med-le-jasmin</loc>
+    <lastmod>2026-04-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/operateur-de-saisie-agadir</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-residence-intouriste</loc>
     <lastmod>2026-04-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1531,13 +1579,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-kitchen-concept</loc>
+    <loc>https://soussmassa-rh.com/emploi/aide-comptable-agadir-ste-fiduciaire-talborjt-sarl</loc>
     <lastmod>2026-03-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/aide-comptable-agadir-ste-fiduciaire-talborjt-sarl</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-kitchen-concept</loc>
     <lastmod>2026-03-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1597,18 +1645,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-ste-break-station</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cadre-financier-specialise-agadir</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://soussmassa-rh.com/emploi/teleconseiller-agadir</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
@@ -1621,13 +1657,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/barman-agadir-ste-break-station</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-ste-break-station</loc>
+    <loc>https://soussmassa-rh.com/emploi/geologue-de-production-exploitation-des-gisements-agadir</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1639,14 +1669,26 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/geologue-de-production-exploitation-des-gisements-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/barman-agadir-ste-break-station</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-mf-securite</loc>
-    <lastmod>2026-03-04</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/cadre-financier-specialise-agadir</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/cuisinier-agadir-ste-break-station</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/serveur-agadir-ste-break-station</loc>
+    <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1657,8 +1699,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-menage-agadir-ona-pro-sarl</loc>
-    <lastmod>2026-02-25</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/agent-de-securite-et-de-surveillance-agadir-mf-securite</loc>
+    <lastmod>2026-03-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1669,8 +1711,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-morocco-dialysis</loc>
-    <lastmod>2026-02-23</lastmod>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-menage-agadir-ona-pro-sarl</loc>
+    <lastmod>2026-02-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1682,6 +1724,12 @@
   </url>
   <url>
     <loc>https://soussmassa-rh.com/emploi/serveur-agadir-restaurant-mimi-la-brochette</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soussmassa-rh.com/emploi/magasinier-dentrepot-agadir-morocco-dialysis</loc>
     <lastmod>2026-02-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1717,13 +1765,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/technicien-de-maintenance-industrielle-agadir-ste-maroc-ascenseurs</loc>
+    <loc>https://soussmassa-rh.com/emploi/secretaire-de-direction-agadir-ste-maroc-ascenseurs</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/secretaire-de-direction-agadir-ste-maroc-ascenseurs</loc>
+    <loc>https://soussmassa-rh.com/emploi/technicien-de-maintenance-industrielle-agadir-ste-maroc-ascenseurs</loc>
     <lastmod>2026-02-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1741,13 +1789,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-hall-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-dr-bentouda-souad</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-dr-bentouda-souad</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-hall-agadir</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1795,7 +1843,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-daccueil-agadir-saadi-assurances-sud</loc>
+    <loc>https://soussmassa-rh.com/emploi/operateur-de-laboratoire-cinematographique-agadir</loc>
     <lastmod>2026-01-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1813,19 +1861,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/operateur-de-laboratoire-cinematographique-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-daccueil-agadir-saadi-assurances-sud</loc>
     <lastmod>2026-01-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-pec-oncologie-experience-clinique-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-facturation-experience-clinique-taroudant</loc>
     <lastmod>2026-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/agent-facturation-experience-clinique-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/agent-pec-oncologie-experience-clinique-taroudant</loc>
     <lastmod>2026-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1837,13 +1885,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/responsable-des-ressources-humaines-taroudant-taroudant</loc>
+    <loc>https://soussmassa-rh.com/emploi/infirmier-de-service-specialise-agadir</loc>
     <lastmod>2026-01-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/infirmier-de-service-specialise-agadir</loc>
+    <loc>https://soussmassa-rh.com/emploi/responsable-des-ressources-humaines-taroudant-taroudant</loc>
     <lastmod>2026-01-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1861,13 +1909,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/operateur-de-maintenance-sur-installation-industrielle-agadir-leoni-wiring-systems-agadir-cdi</loc>
+    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-sous-pro-med</loc>
     <lastmod>2026-01-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://soussmassa-rh.com/emploi/employe-de-gestion-administrative-agadir-sous-pro-med</loc>
+    <loc>https://soussmassa-rh.com/emploi/operateur-de-maintenance-sur-installation-industrielle-agadir-leoni-wiring-systems-agadir-cdi</loc>
     <lastmod>2026-01-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
