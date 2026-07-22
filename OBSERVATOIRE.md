@@ -91,6 +91,25 @@ await fetch(`${SUPABASE_URL}/rest/v1/observatoire_articles`, {
 5. Régénérer la sitemap : `node scripts/gen-sitemap.cjs`, puis commit/push `public/sitemap.xml`
    sur `main` (déploiement auto Vercel).
 
+## Équilibrer les rubriques (anti-concentration)
+
+Pour ne pas accumuler d'articles dans une seule rubrique, **ne choisis pas la catégorie au
+hasard** : demande-la à la base via la fonction `next_observatoire_categorie()`, qui renvoie
+la rubrique **publiée le moins récemment** (jamais publiée en priorité), puis la moins fournie :
+
+```js
+const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/next_observatoire_categorie`, {
+  method: 'POST',
+  headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+  body: '{}',
+});
+const categorie = await r.json();   // ex: "actualite"
+```
+
+Cette approche est **auto-correctrice** : elle tourne sur les 4 rubriques et rattrape les
+retards même si un jour de publication a été manqué. L'onglet Observatoire de l'admin affiche
+le compteur d'articles publiés par rubrique pour un suivi visuel.
+
 ## Bonnes pratiques SEO
 
 - 1 idée = 1 article ciblé sur une requête (« taux de chômage Agadir 2025 », etc.).

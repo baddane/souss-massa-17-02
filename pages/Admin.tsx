@@ -1335,9 +1335,21 @@ const Admin: React.FC = () => {
         <>
           {!obsForm ? (
             <>
-              <div className="flex items-center justify-between mb-6 gap-3">
+              <div className="flex items-center justify-between mb-4 gap-3">
                 <p className="text-sm text-gray-500">Articles de l'Observatoire de l'emploi (publiés & brouillons). La routine publie ici automatiquement.</p>
                 <button onClick={newObs} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 whitespace-nowrap">+ Nouvel article</button>
+              </div>
+              {/* Équilibre des rubriques */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {OBS_CATEGORIES.map((c) => {
+                  const n = obsItems.filter(a => a.categorie === c.value && a.statut === 'publie').length;
+                  return (
+                    <span key={c.value} className="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1 text-xs text-gray-600">
+                      <span>{c.emoji} {c.label}</span>
+                      <span className="font-bold text-gray-900">{n}</span>
+                    </span>
+                  );
+                })}
               </div>
               {obsLoading ? (
                 <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
