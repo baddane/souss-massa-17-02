@@ -1,23 +1,34 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface MarkdownContentProps {
   text: string;
   className?: string;
 }
 
+// Gère **gras** et les liens [texte](url).
+// Lien interne (commence par '/') → <Link> SPA ; lien externe (http) → <a target=_blank>.
 function renderInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
+  const pattern = /\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/;
   while (remaining.length > 0) {
-    const boldMatch = remaining.match(/\*\*(.*?)\*\*/);
-    if (!boldMatch || boldMatch.index === undefined) {
-      parts.push(remaining);
-      break;
+    const m = remaining.match(pattern);
+    if (!m || m.index === undefined) { parts.push(remaining); break; }
+    if (m.index > 0) parts.push(remaining.slice(0, m.index));
+    if (m[1] !== undefined) {
+      parts.push(<strong key={key++}>{m[1]}</strong>);
+    } else {
+      const label = m[2];
+      const url = m[3];
+      if (/^https?:\/\//.test(url)) {
+        parts.push(<a key={key++} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{label}</a>);
+      } else {
+        parts.push(<Link key={key++} to={url} className="text-blue-600 hover:underline">{label}</Link>);
+      }
     }
-    if (boldMatch.index > 0) parts.push(remaining.slice(0, boldMatch.index));
-    parts.push(<strong key={key++}>{boldMatch[1]}</strong>);
-    remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+    remaining = remaining.slice(m.index + m[0].length);
   }
   return parts.length === 1 ? parts[0] : <>{parts}</>;
 }

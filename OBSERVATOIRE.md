@@ -97,4 +97,8 @@ await fetch(`${SUPABASE_URL}/rest/v1/observatoire_articles`, {
 - `meta_description` ≤ 160 caractères, incluant la localité et l'année.
 - Toujours au moins **1 diagramme** (les visualisations augmentent le temps de lecture).
 - Citer des **sources officielles** (HCP, ANAPEC, Conseil Régional Souss-Massa, ministères).
+- **Maillage interne** : `MarkdownContent` rend les liens `[texte](/url)`. Insérer 1-2 liens
+  internes par article vers des pages du site (ex. `[offres dans le tourisme](/offres?sector=tourisme)`,
+  `[emploi à Agadir](/offres?city=Agadir)`, `[toutes les offres](/offres)`) — bon pour le SEO.
+  Liens externes `[texte](https://...)` acceptés (ouvrent dans un nouvel onglet).
 - Publication **régulière** (le `changefreq` du hub est `daily`).
