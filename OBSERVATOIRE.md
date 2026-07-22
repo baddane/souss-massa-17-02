@@ -19,8 +19,11 @@ actualité, stratégie régionale, veille), avec des articles **illustrés de di
 ## Sécurité (important pour la routine)
 
 - Lecture publique : **articles publiés uniquement** (RLS `obs_public_read`).
-- Écriture : **réservée admin** (`is_admin()`) — l'anon **ne peut pas** publier.
-  → La routine doit insérer avec la **clé `service_role`** (bypass RLS), jamais la clé anon.
+- **INSERT autorisé avec la clé anon** (policy `obs_anon_insert`) → la routine publie de façon
+  **100 % automatique**, sans secret, avec la clé anon déjà présente dans le dépôt.
+- **UPDATE / DELETE réservés à l'admin** (`is_admin()`, policy `obs_admin_write`) → un tiers
+  disposant de la clé anon publique **ne peut pas** modifier ni supprimer les articles existants
+  (la modération reste entre tes mains).
 
 ## Schéma d'un article
 
@@ -67,14 +70,17 @@ pour le 2e, etc. Les diagrammes non référencés sont affichés en fin d'articl
    officiels — citer la source exacte et l'année).
 2. `slug` unique via `slugify(titre)` ; vérifier qu'il n'existe pas déjà.
 3. `date_publi` au format **`YYYY-MM-DD`**.
-4. Insérer dans `observatoire_articles` avec la **clé `service_role`** :
+4. Insérer dans `observatoire_articles` avec la **clé anon** (déjà dans le dépôt / les scripts,
+   ex. `scripts/gen-sitemap.cjs`) — aucun secret ni variable d'environnement requis :
 
 ```js
+const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
+const SUPABASE_KEY = '<clé anon du dépôt>';
 await fetch(`${SUPABASE_URL}/rest/v1/observatoire_articles`, {
   method: 'POST',
   headers: {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
     Prefer: 'return=representation',
   },

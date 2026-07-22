@@ -498,9 +498,10 @@ Rubrique `/observatoire` (hub) + `/observatoire/{slug}` (article) : analyses du 
 Souss-Massa (chomage, actualite, strategie regionale, veille), **illustrees de diagrammes**.
 Documentation complete + contrat de publication pour la routine : **`OBSERVATOIRE.md`**.
 
-- **Table** : `observatoire_articles` (migration `008`). Lecture publique = `statut='publie'` ;
-  **ecriture reservee admin** (`is_admin()`) → la routine publie avec la cle **`service_role`**
-  (jamais la cle anon, pour eviter le vandalisme).
+- **Table** : `observatoire_articles` (migrations `008` + `009`). Lecture publique = `statut='publie'`.
+  **INSERT autorise en anon** (migration `009`, workflow routine 100% automatique sans secret) ;
+  **UPDATE/DELETE reserves admin** (`is_admin()`) → un tiers ne peut pas alterer/supprimer les
+  articles existants. Moderation admin via SQL/dashboard.
 - **Pages** : `pages/Observatoire.tsx`, `pages/ObservatoireArticle.tsx` (SEO + JSON-LD `NewsArticle`).
 - **Service** : `src/services/observatoireService.ts`.
 - **Diagrammes** : `components/ObsChart.tsx` (SVG maison, sans dependance : `bar`/`line`/`donut`),
