@@ -61,4 +61,33 @@ export const observatoireService = {
     if (error) { console.error('observatoire.getBySlug', error); return null; }
     return (data as ObsArticle) || null;
   },
+
+  // ---- Admin (RLS is_admin) : voit brouillons + publiés, CRUD complet ----
+  async adminList(): Promise<ObsArticle[]> {
+    const { data, error } = await supabaseOffers
+      .from('observatoire_articles')
+      .select(SELECT)
+      .order('date_publi', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) { console.error('observatoire.adminList', error); return []; }
+    return (data || []) as ObsArticle[];
+  },
+
+  async create(record: Record<string, any>): Promise<{ ok: boolean; error?: string }> {
+    const { error } = await supabaseOffers.from('observatoire_articles').insert(record);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  },
+
+  async update(id: string, patch: Record<string, any>): Promise<{ ok: boolean; error?: string }> {
+    const { error } = await supabaseOffers.from('observatoire_articles').update(patch).eq('id', id);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  },
+
+  async remove(id: string): Promise<boolean> {
+    const { error } = await supabaseOffers.from('observatoire_articles').delete().eq('id', id);
+    if (error) { console.error('observatoire.remove', error); return false; }
+    return true;
+  },
 };

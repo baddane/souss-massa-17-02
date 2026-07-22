@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
 import { moderationService, CompanyProfile } from '../src/services/companyService';
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
+import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -14,6 +15,13 @@ const emptyOfferForm = {
   meta_description: '', seo_keywords: '', slug: '', source: 'Direct',
 };
 const splitList = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
+
+const emptyObsForm = () => ({
+  id: '', slug: '', titre: '', categorie: 'actualite', cover_emoji: '',
+  chapo: '', contenu: '', chartsText: '[]', meta_title: '', meta_description: '',
+  keywordsText: '', sourcesText: '', date_publi: new Date().toISOString().split('T')[0],
+  temps_lecture: 3, statut: 'publie',
+});
 
 const COMPANY_STATUT_LABEL: Record<string, { label: string; color: string }> = {
   en_attente: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800' },
@@ -67,7 +75,7 @@ const Admin: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire'>('candidatures');
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -91,6 +99,10 @@ const Admin: React.FC = () => {
   const [cvUploading, setCvUploading] = useState(false);
   const [cvFilters, setCvFilters] = useState({ q: '', ville: '', poste: '', diplome: '', competence: '', minExp: '' });
   const [cvEditing, setCvEditing] = useState<CvthequeRow | null>(null);
+  const [obsItems, setObsItems] = useState<ObsArticle[]>([]);
+  const [obsLoading, setObsLoading] = useState(false);
+  const [obsForm, setObsForm] = useState<ReturnType<typeof emptyObsForm> | null>(null);
+  const [obsSaving, setObsSaving] = useState(false);
 
   // Verifie une session admin existante (Supabase Auth + appartenance app_admins)
   useEffect(() => {
@@ -224,6 +236,62 @@ const Admin: React.FC = () => {
     }
   };
 
+  // ---- Observatoire de l'emploi ----
+  const loadObservatoire = async () => {
+    setObsLoading(true);
+    setObsItems(await observatoireService.adminList());
+    setObsLoading(false);
+  };
+
+  const newObs = () => setObsForm(emptyObsForm());
+
+  const editObs = (a: ObsArticle) => setObsForm({
+    id: a.id, slug: a.slug, titre: a.titre, categorie: a.categorie,
+    cover_emoji: a.cover_emoji || '', chapo: a.chapo || '', contenu: a.contenu || '',
+    chartsText: JSON.stringify(a.charts || [], null, 2),
+    meta_title: a.meta_title || '', meta_description: a.meta_description || '',
+    keywordsText: (a.seo_keywords || []).join(', '), sourcesText: (a.sources || []).join(', '),
+    date_publi: a.date_publi, temps_lecture: a.temps_lecture || 3, statut: a.statut,
+  });
+
+  const deleteObs = async (a: ObsArticle) => {
+    if (!confirm(`Supprimer l'article « ${a.titre} » ? Cette action est irréversible.`)) return;
+    if (await observatoireService.remove(a.id)) setObsItems(prev => prev.filter(x => x.id !== a.id));
+  };
+
+  const saveObs = async () => {
+    if (!obsForm) return;
+    if (!obsForm.titre.trim()) { alert('Le titre est obligatoire.'); return; }
+    let charts: any;
+    try { charts = JSON.parse(obsForm.chartsText || '[]'); if (!Array.isArray(charts)) throw new Error(); }
+    catch { alert('Le JSON des diagrammes est invalide (il doit être un tableau [...]).'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(obsForm.date_publi)) { alert('Date de publication invalide (format AAAA-MM-JJ).'); return; }
+    const record = {
+      slug: obsForm.slug.trim() || slugify(obsForm.titre),
+      titre: obsForm.titre.trim(),
+      categorie: obsForm.categorie,
+      cover_emoji: obsForm.cover_emoji || null,
+      chapo: obsForm.chapo || null,
+      contenu: obsForm.contenu || null,
+      charts,
+      meta_title: obsForm.meta_title || null,
+      meta_description: obsForm.meta_description || null,
+      seo_keywords: splitList(obsForm.keywordsText),
+      sources: splitList(obsForm.sourcesText),
+      date_publi: obsForm.date_publi,
+      temps_lecture: Number(obsForm.temps_lecture) || 3,
+      statut: obsForm.statut,
+    };
+    setObsSaving(true);
+    const res = obsForm.id
+      ? await observatoireService.update(obsForm.id, record)
+      : await observatoireService.create(record);
+    setObsSaving(false);
+    if (!res.ok) { alert('Erreur : ' + res.error); return; }
+    setObsForm(null);
+    await loadObservatoire();
+  };
+
   useEffect(() => {
     if (!authed) return;
     loadCandidatures();
@@ -231,6 +299,7 @@ const Admin: React.FC = () => {
     loadCompanies();
     loadPendingOffers();
     loadCvtheque();
+    loadObservatoire();
   }, [authed]);
 
   const loadCompanies = async () => {
@@ -588,6 +657,14 @@ const Admin: React.FC = () => {
           }`}
         >
           CVthèque ({cvItems.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('observatoire')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'observatoire' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Observatoire ({obsItems.length})
         </button>
         <button
           onClick={() => setActiveTab('compte')}
@@ -1248,6 +1325,136 @@ const Admin: React.FC = () => {
                   <button onClick={saveCvEdit} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700">Enregistrer</button>
                   <button onClick={() => setCvEditing(null)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">Annuler</button>
                 </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'observatoire' && (
+        <>
+          {!obsForm ? (
+            <>
+              <div className="flex items-center justify-between mb-6 gap-3">
+                <p className="text-sm text-gray-500">Articles de l'Observatoire de l'emploi (publiés & brouillons). La routine publie ici automatiquement.</p>
+                <button onClick={newObs} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 whitespace-nowrap">+ Nouvel article</button>
+              </div>
+              {obsLoading ? (
+                <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
+              ) : obsItems.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-200"><p className="text-gray-500">Aucun article</p></div>
+              ) : (
+                <div className="space-y-3">
+                  {obsItems.map((a) => (
+                    <div key={a.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center flex-wrap gap-2 mb-1">
+                            <h3 className="font-bold text-gray-900">{a.cover_emoji} {a.titre}</h3>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${a.statut === 'publie' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {a.statut === 'publie' ? 'Publié' : 'Brouillon'}
+                            </span>
+                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">{a.categorie}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 text-xs text-gray-400">
+                            <span>{a.date_publi}</span>
+                            <span className="truncate">/observatoire/{a.slug}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <a href={`/observatoire/${a.slug}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm">Voir</a>
+                          <button onClick={() => editObs(a)} className="px-3 py-2 text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium">Éditer</button>
+                          <button onClick={() => deleteObs(a)} className="px-3 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-medium">Supprimer</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 max-w-3xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">{obsForm.id ? "Éditer l'article" : 'Nouvel article'}</h2>
+                <button onClick={() => setObsForm(null)} className="text-gray-400 hover:text-gray-700 text-sm">← Retour à la liste</button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-xs font-semibold text-gray-500 sm:col-span-2">Titre *
+                  <input value={obsForm.titre} onChange={(e) => setObsForm(f => f ? { ...f, titre: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500 sm:col-span-2">Slug (généré depuis le titre si vide)
+                  <input value={obsForm.slug} onChange={(e) => setObsForm(f => f ? { ...f, slug: e.target.value } : f)} placeholder="ex: chomage-jeunes-2024"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Catégorie
+                  <select value={obsForm.categorie} onChange={(e) => setObsForm(f => f ? { ...f, categorie: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500">
+                    {OBS_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Emoji de couverture
+                  <input value={obsForm.cover_emoji} onChange={(e) => setObsForm(f => f ? { ...f, cover_emoji: e.target.value } : f)} placeholder="📊"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Statut
+                  <select value={obsForm.statut} onChange={(e) => setObsForm(f => f ? { ...f, statut: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500">
+                    <option value="publie">Publié</option>
+                    <option value="brouillon">Brouillon</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Date de publication
+                  <input value={obsForm.date_publi} onChange={(e) => setObsForm(f => f ? { ...f, date_publi: e.target.value } : f)} placeholder="AAAA-MM-JJ"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Temps de lecture (min)
+                  <input type="number" min={1} value={obsForm.temps_lecture} onChange={(e) => setObsForm(f => f ? { ...f, temps_lecture: Number(e.target.value) } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+              </div>
+
+              <label className="block text-xs font-semibold text-gray-500">Chapô (résumé, sert de meta_description par défaut)
+                <textarea rows={2} value={obsForm.chapo} onChange={(e) => setObsForm(f => f ? { ...f, chapo: e.target.value } : f)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+              </label>
+
+              <label className="block text-xs font-semibold text-gray-500">Contenu (markdown : ## titre, - liste, **gras** — insérer un diagramme avec <code>[[chart:0]]</code>)
+                <textarea rows={12} value={obsForm.contenu} onChange={(e) => setObsForm(f => f ? { ...f, contenu: e.target.value } : f)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 focus:ring-2 focus:ring-blue-500" />
+              </label>
+
+              <label className="block text-xs font-semibold text-gray-500">Diagrammes — JSON (tableau de specs : type bar/line/donut, title, unit, source, series[])
+                <textarea rows={6} value={obsForm.chartsText} onChange={(e) => setObsForm(f => f ? { ...f, chartsText: e.target.value } : f)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono text-gray-900 focus:ring-2 focus:ring-blue-500" />
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-xs font-semibold text-gray-500">Meta title
+                  <input value={obsForm.meta_title} onChange={(e) => setObsForm(f => f ? { ...f, meta_title: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Meta description (≤160)
+                  <input value={obsForm.meta_description} onChange={(e) => setObsForm(f => f ? { ...f, meta_description: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Mots-clés SEO (séparés par des virgules)
+                  <input value={obsForm.keywordsText} onChange={(e) => setObsForm(f => f ? { ...f, keywordsText: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+                <label className="text-xs font-semibold text-gray-500">Sources (séparées par des virgules)
+                  <input value={obsForm.sourcesText} onChange={(e) => setObsForm(f => f ? { ...f, sourcesText: e.target.value } : f)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button onClick={saveObs} disabled={obsSaving}
+                  className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:opacity-60">
+                  {obsSaving ? 'Enregistrement…' : (obsForm.id ? 'Enregistrer' : 'Publier')}
+                </button>
+                <button onClick={() => setObsForm(null)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">Annuler</button>
               </div>
             </div>
           )}
