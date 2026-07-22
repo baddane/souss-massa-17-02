@@ -10,6 +10,8 @@ export interface CvthequeRow extends ParsedCv {
   file_name: string | null;
   file_type: string | null;
   notes: string | null;
+  source: string;   // 'upload' (importé) | 'candidature' (postulant)
+  bucket: string;    // 'cvtheque' | 'cvs'
 }
 
 export interface CvthequeFilters {
@@ -55,6 +57,8 @@ export const cvthequeService = {
       file_path: path,
       file_name: file.name,
       file_type: file.type || null,
+      source: 'upload',
+      bucket: BUCKET,
       nom_complet: parsed.nom_complet || null,
       email: parsed.email || null,
       telephone: parsed.telephone || null,
@@ -100,8 +104,8 @@ export const cvthequeService = {
     return (data || []) as CvthequeRow[];
   },
 
-  async signedUrl(path: string): Promise<string | null> {
-    const { data, error } = await supabaseOffers.storage.from(BUCKET).createSignedUrl(path, 120);
+  async signedUrl(path: string, bucket: string = BUCKET): Promise<string | null> {
+    const { data, error } = await supabaseOffers.storage.from(bucket).createSignedUrl(path, 120);
     if (error || !data) return null;
     return data.signedUrl;
   },
@@ -112,10 +116,15 @@ export const cvthequeService = {
     return true;
   },
 
-  async remove(id: string, path: string): Promise<boolean> {
+  async remove(id: string, path: string, bucket: string = BUCKET): Promise<boolean> {
     const { error } = await supabaseOffers.from('cvtheque').delete().eq('id', id);
     if (error) { console.error('cvtheque.remove', error); return false; }
-    await supabaseOffers.storage.from(BUCKET).remove([path]);
+    // On ne supprime le fichier QUE s'il appartient au bucket CVthèque.
+    // Un CV de postulant (bucket 'cvs') ne doit jamais être supprimé ici : il
+    // reste rattaché à sa candidature.
+    if (bucket === BUCKET) {
+      await supabaseOffers.storage.from(BUCKET).remove([path]);
+    }
     return true;
   },
 };

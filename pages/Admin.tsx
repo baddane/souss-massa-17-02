@@ -193,14 +193,17 @@ const Admin: React.FC = () => {
   };
 
   const openCvFile = async (row: CvthequeRow) => {
-    const url = await cvthequeService.signedUrl(row.file_path);
+    const url = await cvthequeService.signedUrl(row.file_path, row.bucket);
     if (!url) { alert('Impossible de générer le lien du CV.'); return; }
     window.open(url, '_blank', 'noopener');
   };
 
   const deleteCv = async (row: CvthequeRow) => {
-    if (!confirm(`Supprimer la fiche de « ${row.nom_complet || row.file_name} » ? Le fichier sera aussi supprimé.`)) return;
-    const ok = await cvthequeService.remove(row.id, row.file_path);
+    const msg = row.source === 'candidature'
+      ? `Retirer « ${row.nom_complet || row.file_name} » de la CVthèque ? (Le CV du postulant et sa candidature sont conservés.)`
+      : `Supprimer la fiche de « ${row.nom_complet || row.file_name} » ? Le fichier sera aussi supprimé.`;
+    if (!confirm(msg)) return;
+    const ok = await cvthequeService.remove(row.id, row.file_path, row.bucket);
     if (ok) setCvItems(prev => prev.filter(x => x.id !== row.id));
   };
 
@@ -1150,6 +1153,9 @@ const Admin: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-2 mb-1">
                         <h3 className="font-bold text-gray-900 text-lg">{cv.nom_complet || cv.file_name || 'CV sans nom'}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${cv.source === 'candidature' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {cv.source === 'candidature' ? 'Postulant' : 'Importé'}
+                        </span>
                         {cv.poste && <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">{cv.poste}</span>}
                         {typeof cv.experience_years === 'number' && <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{cv.experience_years} an{cv.experience_years > 1 ? 's' : ''} d'exp.</span>}
                       </div>
