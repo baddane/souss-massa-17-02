@@ -492,6 +492,24 @@ parses et classes dans une table dediee pour un **moteur de recherche dynamique*
   bucket (`cvtheque_obj_select/insert/delete`). Aucune donnee personnelle exposee au public.
 - **Dependances ajoutees** : `pdfjs-dist`, `mammoth` (uniquement chargees a la demande dans l'admin).
 
+## Observatoire de l'emploi (rubrique editoriale SEO)
+
+Rubrique `/observatoire` (hub) + `/observatoire/{slug}` (article) : analyses du marche du travail
+Souss-Massa (chomage, actualite, strategie regionale, veille), **illustrees de diagrammes**.
+Documentation complete + contrat de publication pour la routine : **`OBSERVATOIRE.md`**.
+
+- **Table** : `observatoire_articles` (migration `008`). Lecture publique = `statut='publie'` ;
+  **ecriture reservee admin** (`is_admin()`) → la routine publie avec la cle **`service_role`**
+  (jamais la cle anon, pour eviter le vandalisme).
+- **Pages** : `pages/Observatoire.tsx`, `pages/ObservatoireArticle.tsx` (SEO + JSON-LD `NewsArticle`).
+- **Service** : `src/services/observatoireService.ts`.
+- **Diagrammes** : `components/ObsChart.tsx` (SVG maison, sans dependance : `bar`/`line`/`donut`),
+  alimentes par le champ `charts` (JSON) et inseres dans le markdown via des jetons `[[chart:N]]`.
+- **Dates** : `date_publi` au format `YYYY-MM-DD` (contrainte CHECK). **Sitemap** : `/observatoire`
+  + articles ajoutes dans `api/sitemap.ts` et `scripts/gen-sitemap.cjs`.
+- **i18n** : libelles nav/hub dans les 3 langues (`nav.observatoire`, `obs.*`) ; contenu des
+  articles en FR.
+
 ## Securite (RLS, donnees candidats, auth admin)
 
 Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc

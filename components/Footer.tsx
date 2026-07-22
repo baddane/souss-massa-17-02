@@ -59,6 +59,7 @@ const Footer: React.FC = () => {
             <nav className="flex flex-col gap-1.5 text-sm">
               <Link to="/" className="hover:text-white transition-colors">{t('footer.home')}</Link>
               <Link to="/offres" className="hover:text-white transition-colors">{t('nav.allOffers')}</Link>
+              <Link to="/observatoire" className="hover:text-white transition-colors">{t('nav.observatoire')}</Link>
               <Link to="/contact" className="hover:text-white transition-colors">{t('nav.contact')}</Link>
             </nav>
           </div>

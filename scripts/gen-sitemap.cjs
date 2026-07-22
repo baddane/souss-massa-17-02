@@ -26,11 +26,18 @@ async function main() {
     headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
   });
   const offers = await res.json();
+
+  const obsRes = await fetch(`${SUPABASE_URL}/rest/v1/observatoire_articles?select=slug,date_publi&statut=eq.publie&order=date_publi.desc`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
+  });
+  const obsArticles = await obsRes.json();
+
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'daily' },
     { url: '/offres', priority: '0.9', changefreq: 'daily' },
+    { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
     { url: '/contact', priority: '0.5', changefreq: 'monthly' },
   ];
   const sectorPages = ['informatique', 'commercial', 'administratif', 'industrie', 'sante', 'enseignement', 'tourisme', 'construction']
@@ -49,6 +56,11 @@ async function main() {
     <lastmod>${toISODate(o.date_offre) || today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>`)).concat((obsArticles || []).map(a => `  <url>
+    <loc>${SITE_URL}/observatoire/${a.slug}</loc>
+    <lastmod>${toISODate(a.date_publi) || today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>`)).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

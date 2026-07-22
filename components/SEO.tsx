@@ -103,6 +103,37 @@ function mapContractType(type: string): string {
   return map[type] || 'OTHER';
 }
 
+export function generateArticleJsonLd(article: {
+  titre: string;
+  slug: string;
+  chapo?: string | null;
+  meta_description?: string | null;
+  date_publi: string;
+  auteur?: string | null;
+  cover_emoji?: string | null;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.titre,
+    description: article.meta_description || article.chapo || article.titre,
+    datePublished: article.date_publi,
+    dateModified: article.date_publi,
+    author: { '@type': 'Organization', name: article.auteur || 'Observatoire SoussMassa-RH' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SoussMassa-RH',
+      url: 'https://soussmassa-rh.com',
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://soussmassa-rh.com/observatoire/${article.slug}`,
+    },
+    articleSection: 'Observatoire de l’emploi Souss-Massa',
+    inLanguage: 'fr',
+  };
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
