@@ -49,7 +49,7 @@ const ObservatoireArticle: React.FC = () => {
   const trailingCharts = (article.charts || []).filter((_, i) => !usedIdx.has(i));
 
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10">
+    <article className="max-w-2xl mx-auto px-4 py-12">
       <SEO
         title={article.meta_title || article.titre}
         description={article.meta_description || article.chapo || undefined}
@@ -72,12 +72,16 @@ const ObservatoireArticle: React.FC = () => {
         {article.temps_lecture ? <><span className="text-gray-300">•</span><span className="text-gray-400">{t('obs.minRead', { n: article.temps_lecture })}</span></> : null}
       </div>
 
-      <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4 leading-tight">
+      <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-5 leading-tight tracking-tight">
         {article.cover_emoji} {article.titre}
       </h1>
-      {article.chapo && <p className="text-lg text-gray-600 mb-8 leading-relaxed">{article.chapo}</p>}
+      {article.chapo && (
+        <p className="text-xl text-gray-600 leading-relaxed mb-8 pb-8 border-b border-gray-100">
+          {article.chapo}
+        </p>
+      )}
 
-      <div className="space-y-1">{renderBody(article)}</div>
+      <div className="space-y-2">{renderBody(article)}</div>
       {trailingCharts.map((spec, i) => <ObsChart key={`t${i}`} spec={spec} />)}
 
       {/* Sources */}

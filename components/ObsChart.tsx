@@ -125,8 +125,8 @@ const DonutChart: React.FC<{ spec: ChartSpec }> = ({ spec }) => {
 const ObsChart: React.FC<{ spec: ChartSpec }> = ({ spec }) => {
   if (!spec || !Array.isArray(spec.series) || spec.series.length === 0) return null;
   return (
-    <figure className="my-6 bg-white border border-gray-200 rounded-2xl p-5">
-      {spec.title && <figcaption className="font-bold text-gray-900 mb-3">{spec.title}</figcaption>}
+    <figure className="my-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      {spec.title && <figcaption className="font-bold text-gray-900 mb-4">{spec.title}</figcaption>}
       {spec.type === 'line' ? <LineChart spec={spec} />
         : spec.type === 'donut' ? <DonutChart spec={spec} />
         : <BarChart spec={spec} />}
