@@ -14,7 +14,7 @@ function renderBody(article: ObsArticle) {
       const spec = article.charts?.[Number(part)];
       return spec ? <ObsChart key={i} spec={spec} /> : null;
     }
-    return <MarkdownContent key={i} text={part} className="prose-obs" />;
+    return <MarkdownContent key={i} text={part} size="lg" />;
   });
 }
 
