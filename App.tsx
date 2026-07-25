@@ -17,6 +17,7 @@ import CompanyLogin from './pages/CompanyLogin';
 import CompanyDashboard from './pages/CompanyDashboard';
 import Observatoire from './pages/Observatoire';
 import ObservatoireArticle from './pages/ObservatoireArticle';
+import Recruter from './pages/Recruter';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
@@ -43,6 +44,7 @@ const AppShell: React.FC = () => {
             <Route path="/contact" element={<Contact />} />
             <Route path="/observatoire" element={<Observatoire />} />
             <Route path="/observatoire/:slug" element={<ObservatoireArticle />} />
+            <Route path="/recruter" element={<Recruter />} />
             <Route path="/inscription-entreprise" element={<CompanyRegister />} />
             <Route path="/connexion-entreprise" element={<CompanyLogin />} />
             <Route path="/espace-entreprise" element={<CompanyDashboard />} />

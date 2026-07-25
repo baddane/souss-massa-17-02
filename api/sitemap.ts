@@ -48,6 +48,7 @@ export default async function handler() {
     const staticPages = [
       { url: '/', priority: '1.0', changefreq: 'daily' },
       { url: '/offres', priority: '0.9', changefreq: 'daily' },
+      { url: '/recruter', priority: '0.8', changefreq: 'monthly' },
       { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
       { url: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];

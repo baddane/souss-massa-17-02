@@ -22,9 +22,9 @@ const Header: React.FC = () => {
           </Link>
 
           <nav className="hidden md:flex items-center gap-5">
-            {/* CTA employeur (secondaire, contour) — depose une offre = creation de compte */}
+            {/* CTA employeur (secondaire, contour) → landing SEO recruteurs */}
             <Link
-              to="/inscription-entreprise"
+              to="/recruter"
               className="inline-flex items-center gap-1.5 border-2 border-blue-600 text-blue-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -84,7 +84,7 @@ const Header: React.FC = () => {
 
       {isMenuOpen && (
         <nav className="md:hidden bg-white border-t border-gray-100 py-3 px-4 space-y-2">
-          <Link to="/inscription-entreprise" className="flex items-center justify-center gap-1.5 border-2 border-blue-600 text-blue-700 text-center py-2.5 rounded-lg font-bold">
+          <Link to="/recruter" className="flex items-center justify-center gap-1.5 border-2 border-blue-600 text-blue-700 text-center py-2.5 rounded-lg font-bold">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
