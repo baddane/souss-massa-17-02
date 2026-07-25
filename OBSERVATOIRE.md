@@ -110,6 +110,34 @@ Cette approche est **auto-correctrice** : elle tourne sur les 4 rubriques et rat
 retards même si un jour de publication a été manqué. L'onglet Observatoire de l'admin affiche
 le compteur d'articles publiés par rubrique pour un suivi visuel.
 
+## Baromètre mensuel (étude du marché à partir des offres du site)
+
+En plus des articles quotidiens, publier **une fois par mois** une étude de référence du marché
+du travail régional, calculée sur les offres réelles du site. Les statistiques sont fournies
+**clés en main** par la fonction `observatoire_market_stats()` (aucune agrégation à refaire) :
+
+```js
+const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/observatoire_market_stats`, {
+  method: 'POST',
+  headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+  body: '{}',
+});
+const stats = await r.json();
+// { total_offres, total_postes, nb_entreprises, periode_min/max,
+//   contrats[], villes[], secteurs[{k,offres,postes}], competences[], salaires[], mois[] }
+```
+
+Consignes de rédaction du baromètre :
+- **slug** daté : `barometre-emploi-souss-massa-AAAA-MM` (ex. `...-2026-08`) ; catégorie `veille`.
+- Titre type : « Baromètre de l'emploi Souss-Massa — <Mois AAAA> ».
+- Construis les diagrammes directement à partir de `stats` (camembert contrats, barres villes /
+  secteurs offres / secteurs postes / compétences / salaires, courbe `mois`).
+- Analyse la **divergence offres vs postes** par secteur, la **concentration sur Agadir**, les
+  **compétences dominantes**, la **structure salariale**, et compare au mois précédent si possible.
+- **Méthodologie + Limites** obligatoires (données = offres publiées, salaires indicatifs,
+  classification automatisée, couverture croissante de la plateforme).
+- Ne pas republier si un baromètre du même mois (même slug) existe déjà.
+
 ## Bonnes pratiques SEO
 
 - 1 idée = 1 article ciblé sur une requête (« taux de chômage Agadir 2025 », etc.).
