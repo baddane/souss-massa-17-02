@@ -34,10 +34,10 @@ const Recruter: React.FC = () => {
   const heroText = city
     ? `Publiez vos offres d’emploi à ${city} et dans toute la région Souss-Massa, accédez à la CVthèque régionale et touchez des candidats locaux qualifiés.`
     : 'Publiez vos offres d’emploi, accédez à la CVthèque régionale et touchez une audience ciblée à Agadir, Inezgane, Taroudant, Tiznit et dans toute la région.';
-  const seoTitle = city ? `Recruter à ${city} : publier une offre d’emploi` : 'Recruter en Souss-Massa : publiez votre offre d’emploi';
+  const seoTitle = city ? `Recruter à ${city} : publier une offre d’emploi` : 'Recruter à Souss-Massa : publiez votre offre d’emploi';
   const seoDesc = city
     ? `Recrutez à ${city} : publiez vos offres d’emploi, accédez à la CVthèque et à une audience régionale ciblée. Dépôt simple, gratuit pour démarrer.`
-    : 'Recrutez à Agadir et en Souss-Massa : publiez vos offres d’emploi, accédez à la CVthèque et à une audience régionale ciblée. Dépôt simple, gratuit pour démarrer.';
+    : 'Recrutez à Agadir et dans toute la région Souss-Massa : publiez vos offres d’emploi, accédez à la CVthèque et à une audience régionale ciblée. Dépôt simple, gratuit pour démarrer.';
 
   const FAQ = [
     { q: 'Publier une offre d’emploi est-il gratuit ?', r: 'Oui, vous pouvez créer un compte entreprise et publier vos premières offres gratuitement sur SoussMassa-RH.' },
@@ -52,7 +52,7 @@ const Recruter: React.FC = () => {
     '@graph': [
       {
         '@type': 'Service',
-        name: city ? `Recrutement et publication d’offres d’emploi à ${city}` : 'Publication d’offres d’emploi et recrutement en Souss-Massa',
+        name: city ? `Recrutement et publication d’offres d’emploi à ${city}` : 'Publication d’offres d’emploi et recrutement dans la région de Souss-Massa',
         serviceType: 'Recrutement en ligne',
         provider: { '@type': 'Organization', name: 'SoussMassa-RH', url: SITE_URL },
         areaServed: { '@type': city ? 'City' : 'AdministrativeArea', name: city ? `${city}, Souss-Massa, Maroc` : 'Souss-Massa, Maroc' },
@@ -180,7 +180,7 @@ const Recruter: React.FC = () => {
       {/* CTA final */}
       <section className="bg-gray-900 text-white">
         <div className="max-w-4xl mx-auto px-4 py-14 text-center">
-          <h2 className="text-2xl sm:text-3xl font-black mb-3">Prêt à recruter {city ? `à ${city}` : 'en Souss-Massa'} ?</h2>
+          <h2 className="text-2xl sm:text-3xl font-black mb-3">Prêt à recruter {city ? `à ${city}` : 'à Souss-Massa'} ?</h2>
           <p className="text-gray-300 mb-8 max-w-xl mx-auto">Publiez votre première offre dès aujourd’hui et recevez des candidatures de talents de la région.</p>
           <Link to="/inscription-entreprise" className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-8 py-3.5 rounded-xl font-bold transition-colors">
             Déposer une offre gratuitement

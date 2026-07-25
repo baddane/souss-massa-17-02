@@ -149,3 +149,4 @@ Consignes de rédaction du baromètre :
   `[emploi à Agadir](/offres?city=Agadir)`, `[toutes les offres](/offres)`) — bon pour le SEO.
   Liens externes `[texte](https://...)` acceptés (ouvrent dans un nouvel onglet).
 - Publication **régulière** (le `changefreq` du hub est `daily`).
+- **Style** : écrire « **à Souss-Massa** » ou « **dans la région de Souss-Massa** », **jamais « en Souss-Massa »** (tournure fautive). Apostrophes typographiques `'` (ne jamais doubler `''`).
