@@ -14,6 +14,20 @@ export interface ChartSpec {
 const PALETTE = ['#2563eb', '#f97316', '#16a34a', '#9333ea', '#0891b2', '#dc2626', '#ca8a04', '#4f46e5'];
 const fmt = (n: number) => (Number.isInteger(n) ? n.toString() : n.toFixed(1));
 
+// Découpe un libellé long en 2 lignes (au lieu de tronquer) pour rester lisible.
+function wrapLabel(s: string, max = 13): string[] {
+  if (s.length <= max) return [s];
+  const words = s.split(' ');
+  let l1 = '', l2 = '';
+  for (const w of words) {
+    if (l2 === '' && (l1 ? `${l1} ${w}` : w).length <= max) l1 = l1 ? `${l1} ${w}` : w;
+    else l2 = l2 ? `${l2} ${w}` : w;
+  }
+  if (!l2) return [l1];
+  if (l2.length > max + 3) l2 = l2.slice(0, max + 2) + '…';
+  return [l1, l2];
+}
+
 const BarChart: React.FC<{ spec: ChartSpec }> = ({ spec }) => {
   const w = 640, h = 300, padL = 44, padB = 56, padT = 16, padR = 16;
   const data = spec.series;
@@ -44,7 +58,9 @@ const BarChart: React.FC<{ spec: ChartSpec }> = ({ spec }) => {
               {fmt(d.value)}{spec.unit || ''}
             </text>
             <text x={x + bw * 0.35} y={h - padB + 16} textAnchor="middle" fontSize={11} fill="#6b7280">
-              {d.label.length > 12 ? d.label.slice(0, 11) + '…' : d.label}
+              {wrapLabel(d.label).map((ln, li) => (
+                <tspan key={li} x={x + bw * 0.35} dy={li === 0 ? 0 : 12}>{ln}</tspan>
+              ))}
             </text>
           </g>
         );
