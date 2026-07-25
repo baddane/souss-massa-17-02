@@ -45,6 +45,7 @@ const AppShell: React.FC = () => {
             <Route path="/observatoire" element={<Observatoire />} />
             <Route path="/observatoire/:slug" element={<ObservatoireArticle />} />
             <Route path="/recruter" element={<Recruter />} />
+            <Route path="/recruter/:ville" element={<Recruter />} />
             <Route path="/inscription-entreprise" element={<CompanyRegister />} />
             <Route path="/connexion-entreprise" element={<CompanyLogin />} />
             <Route path="/espace-entreprise" element={<CompanyDashboard />} />

@@ -5,6 +5,7 @@ import { jobOffersService } from '../services/jobOffersService';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import SEO from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
+import RecruiterCTA from '../components/RecruiterCTA';
 import {
   useT,
   localizeOffer,
@@ -270,6 +271,8 @@ const Offers: React.FC = () => {
         </div>
       )}
     </div>
+
+    <RecruiterCTA />
 
     {applyOffer && (
       <ApplyModal

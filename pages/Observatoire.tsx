@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
+import RecruiterCTA from '../components/RecruiterCTA';
 import { useT } from '../src/i18n/LanguageContext';
 import {
   observatoireService, ObsArticle, ObsCategorie,
@@ -112,6 +113,8 @@ const Observatoire: React.FC = () => {
           </div>
         </>
       )}
+
+      <RecruiterCTA />
     </div>
   );
 };

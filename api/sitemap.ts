@@ -68,7 +68,11 @@ export default async function handler() {
       changefreq: 'daily',
     }));
 
-    const allPages = [...staticPages, ...sectorPages, ...cityPages];
+    const recruiterPages = [
+      'agadir', 'inezgane', 'ait-melloul', 'taroudant', 'tiznit', 'oulad-teima', 'biougra',
+    ].map(s => ({ url: `/recruter/${s}`, priority: '0.7', changefreq: 'monthly' }));
+
+    const allPages = [...staticPages, ...sectorPages, ...cityPages, ...recruiterPages];
 
     const urls = allPages
       .map(p => `  <url>
