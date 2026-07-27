@@ -21,8 +21,13 @@ function toISODate(raw) {
   return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
 }
 
+function slugify(text) {
+  return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
 async function main() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville&statut=eq.active&order=date_offre.desc`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc`, {
     headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
   });
   const offers = await res.json();
@@ -48,7 +53,16 @@ async function main() {
   const recruiterPages = ['agadir', 'inezgane', 'ait-melloul', 'taroudant', 'tiznit', 'oulad-teima', 'biougra']
     .map(s => ({ url: `/recruter/${s}`, priority: '0.7', changefreq: 'monthly' }));
 
-  const allPages = [...staticPages, ...sectorPages, ...cityPages, ...recruiterPages];
+  // Pages « Recrutement <Entreprise> » (une par société ayant des offres, hors noms génériques)
+  const companySlugs = Array.from(new Set(
+    offers.map(o => o.raison_sociale)
+      .filter(n => n && n.trim().length >= 3 && !/confidentiel/i.test(n))
+      .map(slugify)
+      .filter(Boolean)
+  ));
+  const companyPages = companySlugs.map(s => ({ url: `/recrutement/${s}`, priority: '0.6', changefreq: 'weekly' }));
+
+  const allPages = [...staticPages, ...sectorPages, ...cityPages, ...recruiterPages, ...companyPages];
   const urls = allPages.map(p => `  <url>
     <loc>${SITE_URL}${p.url}</loc>
     <lastmod>${today}</lastmod>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { jobOffersService } from '../services/jobOffersService';
 import { toast } from 'react-toastify';
-import SEO, { generateJobPostingJsonLd } from '../components/SEO';
+import SEO, { generateJobPostingJsonLd, slugify } from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
 import {
   useT,
@@ -131,7 +131,11 @@ const JobDetail: React.FC = () => {
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-gray-500">{t('job.company')}</dt>
-                  <dd className="font-medium text-gray-900">{offer.raison_sociale}</dd>
+                  <dd className="font-medium">
+                    <Link to={`/recrutement/${slugify(offer.raison_sociale)}`} className="text-blue-600 hover:underline">
+                      {offer.raison_sociale}
+                    </Link>
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500">{t('job.location')}</dt>
