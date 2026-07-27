@@ -70,6 +70,15 @@ const Home: React.FC = () => {
     return acc;
   }, {});
 
+  const employerStats = allOffers.reduce((acc: Record<string, number>, o) => {
+    const name = (o.raison_sociale || '').trim();
+    if (name && name.length >= 3 && !/confidentiel/i.test(name)) acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+  const topEmployers = Object.entries(employerStats)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, 12);
+
   const jobListJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -183,6 +192,24 @@ const Home: React.FC = () => {
               ))}
           </div>
         </section>
+
+        {/* Ils recrutent — top employeurs (maillage vers /recrutement/:entreprise) */}
+        {topEmployers.length > 0 && (
+          <section className="max-w-7xl mx-auto px-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{t('home.theyRecruit')}</h2>
+            <div className="flex flex-wrap gap-2">
+              {topEmployers.map(([name, count]) => (
+                <Link
+                  key={name}
+                  to={`/recrutement/${slugify(name)}`}
+                  className="bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                >
+                  {name} <span className="text-gray-400 ms-1">({count})</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Recent offers - immediately visible */}
         <section className="max-w-7xl mx-auto px-4 space-y-4">
