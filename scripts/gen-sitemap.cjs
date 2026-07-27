@@ -49,7 +49,7 @@ async function main() {
   const sectorPages = ['informatique', 'commercial', 'administratif', 'industrie', 'sante', 'enseignement', 'tourisme', 'construction']
     .map(s => ({ url: `/offres?sector=${s}`, priority: '0.7', changefreq: 'daily' }));
   const cities = Array.from(new Set(offers.map(o => o.ville).filter(Boolean))).sort();
-  const cityPages = cities.map(c => ({ url: `/offres?city=${encodeURIComponent(c)}`, priority: '0.7', changefreq: 'daily' }));
+  const cityPages = cities.map(c => ({ url: `/offres/${slugify(c)}`, priority: '0.7', changefreq: 'daily' }));
   const recruiterPages = ['agadir', 'inezgane', 'ait-melloul', 'taroudant', 'tiznit', 'oulad-teima', 'biougra']
     .map(s => ({ url: `/recruter/${s}`, priority: '0.7', changefreq: 'monthly' }));
 

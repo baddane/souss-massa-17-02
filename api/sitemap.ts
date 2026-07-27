@@ -58,12 +58,15 @@ export default async function handler() {
       'sante', 'enseignement', 'tourisme', 'construction',
     ].map(s => ({ url: `/offres?sector=${s}`, priority: '0.7', changefreq: 'daily' }));
 
-    // Pages ville derivees des villes reellement presentes dans les offres (Souss-Massa)
+    const slugifyCo = (t: string) => String(t || '').toLowerCase().normalize('NFD')
+      .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Pages ville indexables /offres/:ville (villes reellement presentes dans les offres)
     const cities = Array.from(
       new Set((offers as any[]).map(o => o.ville).filter(Boolean))
     ).sort();
     const cityPages = cities.map(c => ({
-      url: `/offres?city=${encodeURIComponent(c)}`,
+      url: `/offres/${slugifyCo(c)}`,
       priority: '0.7',
       changefreq: 'daily',
     }));
@@ -72,8 +75,6 @@ export default async function handler() {
       'agadir', 'inezgane', 'ait-melloul', 'taroudant', 'tiznit', 'oulad-teima', 'biougra',
     ].map(s => ({ url: `/recruter/${s}`, priority: '0.7', changefreq: 'monthly' }));
 
-    const slugifyCo = (t: string) => String(t || '').toLowerCase().normalize('NFD')
-      .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const companySlugs = Array.from(new Set(
       (offers as any[]).map(o => o.raison_sociale)
         .filter((n: string) => n && n.trim().length >= 3 && !/confidentiel/i.test(n))

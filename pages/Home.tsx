@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobOffersService } from '../services/jobOffersService';
 import { SOUSS_MASSA_CITIES } from '../constants';
-import SEO, { generateJobPostingJsonLd } from '../components/SEO';
+import SEO, { generateJobPostingJsonLd, slugify } from '../components/SEO';
 import {
   useT,
   localizeOffer,
@@ -175,7 +175,7 @@ const Home: React.FC = () => {
               .map(([ville, count]) => (
                 <Link
                   key={ville}
-                  to={`/offres?city=${ville}`}
+                  to={`/offres/${slugify(ville)}`}
                   className="bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 >
                   {cityLabel(t, ville)} <span className="text-gray-400 ms-1">({count})</span>

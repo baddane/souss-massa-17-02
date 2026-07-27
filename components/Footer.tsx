@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT, cityLabel } from '../src/i18n/LanguageContext';
+import { slugify } from './SEO';
 
 const SECTOR_LINKS = [
   { key: 'informatique', sector: 'informatique' },
@@ -47,7 +48,7 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-semibold text-sm mb-3">{t('footer.byCity')}</h3>
             <nav className="flex flex-col gap-1.5 text-sm">
               {CITY_LINKS.map((city) => (
-                <Link key={city} to={`/offres?city=${city}`} className="hover:text-white transition-colors">
+                <Link key={city} to={`/offres/${slugify(city)}`} className="hover:text-white transition-colors">
                   {t('footer.jobsIn', { city: cityLabel(t, city) })}
                 </Link>
               ))}

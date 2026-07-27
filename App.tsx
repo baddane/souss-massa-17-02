@@ -19,6 +19,7 @@ import Observatoire from './pages/Observatoire';
 import ObservatoireArticle from './pages/ObservatoireArticle';
 import Recruter from './pages/Recruter';
 import CompanyJobs from './pages/CompanyJobs';
+import CityJobs from './pages/CityJobs';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
@@ -41,6 +42,7 @@ const AppShell: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/offres" element={<Offers />} />
+            <Route path="/offres/:ville" element={<CityJobs />} />
             <Route path="/emploi/:slug" element={<JobDetail />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/observatoire" element={<Observatoire />} />
