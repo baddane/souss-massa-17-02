@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import SEO, { slugify } from '../components/SEO';
 
-const SITE_URL = 'https://soussmassa-rh.com';
+const SITE_URL = 'https://www.soussmassa-rh.com';
 
 // Villes couvertes par une page recruteur dédiée (maillage SEO longue traîne)
 const RECRUITER_CITIES = ['Agadir', 'Inezgane', 'Aït Melloul', 'Taroudant', 'Tiznit', 'Oulad Teima', 'Biougra'];

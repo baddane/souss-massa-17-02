@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import SEO, { slugify } from '../components/SEO';
 import { jobOffersService, JobOffer } from '../services/jobOffersService';
 
-const SITE_URL = 'https://soussmassa-rh.com';
+const SITE_URL = 'https://www.soussmassa-rh.com';
 
 const CompanyJobs: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();

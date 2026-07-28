@@ -17,7 +17,7 @@ Disallow: /admin
 Disallow: /api/
 Crawl-delay: 2
 
-Sitemap: https://soussmassa-rh.com/sitemap.xml`;
+Sitemap: https://www.soussmassa-rh.com/sitemap.xml`;
 
   return new Response(txt, {
     status: 200,

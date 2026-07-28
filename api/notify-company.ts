@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 // dont le statut est 'valide' (verifie cote Supabase).
 const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
-const SITE_URL = 'https://soussmassa-rh.com';
+const SITE_URL = 'https://www.soussmassa-rh.com';
 
 function parseBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {

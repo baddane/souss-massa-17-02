@@ -38,7 +38,7 @@ const Observatoire: React.FC = () => {
           '@type': 'CollectionPage',
           name: `${t('obs.title')} | SoussMassa-RH`,
           description: t('obs.subtitle'),
-          url: 'https://soussmassa-rh.com/observatoire',
+          url: 'https://www.soussmassa-rh.com/observatoire',
         }}
       />
 

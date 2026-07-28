@@ -5,7 +5,7 @@ import { jobOffersService, JobOffer } from '../services/jobOffersService';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import RecruiterCTA from '../components/RecruiterCTA';
 
-const SITE_URL = 'https://soussmassa-rh.com';
+const SITE_URL = 'https://www.soussmassa-rh.com';
 
 const SECTORS = [
   { value: 'informatique', label: 'Informatique' },

@@ -19,7 +19,7 @@ interface SEOProps {
 
 const SITE_NAME = 'SoussMassa-RH';
 const DEFAULT_DESCRIPTION = 'Trouvez votre emploi idéal dans la région Souss-Massa. Offres CDI, CDD, Stage à Agadir, Inezgane, Taroudant. Recrutement rapide et gratuit.';
-const SITE_URL = 'https://soussmassa-rh.com';
+const SITE_URL = 'https://www.soussmassa-rh.com';
 
 const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'website', image, jsonLd }) => {
   const { lang } = useLanguage();
@@ -123,11 +123,11 @@ export function generateArticleJsonLd(article: {
     publisher: {
       '@type': 'Organization',
       name: 'SoussMassa-RH',
-      url: 'https://soussmassa-rh.com',
+      url: 'https://www.soussmassa-rh.com',
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://soussmassa-rh.com/observatoire/${article.slug}`,
+      '@id': `https://www.soussmassa-rh.com/observatoire/${article.slug}`,
     },
     articleSection: 'Observatoire de l’emploi Souss-Massa',
     inLanguage: 'fr',
