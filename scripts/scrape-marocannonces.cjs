@@ -153,6 +153,10 @@ async function main() {
       await new Promise(r => setTimeout(r, 600));
       if (!dhtml) continue;
       const d = parseDetail(dhtml, card.id);
+      // Le site republie les annonces "Tout le Maroc" sur CHAQUE page ville (y compris
+      // les villes Souss-Massa) : le champ "Ville" de la fiche detail est la seule
+      // source fiable pour detecter ces annonces nationales hors-perimetre.
+      if (/tout\s+le\s+maroc/i.test(d.villeDetail || '')) { continue; }
       const ville = c.ville; // filtre par ville canonique
       const emploi_metier = card.title.replace(/\s+/g, ' ').trim();
       if (!emploi_metier) continue;
