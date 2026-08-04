@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import SEO, { slugify } from '../components/SEO';
+import { supabaseOffers } from '../src/services/supabase';
 
 const SITE_URL = 'https://www.soussmassa-rh.com';
 
@@ -24,6 +25,12 @@ const STEPS = [
 
 const Recruter: React.FC = () => {
   const { ville } = useParams<{ ville?: string }>();
+  const [stats, setStats] = useState({ candidatures: 175, offres: 370, entreprises: 168 });
+  useEffect(() => {
+    supabaseOffers.rpc('public_marketing_stats').then(({ data }: any) => {
+      if (data) setStats({ candidatures: data.candidatures, offres: data.offres, entreprises: data.entreprises });
+    }, () => {});
+  }, []);
   const city = ville ? RECRUITER_CITIES.find((c) => slugify(c) === ville) : undefined;
 
   // Slug de ville présent mais inconnu → on renvoie vers la page générique
@@ -80,10 +87,13 @@ const Recruter: React.FC = () => {
               J’ai déjà un compte
             </Link>
           </div>
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mt-10 text-blue-100 text-sm">
-            <span><strong className="text-white">1 700+</strong> postes publiés</span>
-            <span><strong className="text-white">160+</strong> entreprises</span>
-            <span><strong className="text-white">7 villes</strong> couvertes</span>
+          <p className="mt-6 inline-block bg-orange-500/25 border border-orange-300/40 text-orange-50 px-4 py-2 rounded-full text-sm font-semibold">
+            🎁 Offre de lancement : gratuit + mise en avant pour les 20 premières entreprises inscrites
+          </p>
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mt-8 text-blue-100 text-sm">
+            <span><strong className="text-white">{stats.candidatures}+</strong> candidatures reçues</span>
+            <span><strong className="text-white">{stats.offres}</strong> offres en ligne</span>
+            <span><strong className="text-white">{stats.entreprises}</strong> entreprises</span>
           </div>
         </div>
       </section>
