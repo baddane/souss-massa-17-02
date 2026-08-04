@@ -4,6 +4,7 @@ import { supabaseOffers } from '../src/services/supabase';
 import { moderationService, CompanyProfile } from '../src/services/companyService';
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
+import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -22,6 +23,26 @@ const emptyObsForm = () => ({
   keywordsText: '', sourcesText: '', date_publi: new Date().toISOString().split('T')[0],
   temps_lecture: 3, statut: 'publie',
 });
+
+const OUTREACH_DEFAULT_SUBJECT = 'Votre page recruteur à {ville} est déjà en ligne sur SoussMassa-RH';
+const OUTREACH_DEFAULT_BODY = `<div style="font-family:Arial,sans-serif;max-width:600px;color:#111827;line-height:1.55;">
+  <p>Bonjour,</p>
+  <p><strong>{entreprise}</strong> recrute actuellement dans la région Souss-Massa, et vos offres
+  apparaissent déjà sur <strong>SoussMassa-RH</strong>, le portail emploi régional.</p>
+  <p>Votre page recruteur est même déjà accessible ici :<br>
+  👉 <a href="{url}">{url}</a></p>
+  <p>En <strong>créant votre compte entreprise</strong> (gratuit), vous pourrez :</p>
+  <ul>
+    <li>publier vos offres en autonomie, indexées automatiquement sur Google for Jobs ;</li>
+    <li>accéder à la <strong>CVthèque régionale</strong> (profils par métier, ville, diplôme, expérience) ;</li>
+    <li>recevoir et gérer les candidatures depuis votre espace.</li>
+  </ul>
+  <p>🎁 <strong>Offre de lancement</strong> : gratuit et mise en avant pour les 20 premières entreprises inscrites.</p>
+  <p><a href="https://www.soussmassa-rh.com/inscription-entreprise"
+     style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:bold;">
+     Créer mon compte entreprise</a></p>
+  <p style="font-size:13px;color:#6b7280;">— L'équipe SoussMassa-RH · <a href="https://www.soussmassa-rh.com">soussmassa-rh.com</a></p>
+</div>`;
 
 const COMPANY_STATUT_LABEL: Record<string, { label: string; color: string }> = {
   en_attente: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800' },
@@ -75,7 +96,7 @@ const Admin: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection'>('candidatures');
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -103,6 +124,15 @@ const Admin: React.FC = () => {
   const [obsLoading, setObsLoading] = useState(false);
   const [obsForm, setObsForm] = useState<ReturnType<typeof emptyObsForm> | null>(null);
   const [obsSaving, setObsSaving] = useState(false);
+  // ---- Prospection entreprises ----
+  const [outItems, setOutItems] = useState<OutreachTarget[]>([]);
+  const [outLoading, setOutLoading] = useState(false);
+  const [outSel, setOutSel] = useState<Set<string>>(new Set());
+  const [outFilter, setOutFilter] = useState<string>('a_contacter');
+  const [outSubject, setOutSubject] = useState(OUTREACH_DEFAULT_SUBJECT);
+  const [outBody, setOutBody] = useState(OUTREACH_DEFAULT_BODY);
+  const [outSending, setOutSending] = useState(false);
+  const [outImport, setOutImport] = useState('');
 
   // Verifie une session admin existante (Supabase Auth + appartenance app_admins)
   useEffect(() => {
@@ -292,6 +322,67 @@ const Admin: React.FC = () => {
     await loadObservatoire();
   };
 
+  // ---- Prospection entreprises ----
+  const loadOutreach = async () => {
+    setOutLoading(true);
+    setOutItems(await outreachService.list());
+    setOutLoading(false);
+  };
+
+  const outVisible = useMemo(
+    () => (outFilter ? outItems.filter(t => t.statut === outFilter) : outItems),
+    [outItems, outFilter],
+  );
+
+  const setOutEmail = async (t: OutreachTarget, email: string) => {
+    setOutItems(prev => prev.map(x => x.id === t.id ? { ...x, email } : x));
+  };
+  const saveOutEmail = async (t: OutreachTarget, email: string) => {
+    const clean = email.trim() || null;
+    await outreachService.update(t.id, { email: clean });
+  };
+  const setOutStatut = async (t: OutreachTarget, statut: OutreachTarget['statut']) => {
+    setOutItems(prev => prev.map(x => x.id === t.id ? { ...x, statut } : x));
+    await outreachService.update(t.id, { statut });
+  };
+
+  const toggleOutSel = (id: string) => setOutSel(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const selectAllOut = () => {
+    const selectable = outVisible.filter(t => t.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.email));
+    const allSel = selectable.length > 0 && selectable.every(t => outSel.has(t.id));
+    setOutSel(allSel ? new Set() : new Set(selectable.map(t => t.id)));
+  };
+
+  const importOutEmails = async () => {
+    if (!outImport.trim()) return;
+    const n = await outreachService.importEmails(outImport, outItems);
+    setOutImport('');
+    await loadOutreach();
+    alert(`${n} e-mail(s) importé(s) et rapproché(s).`);
+  };
+
+  const sendOutreach = async () => {
+    const selected = outItems.filter(t => outSel.has(t.id) && t.email);
+    if (selected.length === 0) { alert('Sélectionnez au moins une entreprise avec un e-mail.'); return; }
+    if (!confirm(`Envoyer l'e-mail de prospection à ${selected.length} entreprise(s) via Brevo ?`)) return;
+    setOutSending(true);
+    const r = await outreachService.send(
+      selected.map(t => ({ id: t.id, email: t.email as string, raison_sociale: t.raison_sociale, slug: t.slug, ville: t.ville })),
+      outSubject, outBody,
+    );
+    setOutSending(false);
+    if (!r.ok) { alert('Échec : ' + (r.error || 'inconnu')); return; }
+    const sent = (r.results || []).filter(x => x.ok).length;
+    const failed = (r.results || []).filter(x => !x.ok);
+    setOutSel(new Set());
+    await loadOutreach();
+    let msg = `${sent} e-mail(s) envoyé(s) ✅`;
+    if (failed.length) msg += `\n${failed.length} échec(s) :\n` + failed.slice(0, 8).map(f => `• ${f.error}`).join('\n');
+    alert(msg);
+  };
+
   useEffect(() => {
     if (!authed) return;
     loadCandidatures();
@@ -300,6 +391,7 @@ const Admin: React.FC = () => {
     loadPendingOffers();
     loadCvtheque();
     loadObservatoire();
+    loadOutreach();
   }, [authed]);
 
   const loadCompanies = async () => {
@@ -665,6 +757,14 @@ const Admin: React.FC = () => {
           }`}
         >
           Observatoire ({obsItems.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('prospection')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'prospection' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Prospection ({outItems.length})
         </button>
         <button
           onClick={() => setActiveTab('compte')}
@@ -1468,6 +1568,109 @@ const Admin: React.FC = () => {
                 </button>
                 <button onClick={() => setObsForm(null)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium">Annuler</button>
               </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'prospection' && (
+        <>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-sm text-amber-900">
+            <p className="font-bold mb-1">📣 Prospection entreprises — envoi via Brevo</p>
+            <p>Cochez les entreprises (celles ayant un e-mail), personnalisez le message et envoyez depuis
+            <strong> contact@soussmassa-rh.com</strong>. Jetons disponibles : <code>{'{entreprise}'}</code>, <code>{'{ville}'}</code>, <code>{'{url}'}</code>.</p>
+            <p className="mt-1 text-amber-800">Prérequis (une seule fois) : dans <strong>Brevo</strong>, valider l'expéditeur/domaine <em>soussmassa-rh.com</em> ; dans <strong>Vercel</strong>, ajouter la variable <code>BREVO_API_KEY</code>.</p>
+          </div>
+
+          {/* Modèle d'e-mail */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-5 space-y-3">
+            <h3 className="font-bold text-gray-900 text-sm">Modèle d'e-mail</h3>
+            <label className="block text-xs font-semibold text-gray-500">Objet
+              <input value={outSubject} onChange={(e) => setOutSubject(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
+            </label>
+            <label className="block text-xs font-semibold text-gray-500">Contenu (HTML)
+              <textarea rows={8} value={outBody} onChange={(e) => setOutBody(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono text-gray-900 focus:ring-2 focus:ring-blue-500" />
+            </label>
+          </div>
+
+          {/* Import d'emails en masse */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-5 space-y-2">
+            <h3 className="font-bold text-gray-900 text-sm">Importer des e-mails en masse</h3>
+            <p className="text-xs text-gray-500">Une entreprise par ligne, format <code>Nom entreprise;email@domaine.ma</code> (rapprochement automatique sur le nom).</p>
+            <textarea rows={3} value={outImport} onChange={(e) => setOutImport(e.target.value)} placeholder={'LEONI Wiring Systems Agadir;rh@leoni.ma\nAKDITAL;recrutement@akdital.ma'}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono text-gray-900 focus:ring-2 focus:ring-blue-500" />
+            <button onClick={importOutEmails} className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-bold hover:bg-gray-900">Importer & rapprocher</button>
+          </div>
+
+          {/* Barre d'action */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+              {[{ value: '', label: 'Toutes' }, ...OUTREACH_STATUTS].map((s) => (
+                <button key={s.value || 'all'} onClick={() => setOutFilter(s.value)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold ${outFilter === s.value ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+                  {s.label} ({s.value ? outItems.filter(t => t.statut === s.value).length : outItems.length})
+                </button>
+              ))}
+            </div>
+            <div className="flex-1" />
+            <span className="text-sm text-gray-500">{outSel.size} sélectionnée(s)</span>
+            <button onClick={sendOutreach} disabled={outSending || outSel.size === 0}
+              className="px-5 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 disabled:opacity-50">
+              {outSending ? 'Envoi…' : `Envoyer via Brevo (${outSel.size})`}
+            </button>
+          </div>
+
+          {outLoading ? (
+            <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
+          ) : outVisible.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-200"><p className="text-gray-500">Aucune entreprise</p></div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-xs">
+                  <tr>
+                    <th className="p-3 w-10"><input type="checkbox" onChange={selectAllOut}
+                      checked={outVisible.length > 0 && outVisible.filter(t => t.email).every(t => outSel.has(t.id)) && outVisible.some(t => t.email)} /></th>
+                    <th className="p-3 text-start">Entreprise</th>
+                    <th className="p-3 text-start hidden sm:table-cell">Ville(s)</th>
+                    <th className="p-3 text-center">Postes</th>
+                    <th className="p-3 text-start">E-mail</th>
+                    <th className="p-3 text-start">Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outVisible.map((t) => {
+                    const validEmail = !!t.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.email);
+                    return (
+                      <tr key={t.id} className="border-t border-gray-100 hover:bg-gray-50">
+                        <td className="p-3 text-center">
+                          <input type="checkbox" disabled={!validEmail} checked={outSel.has(t.id)} onChange={() => toggleOutSel(t.id)} />
+                        </td>
+                        <td className="p-3">
+                          <a href={`/recrutement/${t.slug}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-gray-900 hover:text-blue-600">{t.raison_sociale}</a>
+                          <div className="text-xs text-gray-400">{t.nb_offres} offre(s)</div>
+                        </td>
+                        <td className="p-3 text-gray-500 hidden sm:table-cell">{t.ville}</td>
+                        <td className="p-3 text-center font-semibold text-gray-700">{t.postes}</td>
+                        <td className="p-3">
+                          <input value={t.email || ''} placeholder="email@…"
+                            onChange={(e) => setOutEmail(t, e.target.value)}
+                            onBlur={(e) => saveOutEmail(t, e.target.value)}
+                            className="w-44 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500" />
+                        </td>
+                        <td className="p-3">
+                          <select value={t.statut} onChange={(e) => setOutStatut(t, e.target.value as OutreachTarget['statut'])}
+                            className={`px-2 py-1 rounded-md text-xs font-semibold border-0 ${OUTREACH_STATUTS.find(s => s.value === t.statut)?.color || ''}`}>
+                            {OUTREACH_STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </>

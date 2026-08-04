@@ -511,6 +511,27 @@ Documentation complete + contrat de publication pour la routine : **`OBSERVATOIR
 - **i18n** : libelles nav/hub dans les 3 langues (`nav.observatoire`, `obs.*`) ; contenu des
   articles en FR.
 
+## Prospection entreprises (onglet admin « Prospection », envoi Brevo)
+
+Onglet **Prospection** dans `pages/Admin.tsx` : liste des employeurs presents via leurs offres
+(a convertir en comptes entreprise inscrits). Chaque cible a sa page vitrine `/recrutement/{slug}`.
+
+- **Table** : `outreach_targets` (migration `012_outreach_targets`), **admin-only** (RLS
+  `outreach_admin_all` via `is_admin()`). Champs : `raison_sociale, slug, ville, nb_offres,
+  postes, email, statut (a_contacter/contacte/inscrit/ignore), date_contact, notes`.
+  Pre-remplie depuis `job_offers` (statut='active'), regroupee par slug entreprise, emails vides.
+- **Service** : `src/services/outreachService.ts` (`list`, `update`, `importEmails`, `send`).
+  L'admin saisit les emails a la main (inline) ou en masse (`Nom;email` par ligne).
+- **Envoi** : serverless `api/send-outreach.ts` → **Brevo transactional API**
+  (`https://api.brevo.com/v3/smtp/email`). Expediteur `contact@soussmassa-rh.com`
+  (surchargeable via `BREVO_SENDER_EMAIL`/`BREVO_SENDER_NAME`). Jetons `{entreprise}`,
+  `{ville}`, `{slug}`, `{url}`. Envois reussis → `statut='contacte'`.
+- **Securite** : l'endpoint **exige le jeton de session** de l'appelant et verifie `is_admin()`
+  cote Supabase AVANT d'envoyer (sinon relais de spam ouvert). Max 200 destinataires/appel.
+- **PREREQUIS** (une fois) : valider l'expediteur/domaine `soussmassa-rh.com` dans **Brevo** ;
+  ajouter `BREVO_API_KEY` dans **Vercel** (Settings → Environment Variables). Plan gratuit
+  Brevo = ~300 envois/jour. Modeles d'e-mail/message : `MARKETING_OUTREACH.md`.
+
 ## Securite (RLS, donnees candidats, auth admin)
 
 Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc
