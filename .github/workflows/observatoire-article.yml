@@ -1,0 +1,40 @@
+name: Observatoire — article automatique
+
+on:
+  schedule:
+    # Lundi et jeudi à 21h (heure de Paris, été) = 20:00 UTC
+    # GitHub planifie en UTC : en hiver (UTC+1), 20:00 UTC = 21h pile.
+    - cron: '0 20 * * 1,4'
+  workflow_dispatch: # lancement manuel possible depuis l'onglet Actions
+
+permissions:
+  contents: write # nécessaire pour le push du sitemap
+
+jobs:
+  article:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer Kimi Code CLI
+        run: npm install -g @moonshot-ai/kimi-code
+
+      - name: Identité git pour le commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rédaction et publication de l'article
+        env:
+          # Clé API Kimi Code (console Kimi Code) stockée en secret GitHub du dépôt
+          KIMI_MODEL_NAME: k3-256k
+          KIMI_MODEL_API_KEY: ${{ secrets.KIMI_API_KEY }}
+          KIMI_MODEL_BASE_URL: https://api.kimi.com/coding/v1
+          KIMI_DISABLE_TELEMETRY: "1"
+          KIMI_CODE_NO_AUTO_UPDATE: "1"
+        run: kimi -p "$(cat ROUTINE_OBSERVATOIRE.md)"
