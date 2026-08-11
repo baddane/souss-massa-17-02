@@ -31,10 +31,11 @@ jobs:
 
       - name: Rédaction et publication de l'article
         env:
-          # Clé API Kimi Code (console Kimi Code) stockée en secret GitHub du dépôt
-          KIMI_MODEL_NAME: k3-256k
+          # Clé API de la Kimi Open Platform (platform.moonshot.ai, pay-as-you-go)
+          # stockée en secret GitHub du dépôt — même configuration que le CLI local
+          KIMI_MODEL_NAME: kimi-k3
           KIMI_MODEL_API_KEY: ${{ secrets.KIMI_API_KEY }}
-          KIMI_MODEL_BASE_URL: https://api.kimi.com/coding/v1
+          KIMI_MODEL_BASE_URL: https://api.moonshot.ai/v1
           KIMI_DISABLE_TELEMETRY: "1"
           KIMI_CODE_NO_AUTO_UPDATE: "1"
         run: kimi -p "$(cat ROUTINE_OBSERVATOIRE.md)"
