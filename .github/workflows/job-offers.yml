@@ -1,0 +1,34 @@
+name: Souss-Massa job offers publisher
+
+on:
+  schedule:
+    # Tous les jours à 09:00 (Paris, hiver UTC+1) = 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer Kimi Code CLI
+        run: npm install -g @moonshot-ai/kimi-code
+      - name: Identité git pour le commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Exécution de la routine
+        env:
+          KIMI_MODEL_NAME: kimi-k3
+          KIMI_MODEL_API_KEY: ${{ secrets.KIMI_API_KEY }}
+          KIMI_MODEL_BASE_URL: https://api.moonshot.ai/v1
+          KIMI_DISABLE_TELEMETRY: "1"
+          KIMI_CODE_NO_AUTO_UPDATE: "1"
+        run: kimi -p "$(cat ROUTINE_JOB_OFFERS.md)"
