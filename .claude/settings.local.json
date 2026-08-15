@@ -24,7 +24,9 @@
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'chore: regles de permissions locales ajoutees par les approbations de session *)"
     ]
   }
 }
