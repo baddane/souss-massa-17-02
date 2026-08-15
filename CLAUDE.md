@@ -339,7 +339,8 @@ api/
   sitemap.ts        # Edge Function - sitemap dynamique (offres statut='active' uniquement)
   robots.ts         # Edge Function - robots.txt (bloque /admin et /api/)
   apply.ts          # Serverless function - envoi candidature par email
-  notify-company.ts # Serverless - email a l'entreprise quand l'admin valide son compte
+  notify-company.ts # Serverless - email de confirmation + identifiants (login + mdp temporaire)
+                    #   quand l'admin valide un compte entreprise (API Admin Supabase)
   keepalive.ts      # Edge Function - ping Supabase (cron Vercel) pour eviter la pause free-tier
 
 components/
@@ -454,7 +455,11 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 - **Offres entreprise** : inserees dans `job_offers` avec `source='entreprise'`,
   `company_id`, et `statut='en_attente'` (invisibles du public tant que non validees).
 - **Moderation** : onglets « Entreprises » et « Offres a valider » dans `pages/Admin.tsx`.
-  Valider un compte → email via `api/notify-company.ts` (rappel identifiant + lien).
+  Valider un compte → email via `api/notify-company.ts` : confirmation + **login et
+  mot de passe temporaire** (Supabase ne conserve pas les mots de passe en clair :
+  l'endpoint genere un mdp, le positionne via l'API Admin `/auth/v1/admin/users/{id}`
+  avec la cle `service_role`, puis l'envoie par email). L'endpoint **verifie que
+  l'appelant est admin** (`is_admin()` via son JWT) avant d'agir.
   Valider une offre → `statut='active'` (publiee).
 - **Visibilite publique** : `jobOffersService` (les 2 copies), `api/sitemap.ts` et
   `scripts/gen-sitemap.cjs` ne renvoient que les offres `statut='active'`.
@@ -464,7 +469,9 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > « Confirm email »). Sinon, apres inscription, l'entreprise ne peut pas se
 > connecter (« Email not confirmed ») — la validation se fait par l'admin, pas
 > par email Supabase. L'email de notification utilise `GMAIL_APP_PASSWORD` (deja
-> configure pour les candidatures).
+> configure pour les candidatures) et **`SUPABASE_SERVICE_ROLE_KEY`** (cle
+> `service_role` du projet `tqrhx…` a ajouter dans Vercel → Settings →
+> Environment Variables, sinon l'email de validation echoue).
 
 ## CVtheque (base de CV admin, parsing SANS LLM)
 

@@ -14,7 +14,17 @@
       "mcp__Supabase__execute_sql",
       "mcp__Supabase__get_publishable_keys",
       "mcp__Supabase__get_project",
-      "mcp__Supabase__apply_migration"
+      "mcp__Supabase__apply_migration",
+      "Bash(command -v vercel)",
+      "Bash(vercel whoami *)",
+      "Bash(git ls-remote *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Skill(update-config)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
