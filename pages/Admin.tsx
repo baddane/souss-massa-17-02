@@ -402,26 +402,31 @@ const Admin: React.FC = () => {
     setPendingOffers(await moderationService.getPendingOffers());
   };
 
+  // Email de confirmation + identifiants (login + mot de passe temporaire).
+  // Le jeton de session admin est transmis : l'endpoint vérifie is_admin()
+  // avant d'agir. Retourne false si l'envoi a échoué.
+  const sendValidationEmail = async (email: string): Promise<boolean> => {
+    const { data: { session } } = await supabaseOffers.auth.getSession();
+    const res = await fetch('/api/notify-company', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(`L'email de confirmation n'a pas pu être envoyé (${(body as any).error || res.status}). Vérifiez notamment la variable SUPABASE_SERVICE_ROLE_KEY sur Vercel.`);
+      return false;
+    }
+    return true;
+  };
+
   const validateCompany = async (c: CompanyProfile) => {
     try {
       await moderationService.setCompanyStatus(c.id, 'valide');
-      // Email de confirmation + identifiants (login + mot de passe temporaire).
-      // Le jeton de session admin est transmis : l'endpoint vérifie is_admin()
-      // avant d'agir.
-      const { data: { session } } = await supabaseOffers.auth.getSession();
-      const res = await fetch('/api/notify-company', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({ email: c.email }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        alert(`Compte validé, mais l'email de confirmation n'a pas pu être envoyé (${(body as any).error || res.status}). Vérifiez notamment la variable SUPABASE_SERVICE_ROLE_KEY sur Vercel.`);
-        return;
-      }
+      if (!(await sendValidationEmail(c.email))) return;
       await moderationService.markNotified(c.id);
       setCompanies(prev => prev.map(x => x.id === c.id ? { ...x, statut: 'valide', notified: true } : x));
     } catch (e) {
@@ -1046,6 +1051,11 @@ const Admin: React.FC = () => {
                             Refuser
                           </button>
                         </>
+                      )}
+                      {c.statut === 'valide' && (
+                        <button onClick={() => sendValidationEmail(c.email)} className="px-4 py-2 text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg text-sm font-medium">
+                          Renvoyer l'email
+                        </button>
                       )}
                       <button onClick={() => deleteCompany(c)} className="px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-bold">
                         Supprimer

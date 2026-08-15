@@ -331,6 +331,9 @@ Le footer (`components/Footer.tsx`) a 4 colonnes :
 - `X-Robots-Tag: noindex, nofollow` sur `/admin` et `/api/`
 - Cache immutable sur fichiers JS et CSS statiques
 - Rewrites : `/sitemap.xml` → `/api/sitemap`, `/robots.txt` → `/api/robots`, `/*` → `/index.html`
+- **Fonctions** : `api/apply.ts` et `api/notify-company.ts` sont forcees en
+  runtime `nodejs22.x` dans vercel.json (nodemailer ne tourne PAS sur Edge —
+  sans ce reglage, les fonctions plantent `FUNCTION_INVOCATION_FAILED`).
 
 ## Structure des fichiers cles
 
