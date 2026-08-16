@@ -85,6 +85,13 @@ function throwawayPassword(): string {
 // ---- Authentification ----
 export const companyAuth = {
   async signUp(email: string, profile: NewCompanyProfile) {
+    // Si une session est deja ouverte dans le navigateur (typiquement l'admin,
+    // ou une entreprise deja connectee), `signUp` ne cree PAS de compte : il
+    // renvoie l'utilisateur courant. La fiche entreprise se retrouvait alors
+    // attachee a ce compte — un admin s'est ainsi vu greffer une entreprise,
+    // ensuite impossible a supprimer. On repart donc toujours d'une session vide.
+    await supabaseOffers.auth.signOut();
+
     const { data, error } = await supabaseOffers.auth.signUp({ email, password: throwawayPassword() });
 
     if (error) {
@@ -94,6 +101,14 @@ export const companyAuth = {
 
     const userId = data.user?.id;
     if (!userId) throw new Error("La création du compte a échoué.");
+
+    // Garde-fou : le compte renvoye doit correspondre a l'email saisi. Sinon
+    // c'est qu'une session a survecu et qu'on s'apprete a ecrire la fiche sur
+    // le mauvais compte.
+    if ((data.user?.email || '').toLowerCase() !== email.trim().toLowerCase()) {
+      await supabaseOffers.auth.signOut();
+      throw new Error("La création du compte a échoué (session existante).");
+    }
 
     try {
       await insertProfile(userId, email, profile);
@@ -289,10 +304,10 @@ export const moderationService = {
       },
       body: JSON.stringify({ id }),
     });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error((body as any).error || `Echec de la suppression (${res.status})`);
-    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((body as any).error || `Echec de la suppression (${res.status})`);
+    // Renvoie un avertissement quand le compte Auth a ete conserve (compte admin).
+    return (body as any).authAccountKept ? String((body as any).message || '') : '';
   },
 
   async getPendingOffers() {

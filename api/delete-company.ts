@@ -51,15 +51,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!isAdminRes.ok) return json(401, { error: 'Jeton invalide' });
     if ((await isAdminRes.json()) !== true) return json(403, { error: 'Réservé aux administrateurs' });
 
-    // 2. Garde-fou : ne jamais supprimer un compte administrateur.
+    // 2. Le compte vise est-il un administrateur ?
+    //    Cas reel : une inscription entreprise lancee depuis un navigateur ou
+    //    l'admin etait connecte greffait la fiche sur le compte admin. Refuser
+    //    tout en bloc laissait cette fiche parasite indelebile. On supprime donc
+    //    toujours la fiche entreprise, et on epargne le compte Auth s'il est admin.
     const adminRow = await fetch(
       `${SUPABASE_URL}/rest/v1/app_admins?select=id&id=eq.${encodeURIComponent(id)}`,
       { headers: { apikey: serviceRole, Authorization: `Bearer ${serviceRole}` } },
     );
     const adminRows = adminRow.ok ? await adminRow.json() : [];
-    if (Array.isArray(adminRows) && adminRows.length > 0) {
-      return json(403, { error: 'Ce compte est un compte administrateur : suppression refusée.' });
-    }
+    const isAdminAccount = Array.isArray(adminRows) && adminRows.length > 0;
 
     // 3. Supprimer la fiche entreprise (les offres deja publiees sont conservees).
     const delProfile = await fetch(
@@ -71,7 +73,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       throw new Error(`Echec suppression du profil (${delProfile.status}): ${errText.slice(0, 200)}`);
     }
 
-    // 4. Supprimer le compte Auth, pour que l'email redevienne utilisable.
+    // 4. Compte administrateur : on s'arrete la. La fiche entreprise parasite est
+    //    supprimee, le compte admin lui-meme est preserve.
+    if (isAdminAccount) {
+      return json(200, {
+        ok: true,
+        authAccountKept: true,
+        message: "Fiche entreprise supprimée. Le compte Auth est un compte administrateur : il a été conservé.",
+      });
+    }
+
+    // 5. Sinon, supprimer le compte Auth pour que l'email redevienne utilisable.
     const delUser = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: { apikey: serviceRole, Authorization: `Bearer ${serviceRole}` },

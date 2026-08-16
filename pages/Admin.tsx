@@ -448,8 +448,9 @@ const Admin: React.FC = () => {
   const deleteCompany = async (c: CompanyProfile) => {
     if (!confirm(`Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`)) return;
     try {
-      await moderationService.deleteCompany(c.id);
+      const warning = await moderationService.deleteCompany(c.id);
       setCompanies(prev => prev.filter(x => x.id !== c.id));
+      if (warning) alert(warning);
     } catch (e: any) {
       alert('Erreur lors de la suppression : ' + (e?.message || e));
     }
