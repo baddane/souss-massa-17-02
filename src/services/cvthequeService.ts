@@ -19,6 +19,7 @@ export interface CvthequeFilters {
   ville?: string;
   poste?: string;
   diplome?: string;
+  niveau?: string;
   competence?: string;
   minExperience?: number;
 }
@@ -94,6 +95,7 @@ export const cvthequeService = {
     if (filters.ville) query = query.ilike('ville', `%${filters.ville}%`);
     if (filters.poste) query = query.ilike('poste', `%${filters.poste}%`);
     if (filters.diplome) query = query.ilike('diplome', `%${filters.diplome}%`);
+    if (filters.niveau) query = query.ilike('niveau_etudes', `%${filters.niveau}%`);
     if (filters.competence) query = query.contains('competences', [filters.competence]);
     if (typeof filters.minExperience === 'number' && !isNaN(filters.minExperience)) {
       query = query.gte('experience_years', filters.minExperience);
@@ -102,6 +104,56 @@ export const cvthequeService = {
     const { data, error } = await query;
     if (error) { console.error('cvtheque.search', error); return []; }
     return (data || []) as CvthequeRow[];
+  },
+
+  // Fiches sans donnees structurees : celles creees par le trigger de
+  // synchronisation des candidatures, qui recopie seulement nom / poste / email
+  // / telephone sans jamais lire le CV. Sans rattrapage, les filtres ville,
+  // niveau, diplome et competences ne servent a rien sur ces profils.
+  async unparsed(): Promise<CvthequeRow[]> {
+    const { data, error } = await supabaseOffers
+      .from('cvtheque')
+      .select('*')
+      .is('raw_text', null)
+      .not('file_path', 'is', null);
+    if (error) { console.error('cvtheque.unparsed', error); return []; }
+    return (data || []) as CvthequeRow[];
+  },
+
+  // Telecharge le CV, l'analyse dans le navigateur (pdf.js / mammoth, aucun LLM)
+  // et complete la fiche. Ne remplace jamais une valeur deja saisie a la main.
+  async parseExisting(row: CvthequeRow): Promise<{ ok: boolean; supported: boolean; error?: string }> {
+    try {
+      const url = await this.signedUrl(row.file_path, row.bucket);
+      if (!url) return { ok: false, supported: false, error: 'URL signée indisponible' };
+
+      const res = await fetch(url);
+      if (!res.ok) return { ok: false, supported: false, error: `Téléchargement ${res.status}` };
+      const blob = await res.blob();
+      const file = new File([blob], row.file_name || 'cv.pdf', { type: blob.type });
+
+      const { parsed, supported } = await parseCvFile(file);
+      if (!supported) return { ok: false, supported: false };
+
+      const patch: Partial<CvthequeRow> = {
+        ville: row.ville || parsed.ville || null,
+        quartier: row.quartier || parsed.quartier || null,
+        diplome: row.diplome || parsed.diplome || null,
+        niveau_etudes: row.niveau_etudes || parsed.niveau_etudes || null,
+        competences: (row.competences?.length ? row.competences : parsed.competences) || [],
+        langues: (row.langues?.length ? row.langues : parsed.langues) || [],
+        experience_years: row.experience_years ?? parsed.experience_years,
+        experience_resume: row.experience_resume || parsed.experience_resume || null,
+        keywords: (row.keywords?.length ? row.keywords : parsed.keywords) || [],
+        raw_text: parsed.raw_text || null,
+        file_type: row.file_type || file.type || null,
+      } as Partial<CvthequeRow>;
+
+      const ok = await this.update(row.id, patch);
+      return { ok, supported: true };
+    } catch (e: any) {
+      return { ok: false, supported: false, error: String(e?.message || e) };
+    }
   },
 
   async signedUrl(path: string, bucket: string = BUCKET): Promise<string | null> {

@@ -5,7 +5,8 @@ import { Helmet } from 'react-helmet-async';
 import { useT, cityLabel, contractLong } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import { companyAuth, companyService, CompanyProfile, CandidatureRow, CandidatureStatus, CANDIDATURE_STATUSES, candidatureStatusKey } from '../src/services/companyService';
-import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
+import { cvthequeService } from '../src/services/cvthequeService';
+import CvthequeExplorer from '../components/CvthequeExplorer';
 
 type Tab = 'offres' | 'candidatures' | 'cvtheque' | 'compte';
 
@@ -39,9 +40,6 @@ const CompanyDashboard: React.FC = () => {
   const [candPage, setCandPage] = useState(1);
   const [candidatures, setCandidatures] = useState<CandidatureRow[]>([]);
   const [loadingCand, setLoadingCand] = useState(false);
-  const [cvRows, setCvRows] = useState<CvthequeRow[]>([]);
-  const [cvQuery, setCvQuery] = useState({ q: '', ville: '', competence: '' });
-  const [loadingCv, setLoadingCv] = useState(false);
 
   // Ouvre un fichier du stockage privé via une URL signée (~120 s).
   const openFile = async (path: string | null, bucket: string) => {
@@ -55,17 +53,6 @@ const CompanyDashboard: React.FC = () => {
     setLoadingCand(true);
     setCandidatures(await companyService.getMyCandidatures(companyId));
     setLoadingCand(false);
-  };
-
-  const searchCvtheque = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    setLoadingCv(true);
-    setCvRows(await cvthequeService.search({
-      q: cvQuery.q || undefined,
-      ville: cvQuery.ville || undefined,
-      competence: cvQuery.competence || undefined,
-    }));
-    setLoadingCv(false);
   };
 
   useEffect(() => {
@@ -345,7 +332,7 @@ const CompanyDashboard: React.FC = () => {
 
       <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-8">
         {TABS.map((tb) => (
-          <button key={tb.key} onClick={() => { setTab(tb.key); if (tb.key === 'cvtheque' && cvRows.length === 0) searchCvtheque(); }}
+          <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-colors ${
               tab === tb.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}>
@@ -563,50 +550,8 @@ const CompanyDashboard: React.FC = () => {
         )
       )}
 
-      {/* CVthèque */}
-      {tab === 'cvtheque' && (
-        <>
-          <form onSubmit={searchCvtheque} className="bg-white rounded-2xl border border-gray-200 p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <input type="text" value={cvQuery.q} onChange={(e) => setCvQuery({ ...cvQuery, q: e.target.value })}
-              placeholder={t('company.cvtheque.searchHint')}
-              className="sm:col-span-2 px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            <input type="text" value={cvQuery.ville} onChange={(e) => setCvQuery({ ...cvQuery, ville: e.target.value })}
-              placeholder={t('company.city')}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            <button type="submit" disabled={loadingCv}
-              className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-60">
-              {loadingCv ? t('company.loading') : t('home.search')}
-            </button>
-          </form>
-          {cvRows.length > 0 && (
-            <p className="text-sm text-gray-500 mb-3">{t('company.cvtheque.count', { count: cvRows.length })}</p>
-          )}
-          {cvRows.length === 0 ? (
-            <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.cvtheque.empty')}</p>
-          ) : (
-            <div className="space-y-3">
-              {cvRows.map((r) => (
-                <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{r.nom_complet || t('company.cvtheque.unnamed')}</p>
-                    <p className="text-sm text-gray-500 truncate">
-                      {[r.poste, r.ville, r.diplome].filter(Boolean).join(' · ')}
-                      {r.experience_years ? ` · ${r.experience_years} ${t('company.cvtheque.years')}` : ''}
-                    </p>
-                    {r.competences?.length > 0 && (
-                      <p className="text-xs text-gray-400 truncate mt-0.5">{r.competences.slice(0, 8).join(', ')}</p>
-                    )}
-                  </div>
-                  <button onClick={() => openFile(r.file_path, r.bucket || 'cvtheque')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">
-                    {t('company.cv.download')}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      {/* CVthèque — composant partagé avec l'admin, pour un affichage identique */}
+      {tab === 'cvtheque' && <CvthequeExplorer />}
 
       {/* Mon compte — remplacer le mot de passe reçu par email */}
       {tab === 'compte' && (

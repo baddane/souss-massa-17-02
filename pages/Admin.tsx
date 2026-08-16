@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { supabaseOffers } from '../src/services/supabase';
 import { moderationService, CompanyProfile } from '../src/services/companyService';
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
+import CvthequeExplorer from '../components/CvthequeExplorer';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
@@ -115,10 +116,10 @@ const Admin: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
-  const [cvItems, setCvItems] = useState<CvthequeRow[]>([]);
-  const [cvLoading, setCvLoading] = useState(false);
+  const [cvCount, setCvCount] = useState(0);
+  const [cvReloadKey, setCvReloadKey] = useState(0);
+  const [cvParsing, setCvParsing] = useState(false);
   const [cvUploading, setCvUploading] = useState(false);
-  const [cvFilters, setCvFilters] = useState({ q: '', ville: '', poste: '', diplome: '', competence: '', minExp: '' });
   const [cvEditing, setCvEditing] = useState<CvthequeRow | null>(null);
   const [obsItems, setObsItems] = useState<ObsArticle[]>([]);
   const [obsLoading, setObsLoading] = useState(false);
@@ -203,18 +204,35 @@ const Admin: React.FC = () => {
   };
 
   // ---- CVthèque ----
+  // La recherche et l'affichage vivent desormais dans <CvthequeExplorer>. Ici on
+  // ne garde que le compteur de l'onglet et un declencheur de rechargement.
   const loadCvtheque = async () => {
-    setCvLoading(true);
-    const items = await cvthequeService.search({
-      q: cvFilters.q || undefined,
-      ville: cvFilters.ville || undefined,
-      poste: cvFilters.poste || undefined,
-      diplome: cvFilters.diplome || undefined,
-      competence: cvFilters.competence || undefined,
-      minExperience: cvFilters.minExp ? Number(cvFilters.minExp) : undefined,
-    });
-    setCvItems(items);
-    setCvLoading(false);
+    const items = await cvthequeService.search({});
+    setCvCount(items.length);
+    setCvReloadKey(k => k + 1);
+  };
+
+  // Les fiches issues des candidatures n'ont que nom / poste / email / telephone :
+  // le trigger de synchronisation recopie la candidature sans jamais lire le CV.
+  // Cette analyse telecharge chaque CV, l'exploite dans le navigateur (pdf.js /
+  // mammoth, aucun LLM) et complete ville, diplome, niveau, competences, langues.
+  // Les valeurs deja saisies a la main ne sont jamais ecrasees.
+  const parseUnparsedCvs = async () => {
+    const pending = await cvthequeService.unparsed();
+    if (!pending.length) { alert('Toutes les fiches ont déjà été analysées.'); return; }
+    if (!confirm(`Analyser ${pending.length} CV non traité(s) ? Cela peut prendre quelques minutes.`)) return;
+
+    setCvParsing(true);
+    let done = 0, unsupported = 0, failed = 0;
+    for (const row of pending) {
+      const res = await cvthequeService.parseExisting(row);
+      if (res.ok) done++;
+      else if (!res.supported) unsupported++;
+      else failed++;
+    }
+    setCvParsing(false);
+    await loadCvtheque();
+    alert(`Analyse terminée.\n\n${done} fiche(s) complétée(s)\n${unsupported} illisible(s) automatiquement (image ou ancien .doc)\n${failed} en erreur`);
   };
 
   const handleCvUpload = async (files: FileList | null) => {
@@ -234,19 +252,13 @@ const Admin: React.FC = () => {
     if (unsupported) alert(`${unsupported} fichier(s) importé(s) mais non lisibles automatiquement (image ou ancien .doc). Complétez les champs à la main via « Éditer ».`);
   };
 
-  const openCvFile = async (row: CvthequeRow) => {
-    const url = await cvthequeService.signedUrl(row.file_path, row.bucket);
-    if (!url) { alert('Impossible de générer le lien du CV.'); return; }
-    window.open(url, '_blank', 'noopener');
-  };
-
   const deleteCv = async (row: CvthequeRow) => {
     const msg = row.source === 'candidature'
       ? `Retirer « ${row.nom_complet || row.file_name} » de la CVthèque ? (Le CV du postulant et sa candidature sont conservés.)`
       : `Supprimer la fiche de « ${row.nom_complet || row.file_name} » ? Le fichier sera aussi supprimé.`;
     if (!confirm(msg)) return;
     const ok = await cvthequeService.remove(row.id, row.file_path, row.bucket);
-    if (ok) setCvItems(prev => prev.filter(x => x.id !== row.id));
+    if (ok) { setCvCount(c => Math.max(0, c - 1)); setCvReloadKey(k => k + 1); }
   };
 
   const saveCvEdit = async () => {
@@ -261,7 +273,7 @@ const Admin: React.FC = () => {
     };
     const ok = await cvthequeService.update(cvEditing.id, patch);
     if (ok) {
-      setCvItems(prev => prev.map(x => x.id === cvEditing.id ? { ...x, ...patch } as CvthequeRow : x));
+      setCvReloadKey(k => k + 1);
       setCvEditing(null);
     }
   };
@@ -766,7 +778,7 @@ const Admin: React.FC = () => {
             activeTab === 'cvtheque' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          CVthèque ({cvItems.length})
+          CVthèque ({cvCount})
         </button>
         <button
           onClick={() => setActiveTab('observatoire')}
@@ -1292,6 +1304,13 @@ const Admin: React.FC = () => {
                   PDF et Word (.docx) sont lus et classés automatiquement. Les images sont lues par OCR (quelques secondes, téléchargement d'un pack FR au 1er usage). Anciens .doc : à compléter à la main. Stockage privé, séparé des CV des candidats.
                 </p>
               </div>
+              <button
+                onClick={parseUnparsedCvs}
+                disabled={cvParsing}
+                className="px-4 py-2.5 rounded-lg text-sm font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-60 whitespace-nowrap"
+              >
+                {cvParsing ? 'Analyse en cours…' : 'Analyser les CV non traités'}
+              </button>
               <label className={`px-4 py-2.5 rounded-lg text-sm font-bold cursor-pointer text-center whitespace-nowrap ${cvUploading ? 'bg-gray-200 text-gray-500 cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
                 {cvUploading ? 'Import en cours…' : '+ Importer des CV'}
                 <input
@@ -1306,86 +1325,15 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          {/* Moteur de recherche */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <input
-                type="search"
-                value={cvFilters.q}
-                onChange={(e) => setCvFilters(f => ({ ...f, q: e.target.value }))}
-                onKeyDown={(e) => { if (e.key === 'Enter') loadCvtheque(); }}
-                placeholder="Mot-clé (poste, compétence, diplôme…)"
-                className="md:col-span-2 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-              />
-              <input type="text" value={cvFilters.poste} onChange={(e) => setCvFilters(f => ({ ...f, poste: e.target.value }))} placeholder="Poste" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-              <input type="text" value={cvFilters.ville} onChange={(e) => setCvFilters(f => ({ ...f, ville: e.target.value }))} placeholder="Ville / quartier" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-              <input type="text" value={cvFilters.diplome} onChange={(e) => setCvFilters(f => ({ ...f, diplome: e.target.value }))} placeholder="Diplôme" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-              <input type="text" value={cvFilters.competence} onChange={(e) => setCvFilters(f => ({ ...f, competence: e.target.value }))} placeholder="Compétence exacte" className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mt-3">
-              <label className="text-sm text-gray-600 flex items-center gap-2">
-                Expérience min.
-                <input type="number" min={0} value={cvFilters.minExp} onChange={(e) => setCvFilters(f => ({ ...f, minExp: e.target.value }))} placeholder="0" className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-                ans
-              </label>
-              <button onClick={loadCvtheque} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Rechercher</button>
-              <button
-                onClick={() => { setCvFilters({ q: '', ville: '', poste: '', diplome: '', competence: '', minExp: '' }); setTimeout(loadCvtheque, 0); }}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
-              >
-                Réinitialiser
-              </button>
-            </div>
-          </div>
-
-          {/* Résultats */}
-          {cvLoading ? (
-            <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>
-          ) : cvItems.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <p className="text-gray-500">Aucun CV dans la CVthèque</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {cvItems.map((cv) => (
-                <div key={cv.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-2 mb-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{cv.nom_complet || cv.file_name || 'CV sans nom'}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${cv.source === 'candidature' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {cv.source === 'candidature' ? 'Postulant' : 'Importé'}
-                        </span>
-                        {cv.poste && <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">{cv.poste}</span>}
-                        {typeof cv.experience_years === 'number' && <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{cv.experience_years} an{cv.experience_years > 1 ? 's' : ''} d'exp.</span>}
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mb-2">
-                        {cv.email && <a href={`mailto:${cv.email}`} className="text-blue-600 hover:underline">{cv.email}</a>}
-                        {cv.telephone && <a href={`tel:${cv.telephone}`} className="text-blue-600 hover:underline">{cv.telephone}</a>}
-                        {cv.ville && <span>{cv.ville}</span>}
-                        {cv.quartier && <span className="text-gray-500">{cv.quartier}</span>}
-                        {(cv.diplome || cv.niveau_etudes) && <span className="text-gray-500">{cv.diplome || cv.niveau_etudes}</span>}
-                      </div>
-                      {cv.competences && cv.competences.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {cv.competences.slice(0, 12).map((s, i) => (
-                            <span key={i} className="bg-gray-50 border border-gray-200 text-gray-600 px-2 py-0.5 rounded text-xs">{s}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-row lg:flex-col gap-2 flex-shrink-0">
-                      <button onClick={() => openCvFile(cv)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Voir CV</button>
-                      <button onClick={() => setCvEditing(cv)} className="px-4 py-2 text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium">Éditer</button>
-                      <button onClick={() => deleteCv(cv)} className="px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-medium">Supprimer</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <p className="text-center text-xs text-gray-400 mt-8">{cvItems.length} CV affiché{cvItems.length !== 1 ? 's' : ''}</p>
+          {/* Recherche, liste et aperçu du CV : composant partagé avec l'espace
+              entreprise, pour que les deux interfaces affichent exactement la même
+              chose. Le bloc d'import ci-dessus reste propre à l'admin. */}
+          <CvthequeExplorer
+            canManage
+            reloadKey={cvReloadKey}
+            onEdit={(row) => setCvEditing(row)}
+            onDelete={(row) => deleteCv(row)}
+          />
 
           {/* Modal d'édition */}
           {cvEditing && (
