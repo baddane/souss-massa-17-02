@@ -26,7 +26,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (!gmailAppPassword) {
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Email service not configured' }));
+    res.end(JSON.stringify({ error: "GMAIL_APP_PASSWORD manquant dans les variables d'environnement Vercel" }));
     return;
   }
 

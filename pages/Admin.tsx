@@ -417,7 +417,9 @@ const Admin: React.FC = () => {
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      alert(`L'email de confirmation n'a pas pu être envoyé (${(body as any).error || res.status}). Vérifiez notamment la variable SUPABASE_SERVICE_ROLE_KEY sur Vercel.`);
+      // Ne pas désigner une variable au hasard : l'endpoint renvoie déjà la
+      // cause exacte (variable manquante, jeton refusé, erreur SMTP…).
+      alert(`L'email de confirmation n'a pas pu être envoyé.\n\nCause : ${(body as any).error || `HTTP ${res.status}`}`);
       return false;
     }
     return true;

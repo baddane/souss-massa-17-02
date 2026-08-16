@@ -46,10 +46,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const gmailUser = process.env.GMAIL_USER || 'r.baddane@gmail.com';
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-  if (!gmailAppPassword) return json(500, { error: 'Email service not configured' });
+  if (!gmailAppPassword) return json(500, { error: "GMAIL_APP_PASSWORD manquant dans les variables d'environnement Vercel" });
 
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRole) return json(500, { error: 'SUPABASE_SERVICE_ROLE_KEY not configured' });
+  if (!serviceRole) return json(500, { error: "SUPABASE_SERVICE_ROLE_KEY manquant dans les variables d'environnement Vercel" });
 
   try {
     const { email } = await parseBody(req);
