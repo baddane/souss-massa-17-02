@@ -19,8 +19,6 @@ interface Props {
   reloadKey?: number;
 }
 
-const PER_PAGE = 20;
-
 const initials = (name: string) =>
   (name || '?')
     .trim()
@@ -47,12 +45,14 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   const [rows, setRows] = useState<CvthequeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<CvthequeRow | null>(null);
-  const [page, setPage] = useState(1);
   const [sort, setSort] = useState<'nom' | 'recent'>('recent');
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
   const [cvHidden, setCvHidden] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [pdfRendering, setPdfRendering] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [filters, setFilters] = useState({ q: '', ville: '', poste: '', niveau: '', diplome: '', withCv: false });
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +60,6 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
     setLoading(true);
     const data = await cvthequeService.search(f);
     setRows(data);
-    setPage(1);
     setSelected(data[0] || null);
     setLoading(false);
   };
@@ -106,14 +105,52 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
     return sorted;
   }, [rows, sort, filters.withCv]);
 
-  const pages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
-  const pageSafe = Math.min(page, pages);
-  const paged = visible.slice((pageSafe - 1) * PER_PAGE, pageSafe * PER_PAGE);
-
   const isPdf = (r: CvthequeRow | null) =>
     !!r && ((r.file_type || '').toLowerCase().includes('pdf') || (r.file_path || '').toLowerCase().endsWith('.pdf'));
   const isImage = (r: CvthequeRow | null) =>
     !!r && /\.(png|jpe?g|webp|gif)$/i.test(r.file_path || '');
+
+  // Le CV est rendu page par page en <img> plutot que dans une <iframe> : une
+  // iframe PDF embarque toujours sa propre barre de defilement, alors que la
+  // demande est de voir le CV en entier, la page etant le seul ascenseur.
+  useEffect(() => {
+    let cancelled = false;
+    setPdfPages([]);
+    if (!cvUrl || !isPdf(selected)) return;
+
+    (async () => {
+      setPdfRendering(true);
+      try {
+        const pdfjs: any = await import('pdfjs-dist');
+        const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+        pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
+        const doc = await pdfjs.getDocument({ url: cvUrl }).promise;
+        const baseWidth = (previewRef.current?.clientWidth || 900) * (zoom / 100);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const out: string[] = [];
+
+        for (let i = 1; i <= doc.numPages; i++) {
+          if (cancelled) return;
+          const page = await doc.getPage(i);
+          const unit = page.getViewport({ scale: 1 });
+          const viewport = page.getViewport({ scale: (baseWidth / unit.width) * dpr });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          out.push(canvas.toDataURL('image/jpeg', 0.85));
+        }
+        if (!cancelled) setPdfPages(out);
+      } catch (err) {
+        console.error('Rendu du CV :', err);
+      } finally {
+        if (!cancelled) setPdfRendering(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [cvUrl, zoom, selected?.id]);
 
   const selectRow = (r: CvthequeRow) => {
     setSelected(r);
@@ -176,12 +213,12 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
         {/* Volet gauche : liste des profils */}
-        <div ref={listRef} className="space-y-2 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pe-1">
+        <div ref={listRef} className="space-y-2">
           {loading ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('cvt.loading')}</p>
-          ) : paged.length === 0 ? (
+          ) : visible.length === 0 ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('cvt.empty')}</p>
-          ) : paged.map((r) => {
+          ) : visible.map((r) => {
             const active = selected?.id === r.id;
             return (
               <button key={r.id} onClick={() => selectRow(r)}
@@ -209,20 +246,10 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
               </button>
             );
           })}
-
-          {pages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-3">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe <= 1}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">‹</button>
-              <span className="text-sm text-gray-500 tabular-nums">{pageSafe} / {pages}</span>
-              <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={pageSafe >= pages}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">›</button>
-            </div>
-          )}
         </div>
 
         {/* Volet droit : fiche + aperçu du CV */}
-        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5">
           {!selected ? (
             <p className="text-gray-500 text-sm text-center py-10">{t('cvt.selectProfile')}</p>
           ) : (
@@ -314,16 +341,26 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
                 ) : !cvUrl ? (
                   <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.previewError')}</p>
                 ) : cvHidden ? null : (
-                  <div className="border border-gray-200 rounded-xl overflow-auto bg-gray-50" style={{ maxHeight: 'calc(100vh - 16rem)' }}>
-                    <div style={{ width: `${zoom}%`, minWidth: zoom > 100 ? `${zoom}%` : undefined }}>
-                      {isImage(selected) ? (
-                        <img src={cvUrl} alt={selected.file_name || 'CV'} className="w-full" />
-                      ) : isPdf(selected) ? (
-                        <iframe src={cvUrl} title={selected.file_name || 'CV'} className="w-full block" style={{ height: 'calc(100vh - 17rem)', minHeight: 560, border: 0 }} />
+                  <div ref={previewRef}>
+                    {isImage(selected) ? (
+                      <img src={cvUrl} alt={selected.file_name || 'CV'}
+                        className="w-full rounded-xl border border-gray-200" style={{ width: `${zoom}%` }} />
+                    ) : isPdf(selected) ? (
+                      pdfRendering && pdfPages.length === 0 ? (
+                        <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.rendering')}</p>
+                      ) : pdfPages.length === 0 ? (
+                        <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.previewError')}</p>
                       ) : (
-                        <p className="text-sm text-gray-500 p-6 text-center">{t('cvt.previewUnsupported')}</p>
-                      )}
-                    </div>
+                        <div className="space-y-3">
+                          {pdfPages.map((src, i) => (
+                            <img key={i} src={src} alt={`${selected.file_name || 'CV'} — page ${i + 1}`}
+                              className="w-full rounded-xl border border-gray-200 shadow-sm" style={{ width: `${zoom}%` }} />
+                          ))}
+                        </div>
+                      )
+                    ) : (
+                      <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.previewUnsupported')}</p>
+                    )}
                   </div>
                 )}
               </div>
