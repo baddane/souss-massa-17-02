@@ -112,6 +112,22 @@ export const companyAuth = {
 
     try {
       await insertProfile(userId, email, profile);
+
+      // Enregistrement comme lead Brevo, avant la déconnexion (l'endpoint exige
+      // le jeton du compte). Best-effort : une panne CRM ne doit jamais faire
+      // échouer une inscription déjà enregistrée en base.
+      try {
+        const token = data.session?.access_token;
+        if (token) {
+          await fetch('/api/company-lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(profile),
+          });
+        }
+      } catch (err) {
+        console.error('Synchro Brevo (non bloquante) :', err);
+      }
     } finally {
       // On déconnecte dans tous les cas : le compte attend la validation admin.
       await supabaseOffers.auth.signOut();

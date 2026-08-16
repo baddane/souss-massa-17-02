@@ -27,6 +27,49 @@ export function brevoConfigured(): boolean {
   return Boolean(process.env.BREVO_API_KEY);
 }
 
+/**
+ * Cree ou met a jour un contact Brevo (CRM). `updateEnabled` rend l'appel
+ * idempotent : rejouer l'inscription ou la validation met simplement le contact
+ * a jour.
+ *
+ * Volontairement NON bloquant : une panne de la synchro CRM ne doit jamais
+ * empecher l'envoi d'un email ni faire echouer une inscription. Les erreurs
+ * sont tracees, pas propagees.
+ *
+ * NB : cela n'a aucun effet sur la delivrabilite. Le placement en spam se joue
+ * sur l'authentification du domaine (SPF + DKIM), pas sur les listes de contacts.
+ */
+export async function upsertBrevoContact(
+  email: string,
+  attributes: Record<string, unknown> = {},
+  extraListIds: number[] = [],
+): Promise<void> {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) return;
+
+  const listEnv = Number(process.env.BREVO_COMPANY_LIST_ID || '');
+  const listIds = [...extraListIds, ...(Number.isFinite(listEnv) && listEnv > 0 ? [listEnv] : [])];
+
+  try {
+    const r = await fetch('https://api.brevo.com/v3/contacts', {
+      method: 'POST',
+      headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        email,
+        attributes,
+        updateEnabled: true,
+        ...(listIds.length ? { listIds } : {}),
+      }),
+    });
+    if (!r.ok && r.status !== 204) {
+      const detail = await r.text().catch(() => '');
+      console.error(`Brevo contact ${email} : ${r.status} ${detail.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.error(`Brevo contact ${email} :`, err);
+  }
+}
+
 export async function sendBrevoEmail(mail: BrevoMail): Promise<void> {
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error(BREVO_MISSING_KEY);

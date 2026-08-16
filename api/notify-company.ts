@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo.js';
+import { sendBrevoEmail, brevoConfigured, upsertBrevoContact, BREVO_MISSING_KEY } from './_brevo.js';
 
 // Email envoye a une entreprise quand l'admin valide son compte :
 // confirmation + identifiants (login + mot de passe).
@@ -124,6 +124,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           <p style="font-size:13px; color:#6b7280;">Chaque offre publiée est vérifiée par notre équipe avant sa mise en ligne.</p>
           <p style="font-size:13px; color:#6b7280;">— L'équipe SoussMassa-RH</p>
         </div>`,
+    });
+
+    // 5. Mise a jour du contact Brevo (CRM). Non bloquant : l'email est parti,
+    //    une panne de synchro ne doit pas transformer un succes en erreur.
+    await upsertBrevoContact(email, {
+      NOM_ENTREPRISE: nom || '',
+      STATUT_COMPTE: 'valide',
+      SOURCE: 'validation-admin',
     });
 
     return json(200, { ok: true });
