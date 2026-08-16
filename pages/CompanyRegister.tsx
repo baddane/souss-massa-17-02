@@ -14,11 +14,10 @@ const CompanyRegister: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({
-    nom_entreprise: '', email: '', password: '', confirmPassword: '', telephone: '', ville: '', secteur: '',
+    nom_entreprise: '', email: '', telephone: '', ville: '', secteur: '',
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
-  const mismatch = form.confirmPassword.length > 0 && form.confirmPassword !== form.password;
 
   const handleGoogle = async () => {
     try { await companyAuth.signInWithGoogle(); }
@@ -27,21 +26,13 @@ const CompanyRegister: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nom_entreprise || !form.email || !form.password) {
+    if (!form.nom_entreprise || !form.email) {
       toast.warning(t('company.error.fillRequired'));
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.warning(t('company.error.passwordShort'));
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      toast.warning(t('company.error.passwordMismatch'));
       return;
     }
     setSending(true);
     try {
-      await companyAuth.signUp(form.email, form.password, {
+      await companyAuth.signUp(form.email, {
         nom_entreprise: form.nom_entreprise,
         telephone: form.telephone,
         ville: form.ville,
@@ -107,20 +98,9 @@ const CompanyRegister: React.FC = () => {
             <input type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="contact@entreprise.com"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.password')} *</label>
-            <input type="password" required minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
-            <p className="text-xs text-gray-400 mt-1">{t('company.passwordHint')}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.confirmPassword')} *</label>
-            <input type="password" required value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 ${
-                mismatch ? 'border-red-400 focus:ring-red-400 bg-red-50' : 'border-gray-200 focus:ring-blue-500'
-              }`} />
-            {mismatch && <p className="text-xs text-red-500 mt-1">{t('company.error.passwordMismatch')}</p>}
-          </div>
+          <p className="text-xs text-gray-500 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            {t('company.register.passwordByEmail')}
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.phone')}</label>
@@ -145,7 +125,7 @@ const CompanyRegister: React.FC = () => {
             </select>
           </div>
 
-          <button type="submit" disabled={sending || mismatch}
+          <button type="submit" disabled={sending}
             className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
             {sending ? t('company.register.submitting') : t('company.register.submit')}
           </button>

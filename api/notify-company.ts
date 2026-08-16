@@ -3,14 +3,17 @@ import { randomBytes } from 'crypto';
 import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo.js';
 
 // Email envoye a une entreprise quand l'admin valide son compte :
-// confirmation + identifiants (login + mot de passe temporaire).
+// confirmation + identifiants (login + mot de passe).
+//
+// L'inscription ne demande aucun mot de passe (formulaire allege) : le compte
+// Auth est cree avec un mot de passe aleatoire jetable, et le vrai mot de passe
+// est genere ici puis envoye. Chaque appel en genere un nouveau et invalide le
+// precedent — l'email le dit explicitement, car plusieurs envois produisent des
+// messages au sujet identique que les clients mail regroupent.
 //
 // Securite :
 // - L'appelant DOIT etre un admin authentifie : son JWT Supabase est verifie
 //   via la fonction RPC `is_admin()` (sinon 401/403).
-// - Supabase ne conserve pas les mots de passe en clair : un mot de passe
-//   temporaire est genere ici, positionne sur le compte via l'API Admin
-//   (cle service_role, jamais exposee au client), puis envoye par email.
 // - On n'envoie QUE si l'email correspond a un compte entreprise dont le
 //   statut est 'valide' (verifie cote Supabase).
 const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
@@ -26,8 +29,8 @@ function parseBody(req: IncomingMessage): Promise<any> {
   });
 }
 
-// Mot de passe temporaire lisible : 10 caracteres sans ambiguite (pas de 0/O, 1/l/I)
-function generateTempPassword(): string {
+// Mot de passe lisible : 10 caracteres sans ambiguite (pas de 0/O, 1/l/I)
+function generatePassword(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const buf = randomBytes(10);
   let out = '';
@@ -74,9 +77,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
     const { id: userId, nom_entreprise: nom } = rows[0];
 
-    // 3. Generer un mot de passe temporaire et le positionner sur le compte
-    //    (l'ancien mot de passe choisi a l'inscription est remplace)
-    const password = generateTempPassword();
+    // 3. Generer le mot de passe et le poser sur le compte (API Admin).
+    //    Le compte n'en avait pas de connu : l'inscription en pose un jetable.
+    const password = generatePassword();
     const updateUser = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
       method: 'PUT',
       headers: {
@@ -91,7 +94,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       throw new Error(`Echec mise à jour du mot de passe (${updateUser.status}): ${errText.slice(0, 200)}`);
     }
 
-    // 4. Envoyer l'email de confirmation avec les identifiants (via Brevo)
+    // 4. Envoyer l'email de confirmation (via Brevo)
     await sendBrevoEmail({
       to: email,
       toName: nom || undefined,
@@ -115,10 +118,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
             </a>
           </p>
           <p style="background:#fef3c7; border-left:4px solid #f59e0b; padding:10px 14px; font-size:13px; color:#92400e; margin:16px 0;">
-            <strong>Important :</strong> ce mot de passe remplace tout mot de passe reçu précédemment.
-            Si vous avez reçu plusieurs emails, seul celui-ci est valide — les précédents ne fonctionnent plus.
+            <strong>Important :</strong> si vous avez reçu plusieurs emails d'activation,
+            seul le <strong>plus récent</strong> est valide — les mots de passe précédents ne fonctionnent plus.
           </p>
-          <p style="font-size:13px; color:#6b7280; margin-top:16px;">Chaque offre publiée est vérifiée par notre équipe avant sa mise en ligne.</p>
+          <p style="font-size:13px; color:#6b7280;">Chaque offre publiée est vérifiée par notre équipe avant sa mise en ligne.</p>
           <p style="font-size:13px; color:#6b7280;">— L'équipe SoussMassa-RH</p>
         </div>`,
     });

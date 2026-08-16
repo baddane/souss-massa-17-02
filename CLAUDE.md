@@ -468,10 +468,14 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
   `company_id`, et `statut='en_attente'` (invisibles du public tant que non validees).
 - **Moderation** : onglets « Entreprises » et « Offres a valider » dans `pages/Admin.tsx`.
   Valider un compte → email via `api/notify-company.ts` : confirmation + **login et
-  mot de passe temporaire** (Supabase ne conserve pas les mots de passe en clair :
-  l'endpoint genere un mdp, le positionne via l'API Admin `/auth/v1/admin/users/{id}`
-  avec la cle `service_role`, puis l'envoie par email). L'endpoint **verifie que
-  l'appelant est admin** (`is_admin()` via son JWT) avant d'agir.
+  mot de passe**. **L'inscription ne demande aucun mot de passe** (formulaire
+  allege : nom, email, telephone, ville, secteur) ; `companyAuth.signUp` pose un
+  mot de passe aleatoire jetable pour satisfaire Supabase Auth, et le vrai mot de
+  passe est genere a la validation puis pose via l'API Admin
+  `/auth/v1/admin/users/{id}` (cle `service_role`). **Chaque envoi regenere le mot
+  de passe et invalide le precedent** — l'email et l'alerte admin le disent, car
+  plusieurs envois produisent des messages au sujet identique que Gmail regroupe.
+  L'endpoint **verifie que l'appelant est admin** (`is_admin()` via son JWT).
   Valider une offre → `statut='active'` (publiee).
 - **Visibilite publique** : `jobOffersService` (les 2 copies), `api/sitemap.ts` et
   `scripts/gen-sitemap.cjs` ne renvoient que les offres `statut='active'`.
@@ -481,9 +485,9 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > « Confirm email »). Sinon, apres inscription, l'entreprise ne peut pas se
 > connecter (« Email not confirmed ») — la validation se fait par l'admin, pas
 > par email Supabase. L'email de notification part via **Brevo** et exige donc
-> **`BREVO_API_KEY`**, ainsi que **`SUPABASE_SERVICE_ROLE_KEY`** (cle
-> `service_role` du projet `tqrhx…`), toutes deux dans Vercel → Settings →
-> Environment Variables, sinon l'email de validation echoue.
+> **`BREVO_API_KEY`** dans Vercel → Settings → Environment Variables, ainsi que
+> **`SUPABASE_SERVICE_ROLE_KEY`** (utilisee par `notify-company` pour poser le mot
+> de passe, et par `delete-company`).
 
 > **Tous les envois passent par Brevo** (`api/_brevo.ts`, prefixe `_` = pas une
 > route). Plus aucun envoi via Gmail/nodemailer : la dependance a ete retiree.

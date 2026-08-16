@@ -402,10 +402,11 @@ const Admin: React.FC = () => {
     setPendingOffers(await moderationService.getPendingOffers());
   };
 
-  // Email de confirmation + identifiants (login + mot de passe temporaire).
-  // Le jeton de session admin est transmis : l'endpoint vérifie is_admin()
-  // avant d'agir. Retourne false si l'envoi a échoué.
-  const sendValidationEmail = async (email: string): Promise<boolean> => {
+  // Email d'activation : login + mot de passe généré par l'endpoint. Chaque envoi
+  // génère un NOUVEAU mot de passe et invalide le précédent. Le jeton de session
+  // admin est transmis : l'endpoint vérifie is_admin() avant d'agir.
+  // `notify` = true pour confirmer visuellement l'envoi (bouton « Renvoyer »).
+  const sendValidationEmail = async (email: string, notify = false): Promise<boolean> => {
     const { data: { session } } = await supabaseOffers.auth.getSession();
     const res = await fetch('/api/notify-company', {
       method: 'POST',
@@ -422,6 +423,7 @@ const Admin: React.FC = () => {
       alert(`L'email de confirmation n'a pas pu être envoyé.\n\nCause : ${(body as any).error || `HTTP ${res.status}`}`);
       return false;
     }
+    if (notify) alert(`Email envoyé à ${email} ✅\n\nUn NOUVEAU mot de passe a été généré : les précédents ne fonctionnent plus.`);
     return true;
   };
 
@@ -431,6 +433,7 @@ const Admin: React.FC = () => {
       if (!(await sendValidationEmail(c.email))) return;
       await moderationService.markNotified(c.id);
       setCompanies(prev => prev.map(x => x.id === c.id ? { ...x, statut: 'valide', notified: true } : x));
+      alert(`Entreprise validée. Email envoyé à ${c.email} ✅\n\nIl contient l'identifiant et le mot de passe de connexion.`);
     } catch (e) {
       alert("Erreur lors de la validation.");
     }
@@ -1055,7 +1058,7 @@ const Admin: React.FC = () => {
                         </>
                       )}
                       {c.statut === 'valide' && (
-                        <button onClick={() => sendValidationEmail(c.email)} className="px-4 py-2 text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg text-sm font-medium">
+                        <button onClick={() => sendValidationEmail(c.email, true)} className="px-4 py-2 text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg text-sm font-medium">
                           Renvoyer l'email
                         </button>
                       )}

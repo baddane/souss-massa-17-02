@@ -60,36 +60,23 @@ async function insertProfile(userId: string, email: string, profile: NewCompanyP
   if (error) throw error;
 }
 
-// Un compte peut exister dans auth.users sans ligne `comptes_entreprise`
-// (compte orphelin : l'admin a supprime l'entreprise, le compte Auth restait).
-// L'inscription echouait alors definitivement sur « User already registered ».
-// Si le mot de passe fourni est le bon et qu'aucun profil n'existe, on recree le
-// profil au lieu de bloquer. Renvoie l'id repare, ou null si c'est un vrai doublon.
-async function healOrphanAccount(email: string, password: string, profile: NewCompanyProfile): Promise<string | null> {
-  const { data, error } = await supabaseOffers.auth.signInWithPassword({ email, password });
-  if (error || !data.user) return null; // mot de passe different -> compte d'un tiers
-  const userId = data.user.id;
-  try {
-    // Ne jamais transformer un compte admin en compte entreprise.
-    const { data: isAdmin } = await supabaseOffers.rpc('is_admin');
-    if (isAdmin === true) return null;
-    if (await companyService.getProfile(userId)) return null; // profil deja present
-    await insertProfile(userId, email, profile);
-    return userId;
-  } finally {
-    await supabaseOffers.auth.signOut();
-  }
+// L'inscription ne demande plus de mot de passe : l'entreprise saisit seulement
+// ses coordonnees. Supabase Auth en exige un a la creation du compte, on en pose
+// donc un aleatoire, jamais affiche ni conserve. Le vrai mot de passe est genere
+// et envoye par email au moment ou l'admin valide le compte (api/notify-company).
+function throwawayPassword(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return 'Tmp-' + Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 32);
 }
 
 // ---- Authentification ----
 export const companyAuth = {
-  async signUp(email: string, password: string, profile: NewCompanyProfile) {
-    const { data, error } = await supabaseOffers.auth.signUp({ email, password });
+  async signUp(email: string, profile: NewCompanyProfile) {
+    const { data, error } = await supabaseOffers.auth.signUp({ email, password: throwawayPassword() });
 
     if (error) {
       if (!/registered|already/i.test(error.message || '')) throw error;
-      const healed = await healOrphanAccount(email, password, profile);
-      if (healed) return healed;
       throw new EmailAlreadyRegisteredError();
     }
 
