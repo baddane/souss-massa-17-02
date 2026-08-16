@@ -686,7 +686,8 @@ const Admin: React.FC = () => {
   const pendingCompanies = companies.filter(c => c.statut === 'en_attente').length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    // Idem côté admin : la CVthèque s'étale, les autres onglets gardent max-w-7xl.
+    <div className={`${activeTab === 'cvtheque' ? 'max-w-screen-2xl' : 'max-w-7xl'} mx-auto px-4 py-8`}>
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>

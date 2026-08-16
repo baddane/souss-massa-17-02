@@ -174,9 +174,9 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
         </select>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,340px)_1fr] xl:grid-cols-[minmax(0,380px)_1fr] gap-5 items-start">
         {/* Volet gauche : liste des profils */}
-        <div ref={listRef} className="space-y-2 lg:max-h-[70vh] lg:overflow-y-auto lg:pe-1">
+        <div ref={listRef} className="space-y-2 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto lg:pe-1">
           {loading ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('cvt.loading')}</p>
           ) : paged.length === 0 ? (
@@ -222,7 +222,7 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
         </div>
 
         {/* Volet droit : fiche + aperçu du CV */}
-        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5 lg:sticky lg:top-4">
+        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           {!selected ? (
             <p className="text-gray-500 text-sm text-center py-10">{t('cvt.selectProfile')}</p>
           ) : (
@@ -314,12 +314,12 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
                 ) : !cvUrl ? (
                   <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.previewError')}</p>
                 ) : cvHidden ? null : (
-                  <div className="border border-gray-200 rounded-xl overflow-auto bg-gray-50" style={{ maxHeight: '65vh' }}>
+                  <div className="border border-gray-200 rounded-xl overflow-auto bg-gray-50" style={{ maxHeight: 'calc(100vh - 20rem)' }}>
                     <div style={{ width: `${zoom}%`, minWidth: zoom > 100 ? `${zoom}%` : undefined }}>
                       {isImage(selected) ? (
                         <img src={cvUrl} alt={selected.file_name || 'CV'} className="w-full" />
                       ) : isPdf(selected) ? (
-                        <iframe src={cvUrl} title={selected.file_name || 'CV'} className="w-full block" style={{ height: '60vh', border: 0 }} />
+                        <iframe src={cvUrl} title={selected.file_name || 'CV'} className="w-full block" style={{ height: 'calc(100vh - 21rem)', minHeight: 460, border: 0 }} />
                       ) : (
                         <p className="text-sm text-gray-500 p-6 text-center">{t('cvt.previewUnsupported')}</p>
                       )}
