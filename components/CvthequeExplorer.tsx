@@ -53,6 +53,7 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [pdfRendering, setPdfRendering] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const pdfCache = useRef<Map<string, string[]>>(new Map());
   const [filters, setFilters] = useState({ q: '', ville: '', poste: '', niveau: '', diplome: '', withCv: false });
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -115,9 +116,14 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   // demande est de voir le CV en entier, la page etant le seul ascenseur.
   useEffect(() => {
     let cancelled = false;
-    setPdfPages([]);
-    if (!cvUrl || !isPdf(selected)) return;
+    if (!cvUrl || !isPdf(selected)) { setPdfPages([]); return; }
 
+    // Revenir sur un profil deja consulte doit etre instantane.
+    const cacheKey = `${selected?.id}@${zoom}`;
+    const cached = pdfCache.current.get(cacheKey);
+    if (cached) { setPdfPages(cached); setPdfRendering(false); return; }
+
+    setPdfPages([]);
     (async () => {
       setPdfRendering(true);
       try {
@@ -140,8 +146,11 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
           canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
           out.push(canvas.toDataURL('image/jpeg', 0.85));
+          // Affichage progressif : la premiere page apparait sans attendre les
+          // suivantes, au lieu de laisser l'ecran vide plusieurs secondes.
+          if (!cancelled) setPdfPages([...out]);
         }
-        if (!cancelled) setPdfPages(out);
+        if (!cancelled) pdfCache.current.set(cacheKey, out);
       } catch (err) {
         console.error('Rendu du CV :', err);
       } finally {
@@ -152,12 +161,20 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
     return () => { cancelled = true; };
   }, [cvUrl, zoom, selected?.id]);
 
+  // La liste n'etant plus paginee, on peut cliquer un profil tout en bas alors
+  // que le volet de droite commence en haut de page : sans ce recentrage, le CV
+  // s'affichait hors ecran et il fallait remonter pour le voir.
   const selectRow = (r: CvthequeRow) => {
     setSelected(r);
     setCvHidden(false);
-    if (window.innerWidth < 1024) {
-      setTimeout(() => document.getElementById('cv-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-    }
+    requestAnimationFrame(() => {
+      const el = document.getElementById('cv-detail');
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 16;
+      // On ne remonte jamais l'utilisateur : on ne bouge que s'il est plus bas
+      // que la fiche, sinon on le laisse ou il est.
+      if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
+    });
   };
 
   return (
@@ -249,7 +266,7 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
         </div>
 
         {/* Volet droit : fiche + aperçu du CV */}
-        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5">
+        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5 scroll-mt-4">
           {!selected ? (
             <p className="text-gray-500 text-sm text-center py-10">{t('cvt.selectProfile')}</p>
           ) : (
