@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import nodemailer from 'nodemailer';
+import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo';
 
 const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
 
@@ -20,13 +20,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  const gmailUser = process.env.GMAIL_USER || RECIPIENT_EMAIL;
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-
-  if (!gmailAppPassword) {
+  if (!brevoConfigured()) {
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: "GMAIL_APP_PASSWORD manquant dans les variables d'environnement Vercel" }));
+    res.end(JSON.stringify({ error: BREVO_MISSING_KEY }));
     return;
   }
 
@@ -40,19 +37,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: gmailUser, pass: gmailAppPassword },
-    });
-
-    const attachments = cvBase64 && cvFileName
-      ? [{ filename: cvFileName, content: cvBase64, encoding: 'base64' as const }]
-      : [];
-
-    await transporter.sendMail({
-      from: `SoussMassa-RH <${gmailUser}>`,
+    await sendBrevoEmail({
       to: RECIPIENT_EMAIL,
       replyTo: candidateEmail,
+      tags: ['candidature'],
+      attachments: cvBase64 && cvFileName ? [{ name: cvFileName, content: cvBase64 }] : undefined,
       subject: `Candidature : ${jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
@@ -67,7 +56,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           </table>
         </div>
       `,
-      attachments,
     });
 
     res.statusCode = 200;

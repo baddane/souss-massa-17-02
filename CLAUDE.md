@@ -480,10 +480,17 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > (Dashboard → Authentication → Sign In / Providers → Email → decocher
 > « Confirm email »). Sinon, apres inscription, l'entreprise ne peut pas se
 > connecter (« Email not confirmed ») — la validation se fait par l'admin, pas
-> par email Supabase. L'email de notification utilise `GMAIL_APP_PASSWORD` (deja
-> configure pour les candidatures) et **`SUPABASE_SERVICE_ROLE_KEY`** (cle
-> `service_role` du projet `tqrhx…` a ajouter dans Vercel → Settings →
-> Environment Variables, sinon l'email de validation echoue).
+> par email Supabase. L'email de notification part via **Brevo** et exige donc
+> **`BREVO_API_KEY`**, ainsi que **`SUPABASE_SERVICE_ROLE_KEY`** (cle
+> `service_role` du projet `tqrhx…`), toutes deux dans Vercel → Settings →
+> Environment Variables, sinon l'email de validation echoue.
+
+> **Tous les envois passent par Brevo** (`api/_brevo.ts`, prefixe `_` = pas une
+> route). Plus aucun envoi via Gmail/nodemailer : la dependance a ete retiree.
+> `GMAIL_APP_PASSWORD` n'est plus utilisee nulle part. Pour diagnostiquer une
+> variable manquante sans identifiants, appeler l'endpoint en POST sans jeton :
+> il echoue sur le controle de la variable *avant* le controle d'authentification,
+> et nomme la variable absente.
 
 ## CVtheque (base de CV admin, parsing SANS LLM)
 

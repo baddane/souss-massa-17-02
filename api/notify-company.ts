@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import nodemailer from 'nodemailer';
+import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo';
 
 // Email envoye a une entreprise quand l'admin valide son compte :
 // confirmation + identifiants (login + mot de passe temporaire).
@@ -44,9 +44,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
-  const gmailUser = process.env.GMAIL_USER || 'r.baddane@gmail.com';
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-  if (!gmailAppPassword) return json(500, { error: "GMAIL_APP_PASSWORD manquant dans les variables d'environnement Vercel" });
+  if (!brevoConfigured()) return json(500, { error: BREVO_MISSING_KEY });
 
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRole) return json(500, { error: "SUPABASE_SERVICE_ROLE_KEY manquant dans les variables d'environnement Vercel" });
@@ -93,15 +91,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       throw new Error(`Echec mise à jour du mot de passe (${updateUser.status}): ${errText.slice(0, 200)}`);
     }
 
-    // 4. Envoyer l'email de confirmation avec les identifiants
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: gmailUser, pass: gmailAppPassword },
-    });
-
-    await transporter.sendMail({
-      from: `SoussMassa-RH <${gmailUser}>`,
+    // 4. Envoyer l'email de confirmation avec les identifiants (via Brevo)
+    await sendBrevoEmail({
       to: email,
+      toName: nom || undefined,
+      tags: ['compte-entreprise-valide'],
       subject: 'Votre compte entreprise SoussMassa-RH est activé ✅',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; color:#111827;">
