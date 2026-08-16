@@ -331,9 +331,15 @@ Le footer (`components/Footer.tsx`) a 4 colonnes :
 - `X-Robots-Tag: noindex, nofollow` sur `/admin` et `/api/`
 - Cache immutable sur fichiers JS et CSS statiques
 - Rewrites : `/sitemap.xml` → `/api/sitemap`, `/robots.txt` → `/api/robots`, `/*` → `/index.html`
-- **Fonctions** : `api/apply.ts` et `api/notify-company.ts` sont forcees en
-  runtime `nodejs22.x` dans vercel.json (nodemailer ne tourne PAS sur Edge —
-  sans ce reglage, les fonctions plantent `FUNCTION_INVOCATION_FAILED`).
+- **Fonctions** : NE PAS mettre de bloc `functions` avec `runtime: "nodejs22.x"`
+  dans vercel.json — cette valeur est rejetee par le builder (« Function Runtimes
+  must have a valid version ») et chaque deploiement echoue. `api/apply.ts` et
+  `api/notify-company.ts` tournent deja sur le runtime **Node par defaut** (seuls
+  sitemap/robots/keepalive declarent `runtime: 'edge'`). Le vrai fix des 500
+  `FUNCTION_INVOCATION_FAILED` etait `"type": "module"` dans package.json :
+  Vercel transpile le TS en gardant la syntaxe ESM, sans lui Node chargeait les
+  fonctions en CJS (« Cannot use import statement outside a module »). Ne pas
+  retirer `"type": "module"` (postcss/tailwind sont alors en `.cjs`).
 
 ## Structure des fichiers cles
 
