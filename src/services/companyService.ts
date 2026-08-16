@@ -14,6 +14,22 @@ export interface CompanyProfile {
   notified: boolean;
 }
 
+// Valeurs imposees par la contrainte `candidatures_status_check` en base, et
+// deja utilisees par la page admin : les deux interfaces doivent afficher les
+// memes statuts sur les memes lignes.
+export type CandidatureStatus = 'nouvelle' | 'vue' | 'présélection' | 'entretien' | 'acceptée' | 'refusée';
+export const CANDIDATURE_STATUSES: CandidatureStatus[] = ['nouvelle', 'vue', 'présélection', 'entretien', 'acceptée', 'refusée'];
+
+// Cle de traduction sans accent ni espace, pour eviter des cles i18n accentuees.
+export const candidatureStatusKey = (s: string): string => ({
+  'nouvelle': 'nouvelle',
+  'vue': 'vue',
+  'présélection': 'preselection',
+  'entretien': 'entretien',
+  'acceptée': 'acceptee',
+  'refusée': 'refusee',
+}[s] || 'nouvelle');
+
 export interface CandidatureRow {
   id: string;
   created_at: string;
@@ -24,6 +40,8 @@ export interface CandidatureRow {
   candidate_phone: string | null;
   cv_path: string | null;
   cv_filename: string | null;
+  status: CandidatureStatus | null;
+  notes: string | null;
 }
 
 export interface OfferForm {
@@ -201,6 +219,14 @@ export const companyService = {
       .order('created_at', { ascending: false });
     if (error) { console.error('getMyCandidatures', error); return []; }
     return (data || []) as CandidatureRow[];
+  },
+
+  // Suivi d'une candidature. Le trigger `candidatures_company_guard`
+  // (migration 020) n'accepte que `status` et `notes` : l'identite du candidat
+  // et le chemin de son CV sont figes cote base.
+  async setCandidatureStatus(id: string, status: CandidatureStatus) {
+    const { error } = await supabaseOffers.from('candidatures').update({ status }).eq('id', id);
+    if (error) throw error;
   },
 
   // Le bucket `cvs` est prive : on genere une URL signee de courte duree.

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { useT, cityLabel, contractLong } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
-import { companyAuth, companyService, CompanyProfile, CandidatureRow } from '../src/services/companyService';
+import { companyAuth, companyService, CompanyProfile, CandidatureRow, CandidatureStatus, CANDIDATURE_STATUSES, candidatureStatusKey } from '../src/services/companyService';
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 
 type Tab = 'offres' | 'candidatures' | 'cvtheque' | 'compte';
@@ -33,6 +33,10 @@ const CompanyDashboard: React.FC = () => {
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [offerStep, setOfferStep] = useState<1 | 2>(1);
+  const [candSearch, setCandSearch] = useState('');
+  const [candStatus, setCandStatus] = useState<'tous' | CandidatureStatus>('tous');
+  const [candPage, setCandPage] = useState(1);
   const [candidatures, setCandidatures] = useState<CandidatureRow[]>([]);
   const [loadingCand, setLoadingCand] = useState(false);
   const [cvRows, setCvRows] = useState<CvthequeRow[]>([]);
@@ -72,6 +76,8 @@ const CompanyDashboard: React.FC = () => {
       const prof = await companyService.getProfile(user.id);
       setProfile(prof);
       if (prof && prof.statut === 'valide') {
+        // Ville pre-remplie depuis le profil : un champ de moins a saisir.
+        if (prof.ville) setForm((f) => ({ ...f, ville: prof.ville as string }));
         setOffers(await companyService.getMyOffers(user.id));
         loadCandidatures(user.id);
       }
@@ -129,7 +135,53 @@ const CompanyDashboard: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const cancelEdit = () => { setEditingId(null); setForm({ ...emptyForm }); };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setOfferStep(1);
+    setForm({ ...emptyForm, ville: profile?.ville || '' });
+  };
+
+  // Suivi d'une candidature (à traiter / présélection / entretien / refusée).
+  const setCandidatureStatus = async (c: CandidatureRow, status: CandidatureStatus) => {
+    const previous = c.status;
+    // Optimiste : la liste réagit tout de suite, on revient en arrière si la base refuse.
+    setCandidatures((prev) => prev.map((x) => (x.id === c.id ? { ...x, status } : x)));
+    try {
+      await companyService.setCandidatureStatus(c.id, status);
+    } catch {
+      setCandidatures((prev) => prev.map((x) => (x.id === c.id ? { ...x, status: previous } : x)));
+      toast.error(t('company.error.generic'));
+    }
+  };
+
+  // Compteurs affichés en tête de tableau de bord.
+  const stats = {
+    publiees: offers.filter((o) => o.statut === 'active').length,
+    enAttente: offers.filter((o) => o.statut === 'en_attente').length,
+    candidatures: candidatures.length,
+    nouvelles: candidatures.filter((c) => (c.status || 'nouvelle') === 'nouvelle').length,
+  };
+
+  // Filtrage + pagination des candidatures.
+  const PER_PAGE = 10;
+  const filteredCand = candidatures.filter((c) => {
+    if (candStatus !== 'tous' && (c.status || 'nouvelle') !== candStatus) return false;
+    const q = candSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [c.candidate_name, c.candidate_email, c.job_title].some((v) => (v || '').toLowerCase().includes(q));
+  });
+  const candPages = Math.max(1, Math.ceil(filteredCand.length / PER_PAGE));
+  const pageSafe = Math.min(candPage, candPages);
+  const pagedCand = filteredCand.slice((pageSafe - 1) * PER_PAGE, pageSafe * PER_PAGE);
+  // Memes couleurs que la page admin, pour que le meme statut se lise pareil.
+  const CAND_STYLE: Record<string, string> = {
+    'nouvelle': 'bg-blue-100 text-blue-800',
+    'vue': 'bg-gray-100 text-gray-800',
+    'présélection': 'bg-yellow-100 text-yellow-800',
+    'entretien': 'bg-purple-100 text-purple-800',
+    'acceptée': 'bg-green-100 text-green-800',
+    'refusée': 'bg-red-100 text-red-800',
+  };
 
   // Retrait / remise en validation d'une offre.
   const changeOfferStatus = async (o: any, statut: 'retire' | 'en_attente') => {
@@ -169,7 +221,8 @@ const CompanyDashboard: React.FC = () => {
         toast.success(t('company.post.success'));
       }
       setEditingId(null);
-      setForm({ ...emptyForm });
+      setOfferStep(1);
+      setForm({ ...emptyForm, ville: profile.ville || '' });
       setOffers(await companyService.getMyOffers(profile.id));
     } catch {
       toast.error(t('company.error.generic'));
@@ -268,6 +321,28 @@ const CompanyDashboard: React.FC = () => {
 
   return shell(
     <>
+      {/* Situation en un coup d'œil, avant le détail */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-200 border border-gray-200 rounded-2xl overflow-hidden mb-8">
+        {[
+          { n: stats.publiees, l: t('company.stat.published') },
+          { n: stats.enAttente, l: t('company.stat.pending') },
+          { n: stats.candidatures, l: t('company.stat.applications') },
+          { n: stats.nouvelles, l: t('company.stat.newApplications'), accent: stats.nouvelles > 0 },
+        ].map((s, i) => (
+          <div key={i} className="bg-white px-4 py-4">
+            <p className={`text-2xl font-bold tabular-nums ${s.accent ? 'text-blue-600' : 'text-gray-900'}`}>{s.n}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{s.l}</p>
+          </div>
+        ))}
+      </div>
+
+      {stats.nouvelles > 0 && (
+        <button onClick={() => { setTab('candidatures'); setCandStatus('nouvelle'); setCandPage(1); }}
+          className="w-full text-start bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-8 text-sm text-blue-900 hover:bg-blue-100 transition-colors">
+          {t('company.stat.newApplicationsCta', { count: stats.nouvelles })}
+        </button>
+      )}
+
       <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-8">
         {TABS.map((tb) => (
           <button key={tb.key} onClick={() => { setTab(tb.key); if (tb.key === 'cvtheque' && cvRows.length === 0) searchCvtheque(); }}
@@ -292,6 +367,16 @@ const CompanyDashboard: React.FC = () => {
           )}
         </div>
         {editingId && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{t('company.offer.editWarning')}</p>}
+
+        {/* Depot en deux temps : le poste, puis le detail. Moins intimidant qu'un
+            bloc de sept champs, et l'etape 1 suffit a decrire l'essentiel. */}
+        <div className="flex items-center gap-2 text-xs font-medium">
+          <span className={offerStep === 1 ? 'text-blue-600' : 'text-gray-400'}>1. {t('company.post.step1')}</span>
+          <span className="h-px flex-1 bg-gray-200" />
+          <span className={offerStep === 2 ? 'text-blue-600' : 'text-gray-400'}>2. {t('company.post.step2')}</span>
+        </div>
+
+        <div className={offerStep === 1 ? '' : 'hidden'}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.post.jobTitle')} *</label>
           <input type="text" required value={form.emploi_metier} onChange={(e) => setForm({ ...form, emploi_metier: e.target.value })}
@@ -325,6 +410,17 @@ const CompanyDashboard: React.FC = () => {
             placeholder={t('company.post.salaryHint')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
+        <button type="button"
+          onClick={() => {
+            if (!form.emploi_metier || !form.ville) { toast.warning(t('company.error.fillRequired')); return; }
+            setOfferStep(2);
+          }}
+          className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 transition-colors">
+          {t('company.post.next')}
+        </button>
+        </div>
+
+        <div className={offerStep === 2 ? '' : 'hidden'}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.post.description')} *</label>
           <textarea required rows={5} value={form.full_description} onChange={(e) => setForm({ ...form, full_description: e.target.value })}
@@ -337,10 +433,18 @@ const CompanyDashboard: React.FC = () => {
             placeholder={t('company.post.skillsHint')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
-        <button type="submit" disabled={sending}
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-colors disabled:opacity-60">
-          {sending ? t('company.post.submitting') : editingId ? t('company.offer.saveEdit') : t('company.post.submit')}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button type="button" onClick={() => setOfferStep(1)}
+            className="sm:w-40 border border-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
+            {t('company.post.back')}
+          </button>
+          <button type="submit" disabled={sending}
+            className="flex-1 bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-colors disabled:opacity-60">
+            {sending ? t('company.post.submitting') : editingId ? t('company.offer.saveEdit') : t('company.post.submit')}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 text-center">{t('company.post.reviewDelay')}</p>
+        </div>
       </form>
 
       {/* Mes offres */}
@@ -388,28 +492,74 @@ const CompanyDashboard: React.FC = () => {
         candidatures.length === 0 ? (
           <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.applications.empty')}</p>
         ) : (
-          <div className="space-y-3">
-            {candidatures.map((c) => (
-              <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{c.candidate_name}</p>
-                  <p className="text-sm text-gray-500 truncate">
-                    {c.job_title} · {new Date(c.created_at).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : 'fr-FR')}
-                  </p>
-                  <p className="text-sm text-gray-600 truncate">
-                    <a href={`mailto:${c.candidate_email}`} className="text-blue-600 hover:underline">{c.candidate_email}</a>
-                    {c.candidate_phone ? ` · ${c.candidate_phone}` : ''}
-                  </p>
-                </div>
-                {c.cv_path ? (
-                  <button onClick={() => openFile(c.cv_path, 'cvs')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">
-                    {t('company.cv.download')}
-                  </button>
-                ) : <span className="text-xs text-gray-400">{t('company.cv.none')}</span>}
+          <>
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input type="search" value={candSearch}
+                onChange={(e) => { setCandSearch(e.target.value); setCandPage(1); }}
+                placeholder={t('company.applications.searchHint')}
+                className="sm:col-span-2 px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+              <select value={candStatus}
+                onChange={(e) => { setCandStatus(e.target.value as typeof candStatus); setCandPage(1); }}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="tous">{t('company.applications.allStatuses')}</option>
+                {CANDIDATURE_STATUSES.map((st) => <option key={st} value={st}>{t(`company.cand.${candidatureStatusKey(st)}`)}</option>)}
+              </select>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-3">{t('company.applications.count', { count: filteredCand.length })}</p>
+
+            {filteredCand.length === 0 ? (
+              <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.applications.noMatch')}</p>
+            ) : (
+              <div className="space-y-3">
+                {pagedCand.map((c) => (
+                  <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{c.candidate_name}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {c.job_title} · {new Date(c.created_at).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : 'fr-FR')}
+                      </p>
+                      <p className="text-sm text-gray-600 truncate">
+                        <a href={`mailto:${c.candidate_email}`} className="text-blue-600 hover:underline">{c.candidate_email}</a>
+                        {c.candidate_phone ? ` · ${c.candidate_phone}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${CAND_STYLE[c.status || 'nouvelle'] || 'bg-gray-100 text-gray-700'}`}>
+                        {t(`company.cand.${candidatureStatusKey(c.status || 'nouvelle')}`)}
+                      </span>
+                      <select value={c.status || 'nouvelle'}
+                        onChange={(e) => setCandidatureStatus(c, e.target.value as CandidatureStatus)}
+                        aria-label={t('company.applications.changeStatus')}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        {CANDIDATURE_STATUSES.map((st) => <option key={st} value={st}>{t(`company.cand.${candidatureStatusKey(st)}`)}</option>)}
+                      </select>
+                      {c.cv_path ? (
+                        <button onClick={() => openFile(c.cv_path, 'cvs')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">
+                          {t('company.cv.download')}
+                        </button>
+                      ) : <span className="text-xs text-gray-400">{t('company.cv.none')}</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+
+            {candPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button onClick={() => setCandPage((p) => Math.max(1, p - 1))} disabled={pageSafe <= 1}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-gray-50">
+                  {t('offers.previous')}
+                </button>
+                <span className="text-sm text-gray-500 tabular-nums">{t('offers.page', { page: pageSafe, total: candPages })}</span>
+                <button onClick={() => setCandPage((p) => Math.min(candPages, p + 1))} disabled={pageSafe >= candPages}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-gray-50">
+                  {t('offers.next')}
+                </button>
+              </div>
+            )}
+          </>
         )
       )}
 
@@ -428,6 +578,9 @@ const CompanyDashboard: React.FC = () => {
               {loadingCv ? t('company.loading') : t('home.search')}
             </button>
           </form>
+          {cvRows.length > 0 && (
+            <p className="text-sm text-gray-500 mb-3">{t('company.cvtheque.count', { count: cvRows.length })}</p>
+          )}
           {cvRows.length === 0 ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.cvtheque.empty')}</p>
           ) : (

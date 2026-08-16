@@ -59,10 +59,16 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
 
       if (uploadError) throw uploadError;
 
+      // L'id est genere ici plutot que relu apres insertion : le visiteur anonyme
+      // n'a que le droit d'ecrire sur `candidatures`, un `.select()` de retour
+      // echouerait sur la RLS et ferait echouer la candidature entiere.
+      const candidatureId = crypto.randomUUID();
+
       // Bucket prive : on stocke le chemin (cv_path), l'admin genere une URL signee.
       const { error: insertError } = await supabaseOffers
         .from('candidatures')
         .insert({
+          id: candidatureId,
           job_ref: jobRef,
           job_title: jobTitle,
           company_name: companyName,
@@ -74,6 +80,14 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
         });
 
       if (insertError) throw insertError;
+
+      // Prevenir l'entreprise. Best-effort : la candidature est deja enregistree,
+      // un echec d'email ne doit pas la faire echouer aux yeux du candidat.
+      fetch('/api/notify-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: candidatureId }),
+      }).catch(() => { /* silencieux */ });
 
       toast.success(t('apply.sentSuccess'));
       setForm({ name: '', email: '', phone: '' });
