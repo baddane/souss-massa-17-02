@@ -26,8 +26,14 @@ const CompanyLogin: React.FC = () => {
     try {
       await companyAuth.signIn(form.email, form.password);
       navigate('/espace-entreprise');
-    } catch {
-      toast.error(t('company.login.error'));
+    } catch (err: any) {
+      // Ne pas tout ramener a « mot de passe incorrect » : un compte non
+      // confirme ou une limitation de debit donnaient le meme message, ce qui
+      // rendait le diagnostic impossible.
+      const msg = String(err?.message || '');
+      if (/not confirmed/i.test(msg)) toast.error(t('company.login.notConfirmed'));
+      else if (/rate limit|too many/i.test(msg)) toast.error(t('company.login.rateLimited'));
+      else toast.error(t('company.login.error'));
     } finally {
       setSending(false);
     }

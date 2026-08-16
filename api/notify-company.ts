@@ -114,6 +114,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
               Se connecter
             </a>
           </p>
+          <p style="background:#fef3c7; border-left:4px solid #f59e0b; padding:10px 14px; font-size:13px; color:#92400e; margin:16px 0;">
+            <strong>Important :</strong> ce mot de passe remplace tout mot de passe reçu précédemment.
+            Si vous avez reçu plusieurs emails, seul celui-ci est valide — les précédents ne fonctionnent plus.
+          </p>
           <p style="font-size:13px; color:#6b7280; margin-top:16px;">Chaque offre publiée est vérifiée par notre équipe avant sa mise en ligne.</p>
           <p style="font-size:13px; color:#6b7280;">— L'équipe SoussMassa-RH</p>
         </div>`,
