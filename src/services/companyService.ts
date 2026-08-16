@@ -14,6 +14,18 @@ export interface CompanyProfile {
   notified: boolean;
 }
 
+export interface CandidatureRow {
+  id: string;
+  created_at: string;
+  job_ref: string;
+  job_title: string;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone: string | null;
+  cv_path: string | null;
+  cv_filename: string | null;
+}
+
 export interface OfferForm {
   emploi_metier: string;
   ville: string;
@@ -136,6 +148,35 @@ export const companyService = {
       .maybeSingle();
     if (error) { console.error('getProfile', error); return null; }
     return data as CompanyProfile | null;
+  },
+
+  // Candidatures recues sur les offres de l'entreprise. Le lien se fait par
+  // `job_ref` (= job_offers.ref_offre) : la table candidatures ne porte pas de
+  // company_id. La RLS (migration 014) applique le meme filtre cote base, donc
+  // une entreprise ne peut pas lire les candidatures d'une autre.
+  async getMyCandidatures(companyId: string): Promise<CandidatureRow[]> {
+    const { data: offers, error: offErr } = await supabaseOffers
+      .from('job_offers')
+      .select('ref_offre')
+      .eq('company_id', companyId);
+    if (offErr) { console.error('getMyCandidatures/offers', offErr); return []; }
+    const refs = (offers || []).map((o: any) => o.ref_offre).filter(Boolean);
+    if (refs.length === 0) return [];
+
+    const { data, error } = await supabaseOffers
+      .from('candidatures')
+      .select('*')
+      .in('job_ref', refs)
+      .order('created_at', { ascending: false });
+    if (error) { console.error('getMyCandidatures', error); return []; }
+    return (data || []) as CandidatureRow[];
+  },
+
+  // Le bucket `cvs` est prive : on genere une URL signee de courte duree.
+  async candidatureCvUrl(cvPath: string): Promise<string | null> {
+    const { data, error } = await supabaseOffers.storage.from('cvs').createSignedUrl(cvPath, 120);
+    if (error) { console.error('candidatureCvUrl', error); return null; }
+    return data?.signedUrl || null;
   },
 
   async getMyOffers(companyId: string) {

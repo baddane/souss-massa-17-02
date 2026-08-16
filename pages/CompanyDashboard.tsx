@@ -4,7 +4,10 @@ import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { useT, cityLabel, contractLong } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
-import { companyAuth, companyService, CompanyProfile } from '../src/services/companyService';
+import { companyAuth, companyService, CompanyProfile, CandidatureRow } from '../src/services/companyService';
+import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
+
+type Tab = 'offres' | 'candidatures' | 'cvtheque' | 'compte';
 
 const CONTRACTS = ['CDI', 'CDD', 'Stage', 'Alternance', 'Freelance'];
 const STATUS_STYLE: Record<string, string> = {
@@ -27,6 +30,37 @@ const CompanyDashboard: React.FC = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [pwForm, setPwForm] = useState({ password: '', confirm: '' });
   const [savingPw, setSavingPw] = useState(false);
+  const [tab, setTab] = useState<Tab>('offres');
+  const [candidatures, setCandidatures] = useState<CandidatureRow[]>([]);
+  const [loadingCand, setLoadingCand] = useState(false);
+  const [cvRows, setCvRows] = useState<CvthequeRow[]>([]);
+  const [cvQuery, setCvQuery] = useState({ q: '', ville: '', competence: '' });
+  const [loadingCv, setLoadingCv] = useState(false);
+
+  // Ouvre un fichier du stockage privé via une URL signée (~120 s).
+  const openFile = async (path: string | null, bucket: string) => {
+    if (!path) return;
+    const url = await cvthequeService.signedUrl(path, bucket);
+    if (url) window.open(url, '_blank', 'noopener');
+    else toast.error(t('company.cv.downloadError'));
+  };
+
+  const loadCandidatures = async (companyId: string) => {
+    setLoadingCand(true);
+    setCandidatures(await companyService.getMyCandidatures(companyId));
+    setLoadingCand(false);
+  };
+
+  const searchCvtheque = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setLoadingCv(true);
+    setCvRows(await cvthequeService.search({
+      q: cvQuery.q || undefined,
+      ville: cvQuery.ville || undefined,
+      competence: cvQuery.competence || undefined,
+    }));
+    setLoadingCv(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -37,6 +71,7 @@ const CompanyDashboard: React.FC = () => {
       setProfile(prof);
       if (prof && prof.statut === 'valide') {
         setOffers(await companyService.getMyOffers(user.id));
+        loadCandidatures(user.id);
       }
       setLoading(false);
     })();
@@ -185,8 +220,28 @@ const CompanyDashboard: React.FC = () => {
     );
   }
 
+  const TABS: { key: Tab; label: string; badge?: number }[] = [
+    { key: 'offres', label: t('company.tab.offers'), badge: offers.length },
+    { key: 'candidatures', label: t('company.tab.applications'), badge: candidatures.length },
+    { key: 'cvtheque', label: t('company.tab.cvtheque') },
+    { key: 'compte', label: t('company.tab.account') },
+  ];
+
   return shell(
     <>
+      <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-8">
+        {TABS.map((tb) => (
+          <button key={tb.key} onClick={() => { setTab(tb.key); if (tb.key === 'cvtheque' && cvRows.length === 0) searchCvtheque(); }}
+            className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-colors ${
+              tab === tb.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}>
+            {tb.label}{typeof tb.badge === 'number' && tb.badge > 0 ? ` (${tb.badge})` : ''}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'offres' && (
+      <>
       {/* Formulaire de dépôt */}
       <form onSubmit={submitOffer} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 mb-10">
         <h2 className="text-lg font-bold text-gray-900">{t('company.post.title')}</h2>
@@ -260,9 +315,85 @@ const CompanyDashboard: React.FC = () => {
           ))}
         </div>
       )}
+      </>
+      )}
+
+      {/* Candidatures reçues sur mes offres */}
+      {tab === 'candidatures' && (
+        loadingCand ? <p className="text-gray-500 text-sm">{t('company.loading')}</p> :
+        candidatures.length === 0 ? (
+          <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.applications.empty')}</p>
+        ) : (
+          <div className="space-y-3">
+            {candidatures.map((c) => (
+              <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{c.candidate_name}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {c.job_title} · {new Date(c.created_at).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : 'fr-FR')}
+                  </p>
+                  <p className="text-sm text-gray-600 truncate">
+                    <a href={`mailto:${c.candidate_email}`} className="text-blue-600 hover:underline">{c.candidate_email}</a>
+                    {c.candidate_phone ? ` · ${c.candidate_phone}` : ''}
+                  </p>
+                </div>
+                {c.cv_path ? (
+                  <button onClick={() => openFile(c.cv_path, 'cvs')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">
+                    {t('company.cv.download')}
+                  </button>
+                ) : <span className="text-xs text-gray-400">{t('company.cv.none')}</span>}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* CVthèque */}
+      {tab === 'cvtheque' && (
+        <>
+          <form onSubmit={searchCvtheque} className="bg-white rounded-2xl border border-gray-200 p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <input type="text" value={cvQuery.q} onChange={(e) => setCvQuery({ ...cvQuery, q: e.target.value })}
+              placeholder={t('company.cvtheque.searchHint')}
+              className="sm:col-span-2 px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="text" value={cvQuery.ville} onChange={(e) => setCvQuery({ ...cvQuery, ville: e.target.value })}
+              placeholder={t('company.city')}
+              className="px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+            <button type="submit" disabled={loadingCv}
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-60">
+              {loadingCv ? t('company.loading') : t('home.search')}
+            </button>
+          </form>
+          {cvRows.length === 0 ? (
+            <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('company.cvtheque.empty')}</p>
+          ) : (
+            <div className="space-y-3">
+              {cvRows.map((r) => (
+                <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{r.nom_complet || t('company.cvtheque.unnamed')}</p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {[r.poste, r.ville, r.diplome].filter(Boolean).join(' · ')}
+                      {r.experience_years ? ` · ${r.experience_years} ${t('company.cvtheque.years')}` : ''}
+                    </p>
+                    {r.competences?.length > 0 && (
+                      <p className="text-xs text-gray-400 truncate mt-0.5">{r.competences.slice(0, 8).join(', ')}</p>
+                    )}
+                  </div>
+                  <button onClick={() => openFile(r.file_path, r.bucket || 'cvtheque')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 whitespace-nowrap">
+                    {t('company.cv.download')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Mon compte — remplacer le mot de passe reçu par email */}
-      <form onSubmit={changePassword} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 mt-10 max-w-lg">
+      {tab === 'compte' && (
+      <form onSubmit={changePassword} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 max-w-lg">
         <h2 className="text-lg font-bold text-gray-900">{t('company.password.title')}</h2>
         <p className="text-sm text-gray-500">{t('company.password.subtitle')}</p>
         <div>
@@ -283,6 +414,7 @@ const CompanyDashboard: React.FC = () => {
           {savingPw ? t('company.password.saving') : t('company.password.submit')}
         </button>
       </form>
+      )}
     </>
   );
 };
