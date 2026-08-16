@@ -19,8 +19,9 @@ const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
 
-const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
+// Cle resolue par scripts/_supabase.cjs : service_role si SUPABASE_SERVICE_ROLE_KEY
+// est definie, sinon repli sur la cle anon.
+const { SUPABASE_URL, SUPABASE_KEY, logKeyMode } = require('./_supabase.cjs');
 
 const BASE = 'https://www.marocannonces.com';
 const HEADERS = {
@@ -114,15 +115,23 @@ function parseDetail(html, id) {
 }
 
 async function existingFromDB() {
-  const refs = new Set(), slugs = new Set();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=ref_offre,slug`, {
     headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
   });
-  if (res.ok) for (const r of await res.json()) { if (r.ref_offre) refs.add(r.ref_offre); if (r.slug) slugs.add(r.slug); }
+  // Ne JAMAIS avaler cet echec : une liste vide ferait passer toutes les offres
+  // pour nouvelles et provoquerait des doublons en base. On arrete net.
+  if (!res.ok) {
+    throw new Error(`Lecture des offres existantes impossible (HTTP ${res.status}) : dedoublonnage impossible, insertion annulee. Verifier la cle Supabase.`);
+  }
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('Reponse inattendue de Supabase lors du dedoublonnage : insertion annulee.');
+  const refs = new Set(), slugs = new Set();
+  for (const r of rows) { if (r.ref_offre) refs.add(r.ref_offre); if (r.slug) slugs.add(r.slug); }
   return { refs, slugs };
 }
 
 async function main() {
+  logKeyMode('scrape-marocannonces');
   console.log('=== Scraper marocannonces.com — Souss-Massa ===');
   const { refs, slugs } = await existingFromDB();
   const slugSeen = new Set(slugs);

@@ -38,4 +38,6 @@ jobs:
           KIMI_MODEL_BASE_URL: https://api.moonshot.ai/v1
           KIMI_DISABLE_TELEMETRY: "1"
           KIMI_CODE_NO_AUTO_UPDATE: "1"
+          # Utilisee par scripts/gen-sitemap.cjs (repli sur la cle anon si absente).
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: kimi -p "$(cat ROUTINE_OBSERVATOIRE.md)"

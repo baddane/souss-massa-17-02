@@ -10,8 +10,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
+// Cle resolue par scripts/_supabase.cjs : service_role si SUPABASE_SERVICE_ROLE_KEY
+// est definie, sinon repli sur la cle anon.
+const { SUPABASE_URL, SUPABASE_KEY, logKeyMode } = require('./_supabase.cjs');
 const SITE_URL = 'https://www.soussmassa-rh.com';
 
 function toISODate(raw) {
@@ -27,15 +28,22 @@ function slugify(text) {
 }
 
 async function main() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
-  });
-  const offers = await res.json();
+  logKeyMode('gen-sitemap');
+  // On verifie explicitement le statut HTTP : une cle invalide renvoyait un objet
+  // d'erreur JSON et le script echouait plus loin sur « offers.map is not a
+  // function », message inexploitable au moment d'une bascule de cle.
+  async function fetchRows(url, label) {
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } });
+    const body = await r.json().catch(() => null);
+    if (!r.ok || !Array.isArray(body)) {
+      const detail = body && body.message ? body.message : `HTTP ${r.status}`;
+      throw new Error(`Lecture ${label} impossible : ${detail}. Verifier la cle Supabase (SUPABASE_SERVICE_ROLE_KEY si definie).`);
+    }
+    return body;
+  }
 
-  const obsRes = await fetch(`${SUPABASE_URL}/rest/v1/observatoire_articles?select=slug,date_publi&statut=eq.publie&order=date_publi.desc`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
-  });
-  const obsArticles = await obsRes.json();
+  const offers = await fetchRows(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc`, 'job_offers');
+  const obsArticles = await fetchRows(`${SUPABASE_URL}/rest/v1/observatoire_articles?select=slug,date_publi&statut=eq.publie&order=date_publi.desc`, 'observatoire_articles');
 
   const today = new Date().toISOString().split('T')[0];
 

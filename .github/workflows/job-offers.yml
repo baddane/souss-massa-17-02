@@ -31,4 +31,10 @@ jobs:
           KIMI_MODEL_BASE_URL: https://api.moonshot.ai/v1
           KIMI_DISABLE_TELEMETRY: "1"
           KIMI_CODE_NO_AUTO_UPDATE: "1"
+          # Cle service_role : les scripts d'import l'utilisent si elle est
+          # definie, sinon ils retombent sur la cle anon (scripts/_supabase.cjs).
+          # Indispensable une fois les ecritures anon de job_offers verrouillees
+          # (migration 017). Secret a creer : Settings > Secrets and variables >
+          # Actions > SUPABASE_SERVICE_ROLE_KEY.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: kimi -p "$(cat ROUTINE_JOB_OFFERS.md)"

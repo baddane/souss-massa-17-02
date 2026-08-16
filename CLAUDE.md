@@ -621,12 +621,33 @@ sur les **politiques RLS** Supabase, pas sur le code client.
 - Le trigger est neutralise quand `auth.uid() is null` (SQL direct, `service_role`,
   scripts d'import en anon) : le pipeline `/import-offres` n'est pas impacte (verifie).
 
+### Bascule des scripts sur `service_role` (preparee, a finaliser)
+
+Les scripts lisent leur cle via **`scripts/_supabase.cjs`** : `service_role` si
+`SUPABASE_SERVICE_ROLE_KEY` est definie, **repli sur la cle anon** sinon. Chaque
+script affiche au demarrage laquelle il utilise (`cle service_role detectee` /
+`cle anon (repli)`), sans jamais afficher la cle. Les deux workflows GitHub
+transmettent deja la variable.
+
+Les lectures de dedoublonnage **echouent desormais bruyamment** : avant, une cle
+invalide renvoyait une liste vide, toutes les offres passaient pour nouvelles et
+etaient reinserees en **doublon**. Les scripts s'arretent maintenant net.
+
+Pour finir la bascule :
+1. Creer le secret GitHub `SUPABASE_SERVICE_ROLE_KEY` (Settings > Secrets and
+   variables > Actions).
+2. En local : `export SUPABASE_SERVICE_ROLE_KEY='...'` avant tout import.
+3. Verifier que les scripts affichent « cle service_role detectee ».
+4. Appliquer **`supabase/migrations/017_job_offers_lock_writes.sql`**
+   (volontairement NON appliquee : elle retire les ecritures anon).
+
 ### Points NON encore durcis (dette connue, niveau « eleve »)
-- **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a **anon** (necessaire aux
-  scripts d'import, qui utilisent la cle anon). N'importe qui disposant de la cle
-  publique peut donc creer ou modifier une offre. Verrouiller demande de basculer
-  `scripts/insert-offers.cjs` et la routine GitHub Actions sur `service_role`
-  (secret a ajouter cote GitHub) AVANT de retirer les policies anon.
+- **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a **anon**. La cle anon
+  etant publique (elle est dans le bundle du site), n'importe qui peut creer,
+  modifier ou supprimer une offre. Correctif pret : migration `017`, a appliquer
+  apres la bascule ci-dessus.
+- **`observatoire_articles`** : `INSERT` encore ouvert a anon (migration `009`,
+  pour la routine editoriale). Meme bascule a prevoir si on veut le fermer.
 - Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
 
 > Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)

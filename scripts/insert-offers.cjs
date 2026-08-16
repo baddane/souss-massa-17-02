@@ -16,19 +16,28 @@
  */
 const fs = require('fs');
 
-const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxcmh4aG9xcWt0bmh0dHptb3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzgwNDcsImV4cCI6MjA4NjUxNDA0N30.hkxJ6XW6CGkAnAaXYabr049eiiEnOYpuinMoHf-TkfM';
+// Cle resolue par scripts/_supabase.cjs : service_role si SUPABASE_SERVICE_ROLE_KEY
+// est definie, sinon repli sur la cle anon.
+const { SUPABASE_URL, SUPABASE_KEY, logKeyMode } = require('./_supabase.cjs');
 
 async function existing() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=ref_offre,slug`, {
     headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
   });
+  // Ne JAMAIS avaler cet echec : une liste vide ferait passer toutes les offres
+  // pour nouvelles et provoquerait des doublons en base. On arrete net.
+  if (!res.ok) {
+    throw new Error(`Lecture des offres existantes impossible (HTTP ${res.status}) : dedoublonnage impossible, insertion annulee. Verifier la cle Supabase.`);
+  }
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('Reponse inattendue de Supabase lors du dedoublonnage : insertion annulee.');
   const refs = new Set(), slugs = new Set();
-  if (res.ok) for (const r of await res.json()) { if (r.ref_offre) refs.add(r.ref_offre); if (r.slug) slugs.add(r.slug); }
+  for (const r of rows) { if (r.ref_offre) refs.add(r.ref_offre); if (r.slug) slugs.add(r.slug); }
   return { refs, slugs };
 }
 
 async function main() {
+  logKeyMode('insert-offers');
   const file = process.argv[2];
   if (!file) { console.error('Usage: node scripts/insert-offers.cjs <fichier.json>'); process.exit(1); }
   const records = JSON.parse(fs.readFileSync(file, 'utf8'));
