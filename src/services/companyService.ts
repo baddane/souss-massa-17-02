@@ -108,6 +108,13 @@ export const companyAuth = {
     await supabaseOffers.auth.signOut();
   },
 
+  // L'entreprise remplace le mot de passe recu par email par le sien.
+  // Agit sur l'utilisateur de la session en cours : aucun droit admin requis.
+  async changePassword(newPassword: string) {
+    const { error } = await supabaseOffers.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  },
+
   async currentUser() {
     const { data } = await supabaseOffers.auth.getUser();
     return data.user || null;

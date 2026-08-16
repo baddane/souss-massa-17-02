@@ -25,6 +25,8 @@ const CompanyDashboard: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [profForm, setProfForm] = useState({ nom_entreprise: '', telephone: '', ville: '', secteur: '' });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [pwForm, setPwForm] = useState({ password: '', confirm: '' });
+  const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -54,6 +56,23 @@ const CompanyDashboard: React.FC = () => {
       toast.error(t('company.error.generic'));
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  // Remplace le mot de passe reçu par email par un mot de passe choisi.
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.password.length < 8) { toast.warning(t('company.error.passwordShort')); return; }
+    if (pwForm.password !== pwForm.confirm) { toast.warning(t('company.error.passwordMismatch')); return; }
+    setSavingPw(true);
+    try {
+      await companyAuth.changePassword(pwForm.password);
+      setPwForm({ password: '', confirm: '' });
+      toast.success(t('company.password.success'));
+    } catch {
+      toast.error(t('company.error.generic'));
+    } finally {
+      setSavingPw(false);
     }
   };
 
@@ -241,6 +260,29 @@ const CompanyDashboard: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Mon compte — remplacer le mot de passe reçu par email */}
+      <form onSubmit={changePassword} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 mt-10 max-w-lg">
+        <h2 className="text-lg font-bold text-gray-900">{t('company.password.title')}</h2>
+        <p className="text-sm text-gray-500">{t('company.password.subtitle')}</p>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.password.new')} *</label>
+          <input type="password" required minLength={8} value={pwForm.password} autoComplete="new-password"
+            onChange={(e) => setPwForm({ ...pwForm, password: e.target.value })}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+          <p className="text-xs text-gray-400 mt-1">{t('company.passwordHint')}</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.confirmPassword')} *</label>
+          <input type="password" required value={pwForm.confirm} autoComplete="new-password"
+            onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+        <button type="submit" disabled={savingPw}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-60">
+          {savingPw ? t('company.password.saving') : t('company.password.submit')}
+        </button>
+      </form>
     </>
   );
 };

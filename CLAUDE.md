@@ -588,12 +588,21 @@ sur les **politiques RLS** Supabase, pas sur le code client.
 - Le public ne voit que les offres **`statut='active'`** (jobOffersService x2, `api/sitemap.ts`,
   `scripts/gen-sitemap.cjs`). Les offres entreprise (`en_attente`) et `refuse` sont masquees.
 
+### `comptes_entreprise` — verrouille (migration `013`)
+- **SELECT** : sa propre fiche ou admin. Avant, `USING (true)` en anon exposait publiquement
+  les emails et telephones de toutes les entreprises.
+- **INSERT** : `authenticated` uniquement, `id = auth.uid()` et `statut = 'en_attente'`.
+- **UPDATE** : sa propre fiche ou admin ; le trigger `ce_protect_moderation_fields` restaure
+  `statut`, `validated_at`, `notified`, `id` et `email` pour tout appelant qui n'est ni admin
+  ni `service_role` (une policy RLS ne sait pas restreindre les colonnes). L'auto-validation
+  cote client est donc impossible : la requete « reussit » sans rien changer.
+- **DELETE** : admin uniquement (migration `005`).
+- L'INSERT exige une session : il fonctionne parce que « Confirm email » est **desactive**
+  (signUp renvoie une session). Reactiver cette option casserait l'inscription.
+
 ### Points NON encore durcis (dette connue, niveau « eleve »)
 - **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a anon (necessaire aux scripts
-  d'import). **`comptes_entreprise`** : `INSERT/UPDATE` encore ouverts a anon, mais **`DELETE`
-  est desormais reserve a l'admin** (`is_admin()`, policy `ce_delete`, migration `005`). A terme :
-  verrouiller les ecritures (Edge Functions + `service_role`) et empecher l'auto-validation du
-  `statut` cote client.
+  d'import). A terme : verrouiller les ecritures (Edge Functions + `service_role`).
 - Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
 
 > Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)
