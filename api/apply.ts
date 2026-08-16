@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo';
+import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo.js';
 
 const RECIPIENT_EMAIL = 'r.baddane@gmail.com';
 

@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo';
+import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo.js';
 
 // Email envoye a une entreprise quand l'admin valide son compte :
 // confirmation + identifiants (login + mot de passe temporaire).
