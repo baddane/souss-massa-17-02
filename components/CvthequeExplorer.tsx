@@ -174,9 +174,9 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
         </select>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,340px)_1fr] xl:grid-cols-[minmax(0,380px)_1fr] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
         {/* Volet gauche : liste des profils */}
-        <div ref={listRef} className="space-y-2 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto lg:pe-1">
+        <div ref={listRef} className="space-y-2 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pe-1">
           {loading ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('cvt.loading')}</p>
           ) : paged.length === 0 ? (
@@ -314,12 +314,12 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
                 ) : !cvUrl ? (
                   <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-6 text-center">{t('cvt.previewError')}</p>
                 ) : cvHidden ? null : (
-                  <div className="border border-gray-200 rounded-xl overflow-auto bg-gray-50" style={{ maxHeight: 'calc(100vh - 20rem)' }}>
+                  <div className="border border-gray-200 rounded-xl overflow-auto bg-gray-50" style={{ maxHeight: 'calc(100vh - 16rem)' }}>
                     <div style={{ width: `${zoom}%`, minWidth: zoom > 100 ? `${zoom}%` : undefined }}>
                       {isImage(selected) ? (
                         <img src={cvUrl} alt={selected.file_name || 'CV'} className="w-full" />
                       ) : isPdf(selected) ? (
-                        <iframe src={cvUrl} title={selected.file_name || 'CV'} className="w-full block" style={{ height: 'calc(100vh - 21rem)', minHeight: 460, border: 0 }} />
+                        <iframe src={cvUrl} title={selected.file_name || 'CV'} className="w-full block" style={{ height: 'calc(100vh - 17rem)', minHeight: 560, border: 0 }} />
                       ) : (
                         <p className="text-sm text-gray-500 p-6 text-center">{t('cvt.previewUnsupported')}</p>
                       )}

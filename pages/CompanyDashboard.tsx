@@ -225,9 +225,10 @@ const CompanyDashboard: React.FC = () => {
   // NB: fonction (pas un composant <Shell>) pour éviter le remontage du sous-arbre
   // à chaque frappe (qui faisait perdre le focus des inputs).
   const shell = (children: React.ReactNode) => (
-    // La CVthèque a besoin de toute la largeur (liste + aperçu du CV côte à côte).
-    // Les autres onglets restent dans une colonne de lecture confortable.
-    <div className={`${tab === 'cvtheque' ? 'max-w-screen-2xl' : 'max-w-4xl'} mx-auto px-4 py-10`}>
+    // La CVthèque s'affiche bord à bord : lire un CV demande de la surface, et
+    // une largeur maximale centrée gaspillait la moitié de l'écran. Les autres
+    // onglets gardent leur colonne de lecture, adaptée aux formulaires.
+    <div className={`${tab === 'cvtheque' ? 'w-full px-3 sm:px-5' : 'max-w-4xl mx-auto px-4'} py-10`}>
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="flex items-center justify-between mb-8">
         <div>
