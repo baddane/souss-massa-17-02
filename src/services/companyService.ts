@@ -35,26 +35,73 @@ function slugify(text: string): string {
 
 const rand = (n = 5) => Math.random().toString(36).slice(2, 2 + n);
 
+type NewCompanyProfile = Omit<CompanyProfile, 'id' | 'email' | 'statut' | 'created_at' | 'validated_at' | 'notified'>;
+
+// Levée quand l'email est deja pris par un compte entreprise reel (a distinguer
+// d'un echec de connexion : le formulaire d'inscription affichait a tort
+// « Email ou mot de passe incorrect »).
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super('EMAIL_ALREADY_REGISTERED');
+    this.name = 'EmailAlreadyRegisteredError';
+  }
+}
+
+async function insertProfile(userId: string, email: string, profile: NewCompanyProfile | { nom_entreprise: string; telephone?: string; ville?: string; secteur?: string }) {
+  const { error } = await supabaseOffers.from('comptes_entreprise').insert({
+    id: userId,
+    email,
+    nom_entreprise: profile.nom_entreprise,
+    telephone: profile.telephone || null,
+    ville: profile.ville || null,
+    secteur: profile.secteur || null,
+    statut: 'en_attente',
+  });
+  if (error) throw error;
+}
+
+// Un compte peut exister dans auth.users sans ligne `comptes_entreprise`
+// (compte orphelin : l'admin a supprime l'entreprise, le compte Auth restait).
+// L'inscription echouait alors definitivement sur « User already registered ».
+// Si le mot de passe fourni est le bon et qu'aucun profil n'existe, on recree le
+// profil au lieu de bloquer. Renvoie l'id repare, ou null si c'est un vrai doublon.
+async function healOrphanAccount(email: string, password: string, profile: NewCompanyProfile): Promise<string | null> {
+  const { data, error } = await supabaseOffers.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return null; // mot de passe different -> compte d'un tiers
+  const userId = data.user.id;
+  try {
+    // Ne jamais transformer un compte admin en compte entreprise.
+    const { data: isAdmin } = await supabaseOffers.rpc('is_admin');
+    if (isAdmin === true) return null;
+    if (await companyService.getProfile(userId)) return null; // profil deja present
+    await insertProfile(userId, email, profile);
+    return userId;
+  } finally {
+    await supabaseOffers.auth.signOut();
+  }
+}
+
 // ---- Authentification ----
 export const companyAuth = {
-  async signUp(email: string, password: string, profile: Omit<CompanyProfile, 'id' | 'email' | 'statut' | 'created_at' | 'validated_at' | 'notified'>) {
+  async signUp(email: string, password: string, profile: NewCompanyProfile) {
     const { data, error } = await supabaseOffers.auth.signUp({ email, password });
-    if (error) throw error;
+
+    if (error) {
+      if (!/registered|already/i.test(error.message || '')) throw error;
+      const healed = await healOrphanAccount(email, password, profile);
+      if (healed) return healed;
+      throw new EmailAlreadyRegisteredError();
+    }
+
     const userId = data.user?.id;
     if (!userId) throw new Error("La création du compte a échoué.");
 
-    const { error: insErr } = await supabaseOffers.from('comptes_entreprise').insert({
-      id: userId,
-      email,
-      nom_entreprise: profile.nom_entreprise,
-      telephone: profile.telephone || null,
-      ville: profile.ville || null,
-      secteur: profile.secteur || null,
-      statut: 'en_attente',
-    });
-    if (insErr) throw insErr;
-    // On déconnecte : le compte attend la validation admin.
-    await supabaseOffers.auth.signOut();
+    try {
+      await insertProfile(userId, email, profile);
+    } finally {
+      // On déconnecte dans tous les cas : le compte attend la validation admin.
+      await supabaseOffers.auth.signOut();
+    }
     return userId;
   },
 
@@ -84,16 +131,7 @@ export const companyAuth = {
 export const companyService = {
   // Cree le profil entreprise pour un utilisateur deja authentifie (ex: connexion Google)
   async createProfile(userId: string, email: string, profile: { nom_entreprise: string; telephone?: string; ville?: string; secteur?: string }) {
-    const { error } = await supabaseOffers.from('comptes_entreprise').insert({
-      id: userId,
-      email,
-      nom_entreprise: profile.nom_entreprise,
-      telephone: profile.telephone || null,
-      ville: profile.ville || null,
-      secteur: profile.secteur || null,
-      statut: 'en_attente',
-    });
-    if (error) throw error;
+    await insertProfile(userId, email, profile);
   },
 
   async getProfile(userId: string): Promise<CompanyProfile | null> {
@@ -175,10 +213,23 @@ export const moderationService = {
     await supabaseOffers.from('comptes_entreprise').update({ notified: true }).eq('id', id);
   },
 
-  // Supprime définitivement une entreprise, quel que soit son statut (même validée)
+  // Supprime définitivement une entreprise, quel que soit son statut (même validée).
+  // Passe par l'endpoint serveur : la fiche ET le compte Supabase Auth doivent
+  // partir ensemble, sinon l'email reste réservé et ne peut plus se réinscrire.
   async deleteCompany(id: string) {
-    const { error } = await supabaseOffers.from('comptes_entreprise').delete().eq('id', id);
-    if (error) throw error;
+    const { data: { session } } = await supabaseOffers.auth.getSession();
+    const res = await fetch('/api/delete-company', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as any).error || `Echec de la suppression (${res.status})`);
+    }
   },
 
   async getPendingOffers() {

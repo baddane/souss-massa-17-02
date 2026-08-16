@@ -344,6 +344,9 @@ api/
   apply.ts          # Serverless function - envoi candidature par email
   notify-company.ts # Serverless - email de confirmation + identifiants (login + mdp temporaire)
                     #   quand l'admin valide un compte entreprise (API Admin Supabase)
+  delete-company.ts # Serverless - supprime la fiche entreprise ET le compte Supabase Auth
+                    #   (sinon l'email reste reserve et ne peut plus se reinscrire).
+                    #   Verifie is_admin() et refuse de supprimer un compte de `app_admins`.
   keepalive.ts      # Edge Function - ping Supabase (cron Vercel) pour eviter la pause free-tier
 
 components/
