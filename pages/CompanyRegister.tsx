@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import { useT } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
-import { companyAuth } from '../src/services/companyService';
+import { companyAuth, EmailAlreadyRegisteredError } from '../src/services/companyService';
 
 const SECTORS = ['informatique', 'commercial', 'administratif', 'industrie', 'sante', 'enseignement', 'tourisme', 'construction'];
 
@@ -49,8 +49,9 @@ const CompanyRegister: React.FC = () => {
       });
       setSent(true);
     } catch (err: any) {
-      const msg = String(err?.message || '');
-      if (/registered|already/i.test(msg)) toast.error(t('company.login.error'));
+      // L'email deja pris n'a rien a voir avec un echec de connexion : on
+      // affichait a tort « Email ou mot de passe incorrect ».
+      if (err instanceof EmailAlreadyRegisteredError) toast.error(t('company.register.emailTaken'));
       else toast.error(t('company.error.generic'));
     } finally {
       setSending(false);
