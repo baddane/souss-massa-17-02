@@ -14,6 +14,7 @@ const STATUS_STYLE: Record<string, string> = {
   en_attente: 'bg-yellow-100 text-yellow-800',
   active: 'bg-green-100 text-green-800',
   refuse: 'bg-red-100 text-red-700',
+  retire: 'bg-gray-200 text-gray-700',
 };
 const emptyForm = { emploi_metier: '', ville: '', type_contrat: 'CDI', nbre_postes: 1, suggested_salary_range: '', full_description: '', skills: '' };
 
@@ -31,6 +32,7 @@ const CompanyDashboard: React.FC = () => {
   const [pwForm, setPwForm] = useState({ password: '', confirm: '' });
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [candidatures, setCandidatures] = useState<CandidatureRow[]>([]);
   const [loadingCand, setLoadingCand] = useState(false);
   const [cvRows, setCvRows] = useState<CvthequeRow[]>([]);
@@ -111,6 +113,36 @@ const CompanyDashboard: React.FC = () => {
     }
   };
 
+  // Charge une offre existante dans le formulaire (mode édition).
+  const startEdit = (o: any) => {
+    setEditingId(o.id);
+    setForm({
+      emploi_metier: o.emploi_metier || '',
+      ville: o.ville || '',
+      type_contrat: o.type_contrat || 'CDI',
+      nbre_postes: o.nbre_postes || 1,
+      suggested_salary_range: o.suggested_salary_range || '',
+      full_description: o.full_description || '',
+      skills: (o.required_skills || []).join(', '),
+    });
+    setTab('offres');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => { setEditingId(null); setForm({ ...emptyForm }); };
+
+  // Retrait / remise en validation d'une offre.
+  const changeOfferStatus = async (o: any, statut: 'retire' | 'en_attente') => {
+    if (statut === 'retire' && !confirm(t('company.offer.withdrawConfirm'))) return;
+    try {
+      await companyService.setMyOfferStatus(o.id, statut);
+      if (profile) setOffers(await companyService.getMyOffers(profile.id));
+      toast.success(statut === 'retire' ? t('company.offer.withdrawn') : t('company.offer.resubmitted'));
+    } catch {
+      toast.error(t('company.error.generic'));
+    }
+  };
+
   const submitOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -120,7 +152,7 @@ const CompanyDashboard: React.FC = () => {
     }
     setSending(true);
     try {
-      await companyService.createOffer(profile, {
+      const payload = {
         emploi_metier: form.emploi_metier,
         ville: form.ville,
         type_contrat: form.type_contrat,
@@ -128,8 +160,15 @@ const CompanyDashboard: React.FC = () => {
         suggested_salary_range: form.suggested_salary_range,
         full_description: form.full_description,
         required_skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
-      });
-      toast.success(t('company.post.success'));
+      };
+      if (editingId) {
+        await companyService.updateOffer(editingId, profile, payload);
+        toast.success(t('company.offer.updated'));
+      } else {
+        await companyService.createOffer(profile, payload);
+        toast.success(t('company.post.success'));
+      }
+      setEditingId(null);
       setForm({ ...emptyForm });
       setOffers(await companyService.getMyOffers(profile.id));
     } catch {
@@ -244,7 +283,15 @@ const CompanyDashboard: React.FC = () => {
       <>
       {/* Formulaire de dépôt */}
       <form onSubmit={submitOffer} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 mb-10">
-        <h2 className="text-lg font-bold text-gray-900">{t('company.post.title')}</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900">{editingId ? t('company.offer.editTitle') : t('company.post.title')}</h2>
+          {editingId && (
+            <button type="button" onClick={cancelEdit} className="text-sm text-gray-500 hover:text-gray-800 font-medium">
+              {t('company.offer.cancelEdit')}
+            </button>
+          )}
+        </div>
+        {editingId && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{t('company.offer.editWarning')}</p>}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('company.post.jobTitle')} *</label>
           <input type="text" required value={form.emploi_metier} onChange={(e) => setForm({ ...form, emploi_metier: e.target.value })}
@@ -292,7 +339,7 @@ const CompanyDashboard: React.FC = () => {
         </div>
         <button type="submit" disabled={sending}
           className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-colors disabled:opacity-60">
-          {sending ? t('company.post.submitting') : t('company.post.submit')}
+          {sending ? t('company.post.submitting') : editingId ? t('company.offer.saveEdit') : t('company.post.submit')}
         </button>
       </form>
 
@@ -303,14 +350,31 @@ const CompanyDashboard: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {offers.map((o) => (
-            <div key={o.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-3">
+            <div key={o.id} className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-gray-900 truncate">{o.emploi_metier}</p>
                 <p className="text-sm text-gray-500">{cityLabel(t, o.ville)} · {contractLong(t, o.type_contrat)} · {new Date(o.date_offre).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : 'fr-FR')}</p>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${STATUS_STYLE[o.statut] || 'bg-gray-100 text-gray-700'}`}>
-                {t(`company.status.${o.statut}`)}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${STATUS_STYLE[o.statut] || 'bg-gray-100 text-gray-700'}`}>
+                  {t(`company.status.${o.statut}`)}
+                </span>
+                <button onClick={() => startEdit(o)}
+                  className="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
+                  {t('company.offer.edit')}
+                </button>
+                {o.statut === 'retire' ? (
+                  <button onClick={() => changeOfferStatus(o, 'en_attente')}
+                    className="px-3 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50">
+                    {t('company.offer.resubmit')}
+                  </button>
+                ) : (
+                  <button onClick={() => changeOfferStatus(o, 'retire')}
+                    className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50">
+                    {t('company.offer.withdraw')}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

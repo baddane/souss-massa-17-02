@@ -224,6 +224,34 @@ export const companyService = {
     if (error) throw error;
     return record;
   },
+
+  // Modification d'une offre existante. Le trigger `job_offers_company_guard`
+  // (migration 016) fige l'identite de l'offre et repasse le statut en
+  // 'en_attente' : toute modification est donc revalidee par l'admin.
+  async updateOffer(offerId: string, profile: CompanyProfile, form: OfferForm) {
+    const { error } = await supabaseOffers
+      .from('job_offers')
+      .update({
+        ville: form.ville,
+        type_contrat: form.type_contrat,
+        nbre_postes: form.nbre_postes || 1,
+        emploi_metier: form.emploi_metier,
+        full_description: form.full_description,
+        required_skills: form.required_skills,
+        suggested_salary_range: form.suggested_salary_range || null,
+        meta_description: `${form.emploi_metier} à ${form.ville} - ${form.type_contrat} chez ${profile.nom_entreprise}.`.slice(0, 160),
+      })
+      .eq('id', offerId);
+    if (error) throw error;
+  },
+
+  // Retrait (l'offre disparait du public) ou remise en validation.
+  // Pas de suppression definitive : les candidatures sont reliees a l'offre par
+  // `ref_offre` et deviendraient inaccessibles a l'entreprise.
+  async setMyOfferStatus(offerId: string, statut: 'retire' | 'en_attente') {
+    const { error } = await supabaseOffers.from('job_offers').update({ statut }).eq('id', offerId);
+    if (error) throw error;
+  },
 };
 
 // ---- Modération (admin) ----

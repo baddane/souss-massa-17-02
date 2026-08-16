@@ -30,7 +30,7 @@ Site de recrutement pour la region Souss-Massa (Maroc).
 | `required_skills` | text[] | Competences requises (array PostgreSQL) |
 | `source` | text | Source de l'offre (ex: ANAPEC, Direct, rekrute, marocannonces, entreprise) |
 | `slug` | text (unique) | Slug SEO pour l'URL permanente |
-| `statut` | text | Moderation : `active` (visible public), `en_attente` (offre entreprise a valider), `refuse` |
+| `statut` | text | Moderation : `active` (visible public), `en_attente` (offre entreprise a valider), `refuse`, `retire` (retiree par l'entreprise) |
 | `company_id` | uuid | Auteur si offre deposee par une entreprise (= `comptes_entreprise.id`), sinon null |
 | `emploi_metier_en` / `emploi_metier_ar` | text | Traduction EN / AR de l'intitule (optionnel) |
 | `full_description_en` / `full_description_ar` | text | Traduction EN / AR de la description (optionnel) |
@@ -466,6 +466,18 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
   `src/services/companyService.ts` (`companyAuth`, `companyService`, `moderationService`).
 - **Offres entreprise** : inserees dans `job_offers` avec `source='entreprise'`,
   `company_id`, et `statut='en_attente'` (invisibles du public tant que non validees).
+- **Espace entreprise self-service** (`pages/CompanyDashboard.tsx`, 4 onglets) :
+  - *Mes offres* : depot, **modification** et **retrait** de ses propres offres.
+    Toute modification repasse le statut a `en_attente` (revalidation admin) ;
+    « retirer » pose `statut='retire'` (masque du public, rien n'est detruit) ;
+    « republier » repasse en `en_attente`. Pas de suppression definitive : les
+    candidatures sont reliees par `ref_offre` et deviendraient inaccessibles.
+  - *Candidatures* : celles deposees sur SES offres, avec telechargement du CV
+    (URL signee, bucket prive).
+  - *CVtheque* : recherche et telechargement (entreprises validees).
+  - *Mon compte* : changement de mot de passe.
+  Le cloisonnement est applique par la **RLS** (migrations `014` et `016`), pas
+  par l'interface : le front utilise la cle anon, masquer cote React ne protege rien.
 - **Moderation** : onglets « Entreprises » et « Offres a valider » dans `pages/Admin.tsx`.
   Valider un compte → email via `api/notify-company.ts` : confirmation + **login et
   mot de passe**. **L'inscription ne demande aucun mot de passe** (formulaire
@@ -600,9 +612,21 @@ sur les **politiques RLS** Supabase, pas sur le code client.
 - L'INSERT exige une session : il fonctionne parce que « Confirm email » est **desactive**
   (signUp renvoie une session). Reactiver cette option casserait l'inscription.
 
+### `job_offers` — gestion par l'entreprise (migration `016`)
+- Policy `job_offers_company_update` : `authenticated`, `company_id = auth.uid()` et
+  entreprise validee. Le trigger `job_offers_company_guard` fige `id`, `company_id`,
+  `ref_offre`, `created_at`, `source`, et **borne les statuts** : seul `retire` est
+  accepte tel quel, toute autre valeur (dont `active`) retombe sur `en_attente`.
+  Une entreprise ne peut donc **pas** publier son offre elle-meme.
+- Le trigger est neutralise quand `auth.uid() is null` (SQL direct, `service_role`,
+  scripts d'import en anon) : le pipeline `/import-offres` n'est pas impacte (verifie).
+
 ### Points NON encore durcis (dette connue, niveau « eleve »)
-- **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a anon (necessaire aux scripts
-  d'import). A terme : verrouiller les ecritures (Edge Functions + `service_role`).
+- **`job_offers`** : `INSERT/UPDATE/DELETE` encore ouverts a **anon** (necessaire aux
+  scripts d'import, qui utilisent la cle anon). N'importe qui disposant de la cle
+  publique peut donc creer ou modifier une offre. Verrouiller demande de basculer
+  `scripts/insert-offers.cjs` et la routine GitHub Actions sur `service_role`
+  (secret a ajouter cote GitHub) AVANT de retirer les policies anon.
 - Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
 
 > Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)
