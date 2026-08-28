@@ -33,6 +33,9 @@ const CompanyDashboard: React.FC = () => {
   const [pwForm, setPwForm] = useState({ password: '', confirm: '' });
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
+  // Rapprochement offre → profils : filtres transmis a la CVtheque quand
+  // l'entreprise demande les profils correspondant a une de ses offres.
+  const [cvSeed, setCvSeed] = useState<{ q?: string; ville?: string } | undefined>(undefined);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [offerStep, setOfferStep] = useState<1 | 2>(1);
   const [candSearch, setCandSearch] = useState('');
@@ -335,7 +338,7 @@ const CompanyDashboard: React.FC = () => {
 
       <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-8">
         {TABS.map((tb) => (
-          <button key={tb.key} onClick={() => setTab(tb.key)}
+          <button key={tb.key} onClick={() => { setTab(tb.key); if (tb.key === 'cvtheque') setCvSeed(undefined); }}
             className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-colors ${
               tab === tb.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}>
@@ -453,6 +456,11 @@ const CompanyDashboard: React.FC = () => {
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${STATUS_STYLE[o.statut] || 'bg-gray-100 text-gray-700'}`}>
                   {t(`company.status.${o.statut}`)}
                 </span>
+                <button
+                  onClick={() => { setCvSeed({ q: o.emploi_metier, ville: o.ville }); setTab('cvtheque'); }}
+                  className="px-3 py-1.5 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-50">
+                  {t('company.offer.matchingProfiles')}
+                </button>
                 <button onClick={() => startEdit(o)}
                   className="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
                   {t('company.offer.edit')}
@@ -554,7 +562,7 @@ const CompanyDashboard: React.FC = () => {
       )}
 
       {/* CVthèque — composant partagé avec l'admin, pour un affichage identique */}
-      {tab === 'cvtheque' && <CvthequeExplorer />}
+      {tab === 'cvtheque' && <CvthequeExplorer initialFilters={cvSeed} />}
 
       {/* Mon compte — remplacer le mot de passe reçu par email */}
       {tab === 'compte' && (

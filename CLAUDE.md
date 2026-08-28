@@ -295,6 +295,26 @@ Pour ajouter de nouveaux metiers a une categorie, modifier `CATEGORY_FILTERS` da
 2. **vercel.json** : header `X-Robots-Tag: noindex, nofollow` sur `/admin` et `/api/`
 3. **React Helmet** : `<meta name="robots" content="noindex, nofollow" />` dans `pages/Admin.tsx`
 
+### Pre-rendu des balises head (`api/prerender.ts`)
+
+Le site est un SPA : Vercel servait le meme `index.html` a toutes les URL, donc
+le meme `<title>`, la meme description et **le meme `canonical` pointant vers la
+page d'accueil** pour les 440+ offres. Les robots sociaux (Facebook, LinkedIn,
+WhatsApp), qui n'executent aucun JavaScript, ne voyaient jamais le titre reel de
+l'offre partagee.
+
+- Reecritures `vercel.json` : `/emploi/:slug` et `/observatoire/:slug` passent par
+  `/api/prerender` (**avant** le catch-all `/(.*)` → `/index.html`).
+- La fonction edge **relit `index.html` du deploiement** (donc jamais de nom de
+  bundle code en dur), remplace title / description / canonical / og:* /
+  twitter:* et ajoute le JSON-LD `JobPosting` complet (`validThrough`,
+  `identifier`, `totalJobOpenings`, `directApply`). Le `<body>` n'est **pas**
+  touche : aucun risque de decalage visuel. Le texte de l'offre est ajoute dans
+  un `<noscript>`, invisible pour un visiteur normal.
+- **Repli systematique** sur l'`index.html` d'origine si Supabase ne repond pas :
+  le pire cas est le comportement precedent, jamais une page cassee. Un vrai 404
+  n'est renvoye que si l'offre est confirmee absente (evite les « soft 404 »).
+
 ### Sitemap
 
 - **Dynamique** : `/api/sitemap.ts` (Edge Function) genere le sitemap depuis Supabase
@@ -354,6 +374,8 @@ api/
                     #   (sinon l'email reste reserve et ne peut plus se reinscrire).
                     #   Verifie is_admin() et refuse de supprimer un compte de `app_admins`.
   keepalive.ts      # Edge Function - ping Supabase (cron Vercel) pour eviter la pause free-tier
+  prerender.ts      # Edge Function - balises head + JSON-LD pour /emploi et /observatoire
+  send-alerts.ts    # Serverless - alertes emploi des candidats (cron Vercel, Brevo)
 
 components/
   SEO.tsx           # Composant SEO + generateJobPostingJsonLd + slugify
@@ -370,6 +392,7 @@ pages/
                     #   Candidatures, Messages, Entreprises (valider/refuser/SUPPRIMER meme validee),
                     #   Offres a valider, + Nouvelle offre (SEO), CVtheque (voir section), Mon compte
   CompanyRegister/CompanyLogin/CompanyDashboard.tsx  # Espace entreprise (voir section dediee)
+  CandidateRegister/CandidateLogin/CandidateDashboard.tsx  # Espace candidat (voir section dediee)
   NotFound.tsx      # Page 404 (noindex)
 
 services/
@@ -377,7 +400,10 @@ services/
 src/services/
   jobOffersService.ts  # Copie alternative — DOIT RESTER SYNCHRONISE avec services/
   companyService.ts    # Auth entreprise + profil + creation d'offre + moderation admin (dont deleteCompany)
-  cvParser.ts          # Parsing CV 100% client SANS LLM (pdf.js + mammoth en import dynamique + regex)
+  candidateService.ts  # Auth candidat + profil + CV + candidatures + alertes
+  cvFields.ts          # Extraction des champs d'un CV : dictionnaires + regex, logique PURE
+                       #   (partagee par l'interface et le script Node — ne pas la dupliquer)
+  cvParser.ts          # Extraction du texte cote navigateur (pdf.js / mammoth / OCR) + re-export
   cvthequeService.ts   # CVtheque : upload bucket prive + parse + recherche + edit + suppression
 
 constants.ts        # Liste des villes (CITIES, SOUSS_MASSA_CITIES)
@@ -387,6 +413,8 @@ scripts/
   scrape-marocannonces.cjs  # Source marocannonces.com (Agadir/Taroudant/Tiznit)
   insert-offers.cjs         # Insertion generique d'offres (records traduits) dans Supabase
   gen-sitemap.cjs           # Regeneration de public/sitemap.xml depuis Supabase
+  parse-cvtheque.ts         # Rattrapage des fiches CVtheque sans texte analyse
+                            #   (npm run parse:cvtheque, exige SUPABASE_SERVICE_ROLE_KEY)
 ```
 
 ### Importer de nouvelles offres (rekrute.com + marocannonces.com)
@@ -508,6 +536,76 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > il echoue sur le controle de la variable *avant* le controle d'authentification,
 > et nomme la variable absente.
 
+## Espace candidat (comptes, consentement, alertes) — migrations `022` / `024`
+
+Le pendant de l'espace entreprise. Contrairement a l'entreprise, le candidat
+**n'attend aucune validation admin** : il choisit son mot de passe et accede
+immediatement a son espace (imposer une moderation ici assecherait la base, qui
+est justement ce qui donne de la valeur au cote recruteur).
+
+- **Pages** : `/inscription-candidat`, `/connexion-candidat`, `/espace-candidat`
+  (`pages/CandidateRegister|CandidateLogin|CandidateDashboard.tsx`).
+  Service : `src/services/candidateService.ts` (`candidateAuth`, `candidateService`,
+  `alertsService`).
+- **Table `candidats`** (id = `auth.users.id`) : profil, CV (`cv_path` dans
+  `cvs/candidat/{uid}/`), disponibilite, contrats et villes souhaites,
+  `visible_recruteurs` (consentement) et `actif` (recherche en pause).
+- **4 onglets** : *Mon profil* (CV + analyse locale de pre-remplissage, barre de
+  completion), *Mes candidatures*, *Mes alertes*, *Mon compte*.
+- **Historique par email** : la policy `cand_self_select` rapproche les
+  candidatures par `candidate_email` = email du compte. Un candidat qui s'inscrit
+  avec l'adresse deja utilisee pour postuler retrouve tout son historique, y
+  compris anterieur a la creation du compte.
+- **Candidature en un clic** : `ApplyModal` reprend coordonnees et CV du profil
+  connecte ; le CV est **recopie** sous `ref_offre/` pour que le cloisonnement par
+  offre (migration 014) reste vrai.
+- Comme cote entreprise, `signUp` **ferme toute session avant l'inscription** et
+  verifie que le compte renvoye correspond a l'email saisi — c'est le piege qui
+  avait greffe une fiche entreprise sur le compte admin. Un compte admin ne peut
+  pas porter de fiche candidat (policy `candidats_self_insert`).
+
+### Consentement CVtheque (le point le plus sensible juridiquement)
+
+Avant, postuler faisait entrer le CV dans la CVtheque consultee par toutes les
+entreprises validees, **sans information ni possibilite de refus**.
+
+- `cvtheque.visible_recruteurs` et `candidatures.consent_cvtheque`, **defaut
+  `true`** : les 112 fiches et 234 candidatures existantes gardent exactement le
+  comportement d'avant, rien ne disparait retroactivement.
+- Le formulaire de candidature porte une case a cocher (cochee par defaut,
+  decochable). Un **refus** exprime la se propage a toutes les fiches portant
+  l'email ; un accord ne re-expose jamais un profil masque depuis l'espace
+  candidat — sinon une case a cocher annulerait un choix plus fort.
+- Le retrait depuis l'espace candidat se propage a **toutes** les fiches de
+  l'email, table *et* stockage (`cvs_company_read_via_cvtheque`,
+  `cvtheque_company_read` verifient `visible_recruteurs`).
+- Le candidat n'ecrit jamais directement dans `cvtheque` : il edite `candidats`,
+  et le trigger SECURITY DEFINER `candidats_sync_cvtheque` repercute. Ouvrir
+  `cvtheque` en ecriture aux authentifies aurait expose une table de donnees
+  personnelles a tous les comptes.
+
+### Alertes emploi (`job_alerts` + `api/send-alerts.ts`)
+
+- Table `job_alerts` (metier, ville, type de contrat, frequence quotidienne ou
+  hebdomadaire, `actif`, `last_sent_at`), 5 alertes maximum par candidat.
+- **L'email est repose par le trigger `job_alerts_guard`** depuis le profil :
+  sans cela, la plateforme devenait un relais permettant de faire envoyer des
+  emails a une adresse tierce.
+- `api/send-alerts.ts` (cron Vercel `0 7 * * *`) envoie les offres publiees
+  **depuis le dernier email** et correspondant aux criteres. Comparaison
+  insensible aux accents (« ait melloul » doit trouver « Aït Melloul »).
+  `last_sent_at` est pose **avant** l'envoi : l'endpoint est idempotent, un rejeu
+  ne renvoie rien — c'est ce qui le rend inoffensif meme appele de l'exterieur.
+  Aucun email vide n'est envoye.
+- Variable facultative **`CRON_SECRET`** (Vercel) : si elle existe, Vercel
+  l'envoie en `Authorization: Bearer` et l'endpoint refuse tout autre appelant.
+
+### Rapprochement offre → profils
+
+Chaque offre de l'espace entreprise porte un bouton **« Profils correspondants »**
+qui ouvre la CVtheque pre-filtree sur l'intitule et la ville
+(`CvthequeExplorer` accepte `initialFilters`).
+
 ## CVtheque (base de CV admin, parsing SANS LLM)
 
 Onglet **CVtheque** dans `pages/Admin.tsx` : l'admin importe des CV, ils sont stockes,
@@ -586,9 +684,31 @@ sur les **politiques RLS** Supabase, pas sur le code client.
 - **CV** : bucket `cvs` **prive**. La candidature stocke le **chemin** (`cv_path`), pas une URL
   publique. L'admin telecharge via **URL signee** (`storage.createSignedUrl`, ~120 s).
   L'upload reste possible en anon (policy INSERT conservee).
-- **CVtheque** (base documentaire admin) : table `cvtheque` + bucket `cvtheque`, **separes**
-  des candidatures et du bucket `cvs`. Tout est **reserve a l'admin** (`is_admin()`) — RLS sur la
-  table (policy `cvtheque_admin_all`) ET sur le storage (`cvtheque_obj_*`). Voir section dediee.
+- **CVtheque** : table `cvtheque` + bucket `cvtheque`, **separes** des candidatures et du
+  bucket `cvs`. Ecriture / suppression **reservees a l'admin** (`cvtheque_admin_all`,
+  `cvtheque_obj_*`). En lecture, les entreprises validees ne voient que les profils
+  **consentants** (`visible_recruteurs`, migration `022`) — table *et* stockage.
+
+### `candidats` et `job_alerts` (migration `022`)
+- **`candidats`** : lecture / ecriture reservees au proprietaire (`id = auth.uid()`) ou a
+  l'admin. Le trigger `candidats_guard` fige `id`, `email` et `created_at` — une policy ne
+  sait pas restreindre les colonnes, et le rapprochement CVtheque se faisant par email,
+  pouvoir le changer aurait permis de prendre la main sur la fiche d'un autre.
+- **`job_alerts`** : idem, plus le trigger `job_alerts_guard` qui **repose l'email depuis le
+  profil**. Sans lui, la plateforme devenait un relais d'envoi vers une adresse tierce.
+- **Bucket `cvs`** : le candidat lit/depose uniquement sous `candidat/{son uid}/`, et relit
+  les CV de ses propres candidatures (`cvs_self_read`, rapprochement par email).
+- **Verifie en conditions reelles** (compte de test cree puis supprime) : changement d'email
+  refuse silencieusement, email d'alerte force, CVtheque et candidatures des autres invisibles,
+  retrait du consentement propage jusqu'au stockage.
+
+### Fonctions de trigger non appelables (migration `023`)
+La migration `018` revoquait `EXECUTE` a `anon` et `authenticated` — **sans effet** : le droit
+ne venait pas d'un grant nominatif mais du `GRANT` implicite a `PUBLIC`. L'advisor Supabase
+continuait donc, a juste titre, de signaler ces fonctions comme exposees via `/rest/v1/rpc/`.
+La `023` revoque a `PUBLIC`. Un trigger continue de fonctionner : il s'execute avec les droits
+du proprietaire de la table, jamais avec ceux de l'appelant. `is_admin()`,
+`is_validated_company()` et `public_marketing_stats()` restent volontairement appelables.
 
 ### Admin authentifie (plus de mot de passe en clair)
 - `pages/Admin.tsx` se connecte via **Supabase Auth** (`signInWithPassword`) puis verifie
@@ -649,6 +769,13 @@ Pour finir la bascule :
 - **`observatoire_articles`** : `INSERT` encore ouvert a anon (migration `009`,
   pour la routine editoriale). Meme bascule a prevoir si on veut le fermer.
 - Une cle `service_role` d'un **ancien** projet a fuite dans les docs historiques : a revoquer.
+- **Consentement retroactif** : les fiches CVtheque anterieures a la migration `022` sont
+  `visible_recruteurs = true` par defaut. C'est le statu quo, pas un consentement recueilli.
+  Le seul moyen propre de le regulariser est d'ecrire aux candidats concernes pour qu'ils
+  creent leur espace et confirment (ou se retirent).
+- **Delivrabilite** : tant que SPF ne contient pas `include:spf.brevo.com` et que la cle DKIM
+  `brevo._domainkey` n'est pas publiee, les emails (validation entreprise, alertes emploi,
+  notification de candidature) partent en spam. C'est un prerequis DNS, pas du code.
 
 > Apres tout changement DDL/RLS, lancer l'advisor securite Supabase (`get_advisors security`)
 > et **tester les 4 parcours publics** (upload CV, postuler, contact, inscription entreprise)
@@ -667,6 +794,8 @@ Vercel → projet → Settings → Cron Jobs.
 npm run dev          # Serveur de developpement
 npm run build        # Build production (tsc + vite)
 npm run preview      # Preview du build
+npm run parse:cvtheque              # Rattrape les fiches CVtheque sans texte analyse
+npm run parse:cvtheque -- --dry-run # ... sans rien ecrire (exige SUPABASE_SERVICE_ROLE_KEY)
 ```
 
 ## Regles importantes
@@ -683,6 +812,8 @@ npm run preview      # Preview du build
 - Toujours commiter et pousser sur `main` apres modification (deploiement auto Vercel)
 - Apres insertion d'offres, toujours mettre a jour `public/sitemap.xml` et commiter
 - Quand on modifie CATEGORY_FILTERS, mettre a jour les DEUX fichiers : `services/` et `src/services/`
+- **Consentement** : ne jamais elargir la visibilite d'un profil CVtheque sans action explicite
+  du candidat. `visible_recruteurs` ne repasse a `true` que depuis l'espace candidat.
 - **Multilingue** : tout nouveau texte d'interface doit etre ajoute dans les 3 langues de
   `src/i18n/translations.ts` (jamais de texte en dur). Apres insertion d'une offre FR, remplir
   ses colonnes `_en` / `_ar` (voir section "Site multilingue"). Le site retombe sur le FR si absent.

@@ -52,7 +52,8 @@ async function main() {
     { url: '/offres', priority: '0.9', changefreq: 'daily' },
     { url: '/recruter', priority: '0.8', changefreq: 'monthly' },
     { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
-    { url: '/contact', priority: '0.5', changefreq: 'monthly' },
+    { url: '/inscription-candidat', priority: '0.7', changefreq: 'monthly' },
+      { url: '/contact', priority: '0.5', changefreq: 'monthly' },
   ];
   const sectorPages = ['informatique', 'commercial', 'administratif', 'industrie', 'sante', 'enseignement', 'tourisme', 'construction']
     .map(s => ({ url: `/offres?sector=${s}`, priority: '0.7', changefreq: 'daily' }));

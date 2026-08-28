@@ -17,6 +17,13 @@ interface Props {
   onEdit?: (row: CvthequeRow) => void;
   onDelete?: (row: CvthequeRow) => void;
   reloadKey?: number;
+  /**
+   * Filtres appliques a l'ouverture. Sert au rapprochement offre → profils :
+   * l'entreprise clique « Profils correspondants » sur une de ses offres et
+   * arrive ici deja filtree sur l'intitule et la ville. Absent = comportement
+   * d'origine (liste complete).
+   */
+  initialFilters?: { q?: string; ville?: string; poste?: string };
 }
 
 const initials = (name: string) =>
@@ -40,7 +47,7 @@ const avatarColor = (seed: string) => {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 };
 
-const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete, reloadKey = 0 }) => {
+const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete, reloadKey = 0, initialFilters }) => {
   const { t } = useT();
   const [rows, setRows] = useState<CvthequeRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +72,20 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [reloadKey]);
+  // Serialise les filtres d'ouverture : compares par valeur, ils ne relancent
+  // pas une recherche a chaque rendu du parent (l'objet est recree a chaque fois).
+  const seed = JSON.stringify(initialFilters || null);
+
+  useEffect(() => {
+    const f = initialFilters || {};
+    if (f.q || f.ville || f.poste) {
+      setFilters((prev) => ({ ...prev, q: f.q || '', ville: f.ville || '', poste: f.poste || '' }));
+      load({ q: f.q || undefined, ville: f.ville || undefined, poste: f.poste || undefined });
+    } else {
+      load();
+    }
+    /* eslint-disable-next-line */
+  }, [reloadKey, seed]);
 
   const search = (e?: React.FormEvent) => {
     e?.preventDefault();

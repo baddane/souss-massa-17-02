@@ -50,6 +50,7 @@ export default async function handler() {
       { url: '/offres', priority: '0.9', changefreq: 'daily' },
       { url: '/recruter', priority: '0.8', changefreq: 'monthly' },
       { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
+      { url: '/inscription-candidat', priority: '0.7', changefreq: 'monthly' },
       { url: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];
 
