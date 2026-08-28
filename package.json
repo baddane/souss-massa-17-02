@@ -15,7 +15,6 @@
     "parse:cvtheque": "npx tsx scripts/parse-cvtheque.ts"
   },
   "dependencies": {
-    "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.95.3",
     "axios": "^1.6.7",
     "cheerio": "^1.2.0",
