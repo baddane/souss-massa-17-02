@@ -11,7 +11,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "jest",
-    "scrape:anapec": "npx tsx scripts/scrape-anapec.ts"
+    "scrape:anapec": "npx tsx scripts/scrape-anapec.ts",
+    "parse:cvtheque": "npx tsx scripts/parse-cvtheque.ts"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
