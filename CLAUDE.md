@@ -606,6 +606,59 @@ Chaque offre de l'espace entreprise porte un bouton **« Profils correspondants 
 qui ouvre la CVtheque pre-filtree sur l'intitule et la ville
 (`CvthequeExplorer` accepte `initialFilters`).
 
+## Parcours d'inscription (principe : 0 friction)
+
+**Regle** : ne jamais demander un compte avant d'avoir rendu le service. Le
+compte est le sous-produit d'une action deja accomplie, pas un peage a l'entree.
+
+### Menu (`components/Header.tsx` + `src/hooks/useAccount.ts`)
+
+Deux actions symetriques a droite, formulees comme des **actions** et non comme
+des lieux, et adaptees au compte connecte :
+
+| Visiteur | Bouton contour | Bouton plein |
+|---|---|---|
+| Anonyme | Déposer une offre → `/recruter` | **Déposer mon CV** → `/inscription-candidat` |
+| Candidat | — | Mon espace candidat |
+| Entreprise | Mon espace entreprise | — |
+
+`useAccount()` ne declenche **aucune requete** pour un visiteur anonyme :
+l'absence de session suffit a conclure. Les deux lectures (`candidats`,
+`comptes_entreprise`) ne partent que pour un compte deja connecte.
+
+> Ne pas reintroduire de libelle du type « Mon espace » affiche a tout le monde :
+> il presuppose la possession et n'apprend rien a qui n'a pas de compte.
+> Ne pas remettre deux entrees de menu vers la meme page.
+
+### Candidat : le compte naît de la candidature (`components/ApplyModal.tsx`)
+
+Le formulaire de candidature collecte deja nom, email, telephone et CV — les
+champs du profil. Une fois la candidature enregistree, un visiteur anonyme voit
+donc un panneau qui reprend ce qu'il vient de saisir et ne demande **qu'un mot
+de passe**. Le compte est cree, le profil recoit le CV deja televerse, et il
+arrive connecte dans son espace avec sa candidature visible.
+
+Le consentement CVtheque coche dans le formulaire est repris tel quel : postuler
+et creer son espace expriment le meme choix, on ne le redemande pas.
+
+### Candidat : l'alerte depuis la recherche (`components/AlertSignupCard.tsx`)
+
+Sous la liste de `/offres`. La recherche en cours **sert de criteres** (metier,
+ville, contrat) : on ne les redemande pas. Anonyme = email + mot de passe ;
+candidat connecte = un seul bouton.
+
+### Entreprise : l'offre avant le compte (`pages/CompanyRegister.tsx`)
+
+Etape 1 = l'annonce (intitule, ville, contrat, description...), etape 2 = les
+coordonnees, la ou elles ont un sens : c'est la qu'arriveront les candidatures.
+`companyAuth.signUp(email, profile, offer?)` cree l'offre **pendant** la session
+d'inscription — apres le `signOut` final, l'insertion repasserait en anon et
+dependrait des ecritures anon de `job_offers`, qui ont vocation a fermer
+(migration `017`).
+
+Moderation inchangee : l'offre part en `en_attente`. Le lien « Je n'ai pas
+encore d'offre a publier » conserve l'ancien parcours (compte seul).
+
 ## CVtheque (base de CV admin, parsing SANS LLM)
 
 Onglet **CVtheque** dans `pages/Admin.tsx` : l'admin importe des CV, ils sont stockes,
@@ -812,6 +865,8 @@ npm run parse:cvtheque -- --dry-run # ... sans rien ecrire (exige SUPABASE_SERVI
 - Toujours commiter et pousser sur `main` apres modification (deploiement auto Vercel)
 - Apres insertion d'offres, toujours mettre a jour `public/sitemap.xml` et commiter
 - Quand on modifie CATEGORY_FILTERS, mettre a jour les DEUX fichiers : `services/` et `src/services/`
+- **Inscription** : ne jamais ajouter d'etape avant la valeur rendue. Toute nouvelle
+  entree doit reprendre ce que l'utilisateur a deja saisi plutot que le lui redemander.
 - **Consentement** : ne jamais elargir la visibilite d'un profil CVtheque sans action explicite
   du candidat. `visible_recruteurs` ne repasse a `true` que depuis l'espace candidat.
 - **Multilingue** : tout nouveau texte d'interface doit etre ajoute dans les 3 langues de

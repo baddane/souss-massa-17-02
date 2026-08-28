@@ -102,7 +102,12 @@ function throwawayPassword(): string {
 
 // ---- Authentification ----
 export const companyAuth = {
-  async signUp(email: string, profile: NewCompanyProfile) {
+  // `offer` (facultatif) : l'entreprise redige son annonce AVANT de donner ses
+  // coordonnees. L'offre est creee ici, tant que la session d'inscription est
+  // encore ouverte — apres le signOut final, l'insertion repasserait en anon et
+  // dependrait des ecritures anon de `job_offers`, qui ont vocation a fermer
+  // (migration 017).
+  async signUp(email: string, profile: NewCompanyProfile, offer?: OfferForm) {
     // Si une session est deja ouverte dans le navigateur (typiquement l'admin,
     // ou une entreprise deja connectee), `signUp` ne cree PAS de compte : il
     // renvoie l'utilisateur courant. La fiche entreprise se retrouvait alors
@@ -130,6 +135,15 @@ export const companyAuth = {
 
     try {
       await insertProfile(userId, email, profile);
+
+      if (offer) {
+        // Meme parcours de moderation que depuis l'espace entreprise : l'offre
+        // part en `en_attente`, rien n'est publie sans validation admin.
+        await companyService.createOffer(
+          { id: userId, nom_entreprise: profile.nom_entreprise } as CompanyProfile,
+          offer,
+        );
+      }
 
       // Enregistrement comme lead Brevo, avant la déconnexion (l'endpoint exige
       // le jeton du compte). Best-effort : une panne CRM ne doit jamais faire

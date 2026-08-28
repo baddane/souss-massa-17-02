@@ -5,6 +5,7 @@ import { jobOffersService } from '../services/jobOffersService';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import SEO from '../components/SEO';
 import ApplyModal from '../components/ApplyModal';
+import AlertSignupCard from '../components/AlertSignupCard';
 import RecruiterCTA from '../components/RecruiterCTA';
 import {
   useT,
@@ -271,6 +272,10 @@ const Offers: React.FC = () => {
         </div>
       )}
     </div>
+
+    {/* La recherche que le visiteur vient de faire sert de criteres : on ne lui
+        redemande ni metier, ni ville, ni contrat. */}
+    <AlertSignupCard intitule={search} ville={city} contrat={contractType} />
 
     <RecruiterCTA />
 

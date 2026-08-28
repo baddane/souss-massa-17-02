@@ -17,14 +17,15 @@ export type AccountKind = 'loading' | 'anonymous' | 'candidate' | 'company';
 
 export interface Account {
   kind: AccountKind;
+  id: string | null;
   email: string | null;
   name: string | null;
 }
 
-const ANON: Account = { kind: 'anonymous', email: null, name: null };
+const ANON: Account = { kind: 'anonymous', id: null, email: null, name: null };
 
 export function useAccount(): Account {
-  const [account, setAccount] = useState<Account>({ kind: 'loading', email: null, name: null });
+  const [account, setAccount] = useState<Account>({ kind: 'loading', id: null, email: null, name: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -44,9 +45,9 @@ export function useAccount(): Account {
         if (cancelled) return;
 
         if (comp.data) {
-          setAccount({ kind: 'company', email: user.email || null, name: (comp.data as any).nom_entreprise || null });
+          setAccount({ kind: 'company', id: user.id, email: user.email || null, name: (comp.data as any).nom_entreprise || null });
         } else if (cand.data) {
-          setAccount({ kind: 'candidate', email: user.email || null, name: (cand.data as any).nom_complet || null });
+          setAccount({ kind: 'candidate', id: user.id, email: user.email || null, name: (cand.data as any).nom_complet || null });
         } else {
           // Session valide sans fiche : compte admin, ou compte cree a l'instant
           // dont le profil n'est pas encore ecrit. On ne devine pas.
