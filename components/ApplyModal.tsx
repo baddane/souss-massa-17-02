@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { supabaseOffers } from '../src/services/supabase';
 import { useT } from '../src/i18n/LanguageContext';
+import { candidateAuth, candidateService, type CandidateProfile } from '../src/services/candidateService';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -19,7 +21,32 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [cvFile, setCvFile] = useState<File | null>(null);
+  // Consentement CVtheque : coche par defaut (comportement historique) mais
+  // desormais decochable, et respecte cote base (migration 024).
+  const [consent, setConsent] = useState(true);
+  const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const { t } = useT();
+
+  // Candidature en un clic : si le visiteur est connecte a son espace candidat,
+  // on reprend ses coordonnees et son CV deja deposé.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const user = await candidateAuth.currentUser();
+        if (!user || cancelled) return;
+        const p = await candidateService.getProfile(user.id);
+        if (!p || cancelled) return;
+        setProfile(p);
+        setForm({ name: p.nom_complet || '', email: p.email || '', phone: p.telephone || '' });
+        setConsent(p.visible_recruteurs);
+      } catch {
+        /* visiteur anonyme : formulaire vierge, comportement inchange */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -37,27 +64,52 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
     setCvFile(file);
   };
 
+  // Reutilise le CV de l'espace candidat : on le recopie sous la reference de
+  // l'offre, comme un depot classique. L'entreprise n'a ainsi acces qu'au
+  // fichier depose sur SON offre (cloisonnement par `ref_offre`, migration 014).
+  const copyProfileCv = async (): Promise<{ path: string; name: string }> => {
+    if (!profile?.cv_path) throw new Error('NO_CV');
+    const url = await candidateService.cvUrl(profile.cv_path);
+    if (!url) throw new Error('NO_CV');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('NO_CV');
+    const blob = await res.blob();
+    const ext = (profile.cv_filename || 'cv.pdf').split('.').pop();
+    const path = `${jobRef}/${Date.now()}-${(profile.nom_complet || 'candidat').replace(/\s+/g, '_')}.${ext}`;
+    const { error } = await supabaseOffers.storage.from('cvs').upload(path, blob, {
+      contentType: blob.type || 'application/pdf',
+    });
+    if (error) throw error;
+    return { path, name: profile.cv_filename || `cv.${ext}` };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email) {
       toast.warning(t('apply.nameEmailRequired'));
       return;
     }
-    if (!cvFile) {
+    if (!cvFile && !profile?.cv_path) {
       toast.warning(t('apply.cvRequired'));
       return;
     }
 
     setSending(true);
     try {
-      const ext = cvFile.name.split('.').pop();
-      const filePath = `${jobRef}/${Date.now()}-${form.name.replace(/\s+/g, '_')}.${ext}`;
+      let filePath: string;
+      let fileName: string;
 
-      const { error: uploadError } = await supabaseOffers.storage
-        .from('cvs')
-        .upload(filePath, cvFile);
-
-      if (uploadError) throw uploadError;
+      if (cvFile) {
+        const ext = cvFile.name.split('.').pop();
+        filePath = `${jobRef}/${Date.now()}-${form.name.replace(/\s+/g, '_')}.${ext}`;
+        const { error: uploadError } = await supabaseOffers.storage.from('cvs').upload(filePath, cvFile);
+        if (uploadError) throw uploadError;
+        fileName = cvFile.name;
+      } else {
+        const copied = await copyProfileCv();
+        filePath = copied.path;
+        fileName = copied.name;
+      }
 
       // L'id est genere ici plutot que relu apres insertion : le visiteur anonyme
       // n'a que le droit d'ecrire sur `candidatures`, un `.select()` de retour
@@ -76,7 +128,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           candidate_email: form.email,
           candidate_phone: form.phone || null,
           cv_path: filePath,
-          cv_filename: cvFile.name,
+          cv_filename: fileName,
+          consent_cvtheque: consent,
         });
 
       if (insertError) throw insertError;
@@ -95,7 +148,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
       onClose();
     } catch (err: any) {
       console.error('Erreur candidature:', err);
-      toast.error(err?.message || t('apply.sendError'));
+      toast.error(err?.message === 'NO_CV' ? t('apply.cvRequired') : (err?.message || t('apply.sendError')));
     } finally {
       setSending(false);
     }
@@ -105,7 +158,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start">
@@ -115,6 +168,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
+
+        {profile && (
+          <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+            {t('apply.prefilled')}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -163,6 +222,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
                   <span className="font-medium text-sm">{cvFile.name}</span>
                   <span className="text-xs text-gray-400">({(cvFile.size / 1024 / 1024).toFixed(1)} Mo)</span>
                 </div>
+              ) : profile?.cv_path ? (
+                <div className="text-sm">
+                  <span className="font-medium text-green-700">{profile.cv_filename || 'CV'}</span>
+                  <span className="block text-xs text-gray-400 mt-1">{t('apply.cvHint')}</span>
+                </div>
               ) : (
                 <span className="text-gray-400 text-sm">{t('apply.cvHint')}</span>
               )}
@@ -176,6 +240,19 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
             </div>
           </div>
 
+          <label className="flex items-start gap-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-blue-600"
+            />
+            <span>
+              {t('apply.consent')}
+              <span className="block text-xs text-gray-400 mt-0.5">{t('apply.consentHelp')}</span>
+            </span>
+          </label>
+
           <button
             type="submit"
             disabled={sending}
@@ -184,6 +261,14 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
             {sending ? t('apply.sending') : t('apply.submit')}
           </button>
         </form>
+
+        {!profile && (
+          <p className="text-center text-sm">
+            <Link to="/inscription-candidat" className="text-blue-600 font-medium hover:underline">
+              {t('apply.createAccount')}
+            </Link>
+          </p>
+        )}
 
         <p className="text-xs text-gray-400 text-center">
           {t('apply.privacyNote')}

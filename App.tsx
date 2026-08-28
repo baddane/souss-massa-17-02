@@ -15,6 +15,9 @@ import NotFound from './pages/NotFound';
 import CompanyRegister from './pages/CompanyRegister';
 import CompanyLogin from './pages/CompanyLogin';
 import CompanyDashboard from './pages/CompanyDashboard';
+import CandidateRegister from './pages/CandidateRegister';
+import CandidateLogin from './pages/CandidateLogin';
+import CandidateDashboard from './pages/CandidateDashboard';
 import Observatoire from './pages/Observatoire';
 import ObservatoireArticle from './pages/ObservatoireArticle';
 import Recruter from './pages/Recruter';
@@ -53,6 +56,9 @@ const AppShell: React.FC = () => {
             <Route path="/inscription-entreprise" element={<CompanyRegister />} />
             <Route path="/connexion-entreprise" element={<CompanyLogin />} />
             <Route path="/espace-entreprise" element={<CompanyDashboard />} />
+            <Route path="/inscription-candidat" element={<CandidateRegister />} />
+            <Route path="/connexion-candidat" element={<CandidateLogin />} />
+            <Route path="/espace-candidat" element={<CandidateDashboard />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

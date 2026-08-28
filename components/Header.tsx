@@ -56,6 +56,14 @@ const Header: React.FC = () => {
             >
               {t('nav.contact')}
             </Link>
+            <Link
+              to="/espace-candidat"
+              className={`text-sm font-semibold transition-colors ${
+                location.pathname.startsWith('/espace-candidat') ? 'text-orange-600' : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              {t('nav.candidateSpace')}
+            </Link>
             {/* CTA candidat (primaire) */}
             <Link
               to="/offres"
@@ -98,6 +106,9 @@ const Header: React.FC = () => {
           </Link>
           <Link to="/contact" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.contact')}
+          </Link>
+          <Link to="/espace-candidat" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+            {t('nav.candidateSpace')}
           </Link>
           <Link to="/offres" className="block bg-orange-500 text-white text-center py-3 rounded-lg font-bold">
             {t('nav.findJob')}
