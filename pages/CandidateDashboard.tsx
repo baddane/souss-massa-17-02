@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import { useT } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
-import { candidatureStatusKey } from '../src/services/companyService';
+import { candidatureStatusKey, companyService } from '../src/services/companyService';
 import {
   candidateAuth,
   candidateService,
@@ -62,9 +62,17 @@ const CandidateDashboard: React.FC = () => {
 
     let prof = await candidateService.getProfile(user.id);
     if (!prof) {
+      // Un compte entreprise arrive ici par erreur (mauvais formulaire, ancien
+      // marque-page) : on le renvoie vers son espace SANS lui creer de fiche
+      // candidat au passage. Rien ne l'interdit cote base — le cloisonnement
+      // porte sur les donnees, pas sur les roles — mais lui greffer un second
+      // profil serait un effet de bord inattendu.
+      const company = await companyService.getProfile(user.id);
+      if (company) { navigate('/espace-entreprise'); return; }
+
       // Compte cree via Google : le profil n'existe pas encore. On le cree a la
-      // volee plutot que de bloquer sur un ecran vide. Si l'insertion echoue,
-      // c'est un compte entreprise ou admin : on le renvoie vers son espace.
+      // volee plutot que de bloquer sur un ecran vide (un compte admin, lui,
+      // est refuse par la policy `candidats_self_insert`).
       try {
         await candidateService.createProfile(
           user.id,
@@ -74,7 +82,7 @@ const CandidateDashboard: React.FC = () => {
         prof = await candidateService.getProfile(user.id);
       } catch {
         toast.error(t('cand.login.isCompany'));
-        navigate('/espace-entreprise');
+        navigate('/');
         return;
       }
     }
@@ -243,7 +251,7 @@ const ProfileTab: React.FC<{ profile: CandidateProfile; onSaved: (p: CandidatePr
 
     setUploading(true);
     try {
-      const { path, name } = await candidateService.uploadCv(profile.id, file);
+      const { path, name } = await candidateService.uploadCv(profile.id, file, profile.cv_path);
       await candidateService.updateProfile(profile.id, { cv_path: path, cv_filename: name });
 
       const res = await candidateService.parseCv(file);

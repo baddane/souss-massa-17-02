@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import { useT } from '../src/i18n/LanguageContext';
 import { candidateAuth, candidateService } from '../src/services/candidateService';
+import { companyService } from '../src/services/companyService';
 
 const CandidateLogin: React.FC = () => {
   const { t } = useT();
@@ -24,11 +25,17 @@ const CandidateLogin: React.FC = () => {
       // Un compte entreprise qui se trompe de formulaire recevait « email ou
       // mot de passe incorrect » alors que ses identifiants etaient bons : on
       // le renvoie vers le bon espace au lieu de le laisser dans le doute.
+      // On ne se contente pas de l'absence de fiche candidat pour conclure :
+      // un compte cree via Google n'en a pas encore, et le tableau de bord la
+      // cree. Seule la presence d'une fiche ENTREPRISE tranche.
       if (user) {
-        const profile = await candidateService.getProfile(user.id);
-        if (!profile) {
-          await candidateAuth.signOut();
-          toast.error(t('cand.login.isCompany'));
+        const [candidate, company] = await Promise.all([
+          candidateService.getProfile(user.id),
+          companyService.getProfile(user.id),
+        ]);
+        if (!candidate && company) {
+          toast.info(t('cand.login.isCompany'));
+          navigate('/espace-entreprise');
           return;
         }
       }

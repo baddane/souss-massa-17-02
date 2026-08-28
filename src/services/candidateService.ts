@@ -159,7 +159,7 @@ export const candidateService = {
   // Le CV vit dans le bucket prive `cvs`, sous `candidat/{uid}/` : ce prefixe
   // est celui qu'autorisent les policies de la migration 022, et il ne peut
   // entrer en collision avec les CV de candidature (ranges par `ref_offre`).
-  async uploadCv(userId: string, file: File): Promise<{ path: string; name: string }> {
+  async uploadCv(userId: string, file: File, previousPath?: string | null): Promise<{ path: string; name: string }> {
     if (!CV_TYPES.includes(file.type)) throw new Error('FORMAT');
     if (file.size > MAX_CV_SIZE) throw new Error('SIZE');
 
@@ -168,6 +168,14 @@ export const candidateService = {
       contentType: file.type, upsert: false,
     });
     if (error) throw error;
+
+    // Le CV precedent n'est plus reference par personne : sans ce menage, chaque
+    // remplacement laisserait un fichier orphelin dans le bucket. On ne touche
+    // QUE les fichiers du dossier personnel : un CV depose sur une offre reste
+    // rattache a sa candidature et ne doit jamais partir.
+    if (previousPath && previousPath !== path && previousPath.startsWith(`candidat/${userId}/`)) {
+      await supabaseOffers.storage.from('cvs').remove([previousPath]);
+    }
     return { path, name: file.name };
   },
 
