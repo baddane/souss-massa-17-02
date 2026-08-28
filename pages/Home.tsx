@@ -286,10 +286,10 @@ const Home: React.FC = () => {
               <p className="text-blue-200">{t('home.recruitingText')}</p>
             </div>
             <Link
-              to="/contact"
+              to="/recruter"
               className="bg-white text-blue-700 px-8 py-4 rounded-xl font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
             >
-              {t('home.contactUs')}
+              {t('home.recruitingCta')}
             </Link>
           </div>
         </section>

@@ -62,7 +62,7 @@ const Footer: React.FC = () => {
               <Link to="/offres" className="hover:text-white transition-colors">{t('nav.allOffers')}</Link>
               <Link to="/observatoire" className="hover:text-white transition-colors">{t('nav.observatoire')}</Link>
               <Link to="/contact" className="hover:text-white transition-colors">{t('nav.contact')}</Link>
-              <Link to="/espace-candidat" className="hover:text-white transition-colors">{t('nav.candidateSpace')}</Link>
+              <Link to="/inscription-candidat" className="hover:text-white transition-colors">{t('nav.depositCv')}</Link>
               <Link to="/recruter" className="hover:text-white transition-colors">{t('nav.postOffer')}</Link>
             </nav>
           </div>

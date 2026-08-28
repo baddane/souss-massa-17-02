@@ -105,7 +105,7 @@ export const translations: Record<Lang, Dict> = {
     'home.contactUs': 'Nous contacter',
     'home.seoHeading': 'Emploi et recrutement dans la région Souss-Massa',
     'home.seoP1': "SoussMassa-RH est le portail de référence pour l'emploi dans la région Souss-Massa au Maroc. Retrouvez des offres d'emploi à Agadir, Inezgane, Taroudant, Tiznit et dans toute la région. CDI, CDD, stages et alternances dans tous les secteurs : informatique, commerce, industrie, santé, tourisme.",
-    'home.seoP2': "Candidats, postulez gratuitement en un clic — déposez votre CV et il arrive directement chez le recruteur. Entreprises, contactez-nous pour publier vos annonces et toucher les meilleurs talents de la région.",
+    'home.seoP2': "Candidats : créez votre espace gratuit, déposez votre CV une fois et postulez en un clic à toutes les offres. Recevez par email les nouvelles annonces qui correspondent à votre métier et à votre ville. Entreprises : créez votre compte recruteur, publiez vos offres et consultez les profils de la région — gratuitement.",
     'home.seoTitle': "Offres d'emploi Souss-Massa - Agadir, Inezgane, Taroudant",
     'home.seoDescription': "{count}+ offres d'emploi dans la région Souss-Massa. CDI, CDD, Stage à Agadir et environs. Postulez gratuitement en 1 clic.",
 
@@ -206,6 +206,10 @@ export const translations: Record<Lang, Dict> = {
     // Espace entreprise
     'nav.companyArea': 'Espace entreprise',
     'nav.postOffer': 'Déposer une offre',
+    'nav.depositCv': 'Déposer mon CV',
+    'nav.candidateSpaceFull': 'Mon espace candidat',
+    'nav.companySpace': 'Mon espace entreprise',
+    'home.recruitingCta': 'Publier une offre gratuitement',
     'company.register.title': 'Créer un compte entreprise',
     'company.register.subtitle': "Publiez vos offres d'emploi en quelques clics. Votre compte sera activé après validation par notre équipe.",
     'company.companyName': "Nom de l'entreprise",
@@ -562,7 +566,7 @@ export const translations: Record<Lang, Dict> = {
     'home.contactUs': 'Contact us',
     'home.seoHeading': 'Jobs and recruitment in the Souss-Massa region',
     'home.seoP1': "SoussMassa-RH is the leading job portal for the Souss-Massa region in Morocco. Find job offers in Agadir, Inezgane, Taroudant, Tiznit and across the region. Permanent, fixed-term, internship and apprenticeship positions in every sector: IT, retail, industry, healthcare and tourism.",
-    'home.seoP2': "Candidates, apply for free in one click — upload your CV and it reaches the recruiter directly. Companies, contact us to post your listings and reach the best talent in the region.",
+    'home.seoP2': "Candidates: create your free space, upload your CV once and apply to any job in one click. Get an email whenever a new job matches your role and city. Companies: create your recruiter account, post your jobs and browse profiles from the region — free of charge.",
     'home.seoTitle': 'Jobs in Souss-Massa - Agadir, Inezgane, Taroudant',
     'home.seoDescription': '{count}+ job offers in the Souss-Massa region. Permanent, fixed-term and internship positions in Agadir and nearby. Apply for free in one click.',
 
@@ -657,6 +661,10 @@ export const translations: Record<Lang, Dict> = {
     // Employer area
     'nav.companyArea': 'Employers',
     'nav.postOffer': 'Post a job',
+    'nav.depositCv': 'Upload my CV',
+    'nav.candidateSpaceFull': 'My candidate space',
+    'nav.companySpace': 'My company space',
+    'home.recruitingCta': 'Post a job for free',
     'company.register.title': 'Create an employer account',
     'company.register.subtitle': 'Post your job offers in a few clicks. Your account will be activated after review by our team.',
     'company.companyName': 'Company name',
@@ -1013,7 +1021,7 @@ export const translations: Record<Lang, Dict> = {
     'home.contactUs': 'اتصل بنا',
     'home.seoHeading': 'التوظيف والشغل في جهة سوس ماسة',
     'home.seoP1': 'منصة SoussMassa-RH هي البوابة المرجعية للشغل في جهة سوس ماسة بالمغرب. اعثر على عروض عمل في أكادير وإنزكان وتارودانت وتزنيت وفي مختلف أنحاء الجهة. عقود دائمة ومحددة المدة وتداريب وتكوين بالتناوب في جميع القطاعات: المعلوميات، التجارة، الصناعة، الصحة والسياحة.',
-    'home.seoP2': 'أيها المترشحون، تقدموا مجانًا بنقرة واحدة — حمّلوا سيرتكم الذاتية لتصل مباشرة إلى صاحب العمل. أيتها الشركات، اتصلوا بنا لنشر إعلاناتكم والوصول إلى أفضل المواهب في الجهة.',
+    'home.seoP2': "المترشحون: أنشئوا فضاءكم المجاني، أودعوا سيرتكم الذاتية مرة واحدة وترشّحوا بنقرة واحدة لجميع العروض. توصّلوا بالبريد الإلكتروني بالعروض الجديدة المطابقة لمهنتكم ومدينتكم. الشركات: أنشئوا حساب التوظيف، انشروا عروضكم واطّلعوا على ملفات الجهة — مجاناً.",
     'home.seoTitle': 'عروض عمل بسوس ماسة - أكادير، إنزكان، تارودانت',
     'home.seoDescription': 'أكثر من {count} عرض عمل في جهة سوس ماسة. عقود دائمة ومحددة المدة وتداريب في أكادير والمناطق المجاورة. تقدّم مجانًا بنقرة واحدة.',
 
@@ -1108,6 +1116,10 @@ export const translations: Record<Lang, Dict> = {
     // فضاء المقاولات
     'nav.companyArea': 'فضاء المقاولات',
     'nav.postOffer': 'نشر عرض عمل',
+    'nav.depositCv': 'إيداع سيرتي الذاتية',
+    'nav.candidateSpaceFull': 'فضاء المترشح',
+    'nav.companySpace': 'فضاء الشركة',
+    'home.recruitingCta': 'نشر عرض عمل مجاناً',
     'company.register.title': 'إنشاء حساب مقاولة',
     'company.register.subtitle': 'انشر عروض عملك ببضع نقرات. سيتم تفعيل حسابك بعد مصادقة فريقنا.',
     'company.companyName': 'اسم المقاولة',
