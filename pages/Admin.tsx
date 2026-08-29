@@ -6,6 +6,7 @@ import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import CredentialsTab from '../components/CredentialsTab';
+import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
@@ -461,6 +462,8 @@ const Admin: React.FC = () => {
 
   // Entreprise dont on rattache les offres deja en ligne a son nom.
   const [claimFor, setClaimFor] = useState<CompanyProfile | null>(null);
+  // Article dont on prepare l'extrait LinkedIn.
+  const [linkedInFor, setLinkedInFor] = useState<ObsArticle | null>(null);
 
   const deleteCompany = async (c: CompanyProfile) => {
     if (!confirm(`Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`)) return;
@@ -1464,6 +1467,9 @@ const Admin: React.FC = () => {
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
                           <a href={`/observatoire/${a.slug}`} target="_blank" rel="noopener noreferrer" className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm">Voir</a>
+                          {a.statut === 'publie' && (
+                            <button onClick={() => setLinkedInFor(a)} className="px-3 py-2 text-white bg-[#0A66C2] hover:bg-[#004182] rounded-lg text-sm font-medium">LinkedIn</button>
+                          )}
                           <button onClick={() => editObs(a)} className="px-3 py-2 text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium">Éditer</button>
                           <button onClick={() => deleteObs(a)} className="px-3 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-medium">Supprimer</button>
                         </div>
@@ -1666,6 +1672,8 @@ const Admin: React.FC = () => {
       )}
 
       {activeTab === 'identifiants' && <CredentialsTab />}
+
+      {linkedInFor && <LinkedInPostPanel article={linkedInFor} onClose={() => setLinkedInFor(null)} />}
 
       {/* Surcouche modale : declenchee depuis l'onglet Entreprises, rendue au
           niveau racine pour ne dependre d'aucun onglet actif. */}
