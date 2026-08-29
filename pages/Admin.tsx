@@ -6,7 +6,7 @@ import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import CredentialsTab from '../components/CredentialsTab';
-import AdminSidebar, { ICONES, type AdminTabItem } from '../components/AdminSidebar';
+import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
@@ -716,12 +716,16 @@ const Admin: React.FC = () => {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <AdminSidebar
+      <DashboardSidebar
+        espace="admin"
+        titre="Administration"
         tabs={onglets}
         actif={activeTab}
-        onSelect={(id) => setActiveTab(id as typeof activeTab)}
-        onRafraichir={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
-        onDeconnexion={logout}
+        onSelect={(id: string) => setActiveTab(id as typeof activeTab)}
+        actions={[
+          { label: 'Rafraîchir', icone: ICONES.rafraichir, onClick: () => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); } },
+          { label: 'Déconnexion', icone: ICONES.deconnexion, onClick: logout, discret: true },
+        ]}
         ouvertMobile={menuMobile}
         onFermerMobile={() => setMenuMobile(false)}
       />

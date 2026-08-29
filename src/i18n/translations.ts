@@ -34,6 +34,10 @@ export const translations: Record<Lang, Dict> = {
     'obs.chart.zoomIn': 'Zoom avant',
     'obs.chart.zoomOut': 'Zoom arrière',
     'obs.chart.hint': 'Utilisez + / − puis faites défiler',
+    'dash.menu.open': 'Ouvrir le menu',
+    'dash.menu.close': 'Fermer le menu',
+    'dash.menu.collapse': 'Replier le menu',
+    'dash.menu.expand': 'Déplier le menu',
     'nav.menu': 'Menu',
     'nav.language': 'Langue',
 
@@ -539,6 +543,10 @@ export const translations: Record<Lang, Dict> = {
     'obs.chart.zoomIn': 'Zoom in',
     'obs.chart.zoomOut': 'Zoom out',
     'obs.chart.hint': 'Use + / − then scroll',
+    'dash.menu.open': 'Open menu',
+    'dash.menu.close': 'Close menu',
+    'dash.menu.collapse': 'Collapse menu',
+    'dash.menu.expand': 'Expand menu',
     'nav.menu': 'Menu',
     'nav.language': 'Language',
 
@@ -1033,6 +1041,10 @@ export const translations: Record<Lang, Dict> = {
     'obs.chart.zoomIn': 'تكبير',
     'obs.chart.zoomOut': 'تصغير',
     'obs.chart.hint': 'استعمل + / − ثم مرّر',
+    'dash.menu.open': 'فتح القائمة',
+    'dash.menu.close': 'إغلاق القائمة',
+    'dash.menu.collapse': 'طي القائمة',
+    'dash.menu.expand': 'توسيع القائمة',
     'nav.menu': 'القائمة',
     'nav.language': 'اللغة',
 

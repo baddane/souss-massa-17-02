@@ -383,6 +383,16 @@ api/
   send-alerts.ts    # Serverless - alertes emploi des candidats (cron Vercel, Brevo)
 
 components/
+  DashboardSidebar.tsx  # Navigation laterale COMMUNE aux 3 tableaux de bord (admin,
+                    #   entreprise, candidat). Repliable en bande d'icones a partir de `lg`
+                    #   (choix retenu dans localStorage, une cle par espace) ; en dessous,
+                    #   tiroir a voile sombre ferme par Echap, clic exterieur ou choix d'onglet.
+                    #   Remplace les barres d'onglets horizontales : les dix onglets de l'admin
+                    #   debordaient de l'ecran des le format tablette, et la moitie devenait
+                    #   inatteignable sur telephone. Les libelles d'onglets arrivent DEJA
+                    #   TRADUITS (espaces entreprise et candidat trilingues, admin non) ;
+                    #   seuls les libelles du menu (`dash.menu.*`) sont traduits dedans.
+                    #   `accent="orange"` cote candidat, bleu ailleurs.
   SEO.tsx           # Composant SEO + generateJobPostingJsonLd + slugify
   ApplyModal.tsx    # Modal de candidature + upload CV (stocke cv_path, bucket prive)
   Header.tsx        # Navigation + CTA « Deposer une offre » (gauche) + LanguageSwitcher
@@ -393,11 +403,7 @@ pages/
   Offers.tsx        # Liste des offres avec 4 filtres (recherche, ville, contrat, secteur)
   JobDetail.tsx     # Detail d'une offre (route /emploi/:slug)
   Contact.tsx       # Formulaire de contact (stocke dans table `messages`)
-  Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), navigation en
-                    #   barre laterale (`components/AdminSidebar.tsx`) : repliable en bande
-                    #   d'icones sur desktop (choix retenu dans localStorage), tiroir a voile
-                    #   sur mobile (Echap ou clic exterieur ferme). Les dix onglets debordaient
-                    #   de l'ecran des le format tablette en barre horizontale. Onglets :
+  Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), onglets :
                     #   Candidatures, Messages, Entreprises (valider/refuser/SUPPRIMER meme validee),
                     #   Offres a valider, + Nouvelle offre (SEO), CVtheque (voir section), Mon compte
   CompanyRegister/CompanyLogin/CompanyDashboard.tsx  # Espace entreprise (voir section dediee)

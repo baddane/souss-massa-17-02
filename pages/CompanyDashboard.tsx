@@ -7,6 +7,7 @@ import { SOUSS_MASSA_CITIES } from '../constants';
 import { companyAuth, companyService, CompanyProfile, CandidatureRow, CandidatureStatus, CANDIDATURE_STATUSES, candidatureStatusKey } from '../src/services/companyService';
 import { cvthequeService } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
+import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 
 type Tab = 'offres' | 'candidatures' | 'cvtheque' | 'compte';
 
@@ -33,6 +34,7 @@ const CompanyDashboard: React.FC = () => {
   const [pwForm, setPwForm] = useState({ password: '', confirm: '' });
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
+  const [menuMobile, setMenuMobile] = useState(false);
   // Rapprochement offre → profils : filtres transmis a la CVtheque quand
   // l'entreprise demande les profils correspondant a une de ses offres.
   const [cvSeed, setCvSeed] = useState<{ q?: string; ville?: string } | undefined>(undefined);
@@ -227,10 +229,23 @@ const CompanyDashboard: React.FC = () => {
 
   // NB: fonction (pas un composant <Shell>) pour éviter le remontage du sous-arbre
   // à chaque frappe (qui faisait perdre le focus des inputs).
+  // Colonne de contenu, commune a tous les etats de la page.
+  // La CVthèque s'affiche bord à bord : lire un CV demande de la surface, et
+  // une largeur maximale centrée gaspillait la moitié de l'écran. Les autres
+  // onglets gardent leur colonne de lecture, adaptée aux formulaires.
+  const colonne = (children: React.ReactNode, titre: string) => (
+    <div className={`${tab === 'cvtheque' ? 'w-full px-3 sm:px-5' : 'max-w-4xl mx-auto px-4'} py-6 lg:py-10`}>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">{titre}</h1>
+        {profile && <p className="text-gray-500 text-sm mt-1">{t('company.dash.welcome', { name: profile.nom_entreprise })}</p>}
+      </div>
+      {children}
+    </div>
+  );
+
+  // Etats sans navigation : chargement, profil a completer, compte refuse.
+  // Il n'y a rien a naviguer, une barre laterale n'aurait aucun onglet a offrir.
   const shell = (children: React.ReactNode) => (
-    // La CVthèque s'affiche bord à bord : lire un CV demande de la surface, et
-    // une largeur maximale centrée gaspillait la moitié de l'écran. Les autres
-    // onglets gardent leur colonne de lecture, adaptée aux formulaires.
     <div className={`${tab === 'cvtheque' ? 'w-full px-3 sm:px-5' : 'max-w-4xl mx-auto px-4'} py-10`}>
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="flex items-center justify-between mb-8">
@@ -243,6 +258,39 @@ const CompanyDashboard: React.FC = () => {
         </button>
       </div>
       {children}
+    </div>
+  );
+
+  // Etat nominal : barre laterale a gauche, contenu a droite.
+  const shellAvecMenu = (children: React.ReactNode, onglets: AdminTabItem[], titre: string) => (
+    <div className="flex min-h-screen bg-gray-50">
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
+      <DashboardSidebar
+        espace="entreprise"
+        titre={t('company.dash.title')}
+        tabs={onglets}
+        actif={tab}
+        onSelect={(id: string) => { setTab(id as Tab); if (id === 'cvtheque') setCvSeed(undefined); }}
+        actions={[{ label: t('company.dash.logout'), icone: ICONES.deconnexion, onClick: logout, discret: true }]}
+        ouvertMobile={menuMobile}
+        onFermerMobile={() => setMenuMobile(false)}
+      />
+      {/* `min-w-0` : sans lui, un tableau large empeche la colonne de retrecir
+          et c'est la page entiere qui defile horizontalement. */}
+      <div className="flex-1 min-w-0">
+        <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-white border-b border-gray-200">
+          <button
+            onClick={() => setMenuMobile(true)}
+            className="w-9 h-9 -ms-1 inline-flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+            aria-label={t('dash.menu.open')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          </button>
+          <span className="font-bold text-gray-900 truncate">{titre}</span>
+        </div>
+        {colonne(children, titre)}
+      </div>
     </div>
   );
 
@@ -305,14 +353,15 @@ const CompanyDashboard: React.FC = () => {
     );
   }
 
-  const TABS: { key: Tab; label: string; badge?: number }[] = [
-    { key: 'offres', label: t('company.tab.offers'), badge: offers.length },
-    { key: 'candidatures', label: t('company.tab.applications'), badge: candidatures.length },
-    { key: 'cvtheque', label: t('company.tab.cvtheque') },
-    { key: 'compte', label: t('company.tab.account') },
+  const TABS: AdminTabItem[] = [
+    { id: 'offres', label: t('company.tab.offers'), count: offers.length, icone: ICONES.emplois },
+    { id: 'candidatures', label: t('company.tab.applications'), count: candidatures.length,
+      alerte: stats.nouvelles, alerteCouleur: 'rouge', icone: ICONES.candidatures },
+    { id: 'cvtheque', label: t('company.tab.cvtheque'), icone: ICONES.cvtheque },
+    { id: 'compte', label: t('company.tab.account'), icone: ICONES.compte },
   ];
 
-  return shell(
+  return shellAvecMenu(
     <>
       {/* Situation en un coup d'œil, avant le détail */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-200 border border-gray-200 rounded-2xl overflow-hidden mb-8">
@@ -335,17 +384,6 @@ const CompanyDashboard: React.FC = () => {
           {t('company.stat.newApplicationsCta', { count: stats.nouvelles })}
         </button>
       )}
-
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 mb-8">
-        {TABS.map((tb) => (
-          <button key={tb.key} onClick={() => { setTab(tb.key); if (tb.key === 'cvtheque') setCvSeed(undefined); }}
-            className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-colors ${
-              tab === tb.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}>
-            {tb.label}{typeof tb.badge === 'number' && tb.badge > 0 ? ` (${tb.badge})` : ''}
-          </button>
-        ))}
-      </div>
 
       {tab === 'offres' && (
       <>
@@ -588,7 +626,9 @@ const CompanyDashboard: React.FC = () => {
         </button>
       </form>
       )}
-    </>
+    </>,
+    TABS,
+    TABS.find((o) => o.id === tab)?.label || t('company.dash.title'),
   );
 };
 

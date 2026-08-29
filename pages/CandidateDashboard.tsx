@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
+import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import { useT } from '../src/i18n/LanguageContext';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import { candidatureStatusKey, companyService } from '../src/services/companyService';
@@ -51,6 +52,7 @@ const CandidateDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [tab, setTab] = useState<Tab>('profile');
+  const [menuMobile, setMenuMobile] = useState(false);
 
   const [apps, setApps] = useState<MyCandidature[]>([]);
   const [alerts, setAlerts] = useState<JobAlert[]>([]);
@@ -111,35 +113,52 @@ const CandidateDashboard: React.FC = () => {
 
   const pct = completion(profile);
 
+  const onglets: AdminTabItem[] = [
+    { id: 'profile', label: t('cand.tab.profile'), icone: ICONES.compte },
+    { id: 'applications', label: t('cand.tab.applications'), count: apps.length, icone: ICONES.candidatures },
+    { id: 'alerts', label: t('cand.tab.alerts'), count: alerts.filter((a) => a.actif).length, icone: ICONES.alertes },
+    { id: 'account', label: t('cand.tab.account'), icone: ICONES.reglages },
+  ];
+  const titreOnglet = onglets.find((o) => o.id === tab)?.label || t('cand.dash.title');
+
   return (
     <>
       <SEO title={t('cand.dash.title')} canonical="/espace-candidat" />
-      <div className="max-w-4xl mx-auto px-4 py-10">
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('cand.dash.title')}</h1>
-            <p className="text-gray-500">{t('cand.dash.welcome', { name: profile.nom_complet })}</p>
-          </div>
-          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-800 underline">
-            {t('cand.dash.logout')}
-          </button>
-        </div>
+      <div className="flex min-h-screen bg-gray-50">
+        <DashboardSidebar
+          espace="candidat"
+          titre={t('cand.dash.title')}
+          tabs={onglets}
+          actif={tab}
+          onSelect={(id: string) => setTab(id as Tab)}
+          actions={[{ label: t('cand.dash.logout'), icone: ICONES.deconnexion, onClick: handleLogout, discret: true }]}
+          accent="orange"
+          ouvertMobile={menuMobile}
+          onFermerMobile={() => setMenuMobile(false)}
+        />
 
-        <StatsStrip t={t} apps={apps.length} alerts={alerts.filter((a) => a.actif).length} profile={profile} pct={pct} />
-
-        <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar">
-          {(['profile', 'applications', 'alerts', 'account'] as Tab[]).map((k) => (
+        {/* `min-w-0` : sans lui, un contenu large empeche la colonne de
+            retrecir et c'est la page entiere qui defile horizontalement. */}
+        <div className="flex-1 min-w-0">
+          <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-white border-b border-gray-200">
             <button
-              key={k}
-              onClick={() => setTab(k)}
-              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                tab === k ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-800'
-              }`}
+              onClick={() => setMenuMobile(true)}
+              className="w-9 h-9 -ms-1 inline-flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+              aria-label={t('dash.menu.open')}
             >
-              {t(`cand.tab.${k}`)}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
-          ))}
-        </div>
+            <span className="font-bold text-gray-900 truncate">{titreOnglet}</span>
+          </div>
+
+          <div className="max-w-4xl mx-auto px-4 py-6 lg:py-10">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">{titreOnglet}</h1>
+              <p className="text-gray-500">{t('cand.dash.welcome', { name: profile.nom_complet })}</p>
+            </div>
+
+            <StatsStrip t={t} apps={apps.length} alerts={alerts.filter((a) => a.actif).length} profile={profile} pct={pct} />
 
         {tab === 'profile' && (
           <ProfileTab profile={profile} onSaved={(p) => setProfile(p)} />
@@ -149,6 +168,8 @@ const CandidateDashboard: React.FC = () => {
           <AlertsTab profile={profile} alerts={alerts} onChange={async () => setAlerts(await alertsService.list(profile.id))} />
         )}
         {tab === 'account' && <AccountTab />}
+          </div>
+        </div>
       </div>
     </>
   );
