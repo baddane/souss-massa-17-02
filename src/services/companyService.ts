@@ -381,3 +381,115 @@ export const moderationService = {
     if (error) throw error;
   },
 };
+
+// ---- Rattachement d'offres existantes a un compte entreprise ----
+//
+// PROBLEME RESOLU : les 469 offres importees (ANAPEC, rekrute, marocannonces)
+// ont `company_id = null`. L'espace entreprise filtre sur `company_id`, cote
+// interface ET cote RLS (`cand_company_select`). Une entreprise demarchee qui
+// creait un compte trouvait donc un tableau de bord VIDE, alors que ses offres
+// et ses candidatures etaient bien la — ce qui ruinait l'argument meme de la
+// prospection.
+//
+// POURQUOI L'ADMIN ET PAS UN RATTACHEMENT AUTOMATIQUE : rattacher par
+// correspondance de nom se tromperait tot ou tard. « Entreprise confidentielle »
+// couvre a elle seule 68 offres de societes differentes, et une erreur donnerait
+// a une entreprise l'acces aux CV et aux coordonnees des candidats d'une autre.
+// Ca se verifie a l'oeil, une fois, au moment de la validation du compte.
+//
+// Cote base, rien a ajouter : la policy `job_offers_admin_update` autorise
+// l'admin, et le trigger `job_offers_company_guard` l'exempte explicitement
+// (`if auth.uid() is null or public.is_admin() then return new`).
+
+export interface UnclaimedGroup {
+  raison_sociale: string;
+  offerIds: string[];
+  offres: number;
+  candidatures: number;
+  villes: string[];
+}
+
+export const claimService = {
+  // Offres actives encore sans proprietaire dont la raison sociale ressemble a
+  // `term`, regroupees par raison sociale exacte. Le regroupement est
+  // volontaire : on rattache l'ensemble des offres portant un meme nom, pas des
+  // offres isolees choisies une a une.
+  async findUnclaimed(term: string): Promise<UnclaimedGroup[]> {
+    const needle = term.trim();
+    if (needle.length < 2) return [];
+
+    const { data: offers, error } = await supabaseOffers
+      .from('job_offers')
+      .select('id,ref_offre,raison_sociale,ville')
+      .is('company_id', null)
+      .eq('statut', 'active')
+      .ilike('raison_sociale', `%${needle}%`)
+      .limit(500);
+    if (error) { console.error('claim.findUnclaimed', error); return []; }
+
+    const rows = offers || [];
+    if (rows.length === 0) return [];
+
+    // Nombre de candidatures en attente derriere chaque groupe : c'est
+    // l'information qui compte pour l'admin comme pour l'argumentaire.
+    const refs = rows.map((o: any) => o.ref_offre).filter(Boolean);
+    const counts = new Map<string, number>();
+    if (refs.length) {
+      const { data: cands } = await supabaseOffers
+        .from('candidatures').select('job_ref').in('job_ref', refs);
+      for (const c of cands || []) counts.set((c as any).job_ref, (counts.get((c as any).job_ref) || 0) + 1);
+    }
+
+    const groups = new Map<string, UnclaimedGroup>();
+    for (const o of rows as any[]) {
+      const key = o.raison_sociale || '(sans nom)';
+      let g = groups.get(key);
+      if (!g) { g = { raison_sociale: key, offerIds: [], offres: 0, candidatures: 0, villes: [] }; groups.set(key, g); }
+      g.offerIds.push(o.id);
+      g.offres += 1;
+      g.candidatures += counts.get(o.ref_offre) || 0;
+      if (o.ville && !g.villes.includes(o.ville)) g.villes.push(o.ville);
+    }
+    return Array.from(groups.values()).sort((a, b) => b.candidatures - a.candidatures || b.offres - a.offres);
+  },
+
+  // Offres deja rattachees a ce compte — pour pouvoir revenir en arriere.
+  async listAttached(companyId: string) {
+    const { data, error } = await supabaseOffers
+      .from('job_offers')
+      .select('id,raison_sociale,emploi_metier,ville,statut')
+      .eq('company_id', companyId)
+      .order('raison_sociale');
+    if (error) { console.error('claim.listAttached', error); return []; }
+    return data || [];
+  },
+
+  // `is('company_id', null)` dans le filtre : deux administrateurs ne peuvent
+  // pas rattacher la meme offre a deux comptes differents, et un rejeu ne vole
+  // pas une offre deja attribuee.
+  async attach(companyId: string, offerIds: string[]): Promise<number> {
+    if (offerIds.length === 0) return 0;
+    const { data, error } = await supabaseOffers
+      .from('job_offers')
+      .update({ company_id: companyId })
+      .in('id', offerIds)
+      .is('company_id', null)
+      .select('id');
+    if (error) throw error;
+    return (data || []).length;
+  },
+
+  // Reversibilite : une erreur de rattachement doit se defaire en un clic.
+  // On ne detache que ce qui appartient bien a ce compte.
+  async detach(companyId: string, offerIds: string[]): Promise<number> {
+    if (offerIds.length === 0) return 0;
+    const { data, error } = await supabaseOffers
+      .from('job_offers')
+      .update({ company_id: null })
+      .in('id', offerIds)
+      .eq('company_id', companyId)
+      .select('id');
+    if (error) throw error;
+    return (data || []).length;
+  },
+};

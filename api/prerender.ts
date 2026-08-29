@@ -187,6 +187,96 @@ async function articleMeta(slug: string): Promise<Meta> {
   };
 }
 
+// Identique a `slugify` de components/SEO.tsx : les URL /recrutement/{slug} sont
+// construites cote client a partir de `raison_sociale`, il n'existe aucune
+// colonne slug pour les entreprises. Les deux implementations doivent rester
+// rigoureusement equivalentes, sinon la page pre-rendue ne correspond plus a
+// celle que React affiche.
+function slugifyCompany(text: string): string {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+interface CompanyOffer {
+  raison_sociale: string;
+  ville: string;
+  nbre_postes: number | null;
+  emploi_metier: string;
+  slug: string;
+}
+
+// Index des offres actives, mis en cache dans l'instance edge : la page
+// entreprise a besoin de TOUTES les offres pour retrouver celle dont le nom
+// slugifie correspond a l'URL demandee.
+let offersCache: { rows: CompanyOffer[]; at: number } | null = null;
+const OFFERS_TTL = 5 * 60 * 1000;
+
+async function loadOffers(): Promise<CompanyOffer[] | null> {
+  if (offersCache && Date.now() - offersCache.at < OFFERS_TTL) return offersCache.rows;
+  const rows = await sbGet(
+    'job_offers?select=raison_sociale,ville,nbre_postes,emploi_metier,slug&statut=eq.active',
+  );
+  if (rows === null) return offersCache?.rows || null;
+  offersCache = { rows: rows as CompanyOffer[], at: Date.now() };
+  return offersCache.rows;
+}
+
+// --- Page entreprise /recrutement/{slug} ----------------------------------
+async function companyMeta(slug: string): Promise<Meta> {
+  const all = await loadOffers();
+  if (all === null) return { ...emptyMeta(), degraded: true };
+
+  const offers = all.filter((o) => slugifyCompany(o.raison_sociale) === slug);
+  if (offers.length === 0) return emptyMeta();
+
+  const company = offers[0].raison_sociale;
+  const cities = Array.from(new Set(offers.map((o) => o.ville).filter(Boolean)));
+  const totalPostes = offers.reduce((s, o) => s + (Number(o.nbre_postes) || 1), 0);
+  const cityLabel = cities.length === 1 ? cities[0] : 'Souss-Massa';
+  const plurielO = offers.length > 1 ? 's' : '';
+  const plurielP = totalPostes > 1 ? 's' : '';
+
+  // Titre et description repris a l'identique de pages/CompanyJobs.tsx : le
+  // robot social et le visiteur doivent lire la meme chose.
+  const title = `Recrutement ${company} à ${cityLabel} — offres d'emploi`;
+  const description = clamp(
+    `${company} recrute à ${cityLabel} : ${offers.length} offre${plurielO} d'emploi ` +
+    `(${totalPostes} poste${plurielP}) à pourvoir dans la région Souss-Massa. Postulez en ligne.`,
+    158,
+  );
+
+  return {
+    title: `${title} | ${SITE_NAME}`,
+    description,
+    canonical: `${SITE_URL}/recrutement/${slug}`,
+    type: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `Offres d'emploi — ${company}`,
+      numberOfItems: offers.length,
+      itemListElement: offers.slice(0, 30).map((o, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${SITE_URL}/emploi/${o.slug}`,
+        name: o.emploi_metier,
+      })),
+    },
+    body: `
+      <h1>Recrutement ${esc(company)}</h1>
+      <p>${esc(offers.length)} offre${plurielO} d'emploi · ${esc(totalPostes)} poste${plurielP}${
+        cities.length ? ` · ${cities.map(esc).join(', ')}` : ''}</p>
+      <ul>${offers.slice(0, 30).map((o) =>
+        `<li><a href="${SITE_URL}/emploi/${encodeURIComponent(o.slug)}">${esc(o.emploi_metier)} — ${esc(o.ville)}</a></li>`,
+      ).join('')}</ul>`,
+    found: true,
+  };
+}
+
 function emptyMeta(): Meta {
   return { title: '', description: '', canonical: '', type: 'website', found: false };
 }
@@ -293,9 +383,11 @@ export default async function handler(req: Request) {
     let meta: Meta | null = null;
     const offer = /^\/emploi\/([^/?#]+)/.exec(path);
     const article = /^\/observatoire\/([^/?#]+)/.exec(path);
+    const company = /^\/recrutement\/([^/?#]+)/.exec(path);
 
     if (offer) meta = await offerMeta(decodeURIComponent(offer[1]));
     else if (article) meta = await articleMeta(decodeURIComponent(article[1]));
+    else if (company) meta = await companyMeta(decodeURIComponent(company[1]));
 
     if (!meta || meta.degraded) return send(shell);        // Supabase muet : statu quo
     if (!meta.found) {

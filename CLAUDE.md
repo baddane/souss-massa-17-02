@@ -303,8 +303,13 @@ page d'accueil** pour les 440+ offres. Les robots sociaux (Facebook, LinkedIn,
 WhatsApp), qui n'executent aucun JavaScript, ne voyaient jamais le titre reel de
 l'offre partagee.
 
-- Reecritures `vercel.json` : `/emploi/:slug` et `/observatoire/:slug` passent par
-  `/api/prerender` (**avant** le catch-all `/(.*)` → `/index.html`).
+- Reecritures `vercel.json` : `/emploi/:slug`, `/observatoire/:slug` et
+  `/recrutement/:slug` passent par `/api/prerender` (**avant** le catch-all
+  `/(.*)` → `/index.html`).
+- Les pages entreprise `/recrutement/{slug}` n'ont **pas de colonne slug** : le
+  slug est calcule depuis `raison_sociale`. `slugifyCompany()` du pre-rendu doit
+  donc rester rigoureusement equivalent a `slugify()` de `components/SEO.tsx`,
+  sinon la page pre-rendue ne correspond plus a celle que React affiche.
 - La fonction edge **relit `index.html` du deploiement** (donc jamais de nom de
   bundle code en dur), remplace title / description / canonical / og:* /
   twitter:* et ajoute le JSON-LD `JobPosting` complet (`validThrough`,
@@ -535,6 +540,36 @@ Les entreprises peuvent creer un compte et deposer des offres, validees par l'ad
 > variable manquante sans identifiants, appeler l'endpoint en POST sans jeton :
 > il echoue sur le controle de la variable *avant* le controle d'authentification,
 > et nomme la variable absente.
+
+### Rattacher des offres existantes a un compte (onglet Entreprises)
+
+Les 469 offres importees (ANAPEC, rekrute, marocannonces) ont `company_id = null`.
+L'espace entreprise filtre sur `company_id`, **cote interface ET cote RLS**
+(`cand_company_select`) : sans rattachement, une entreprise demarchee qui cree un
+compte trouve un tableau de bord **vide**, alors que ses offres et ses
+candidatures sont bien la. C'est ce qui ruinait l'argument de la prospection.
+
+Bouton **« Rattacher ses offres »** sur chaque fiche entreprise
+(`components/ClaimOffersPanel.tsx`, service `claimService`). Le panneau cherche
+les offres actives **sans proprietaire** dont la raison sociale ressemble au nom
+du compte, les regroupe par raison sociale exacte, et affiche pour chaque groupe
+le **nombre de candidatures** — c'est precisement ce que le rattachement rend
+visible, donc ce sur quoi l'admin doit juger.
+
+- **Jamais automatique.** Un rattachement par correspondance de nom se
+  tromperait : « Entreprise confidentielle » couvre a elle seule 68 offres de
+  societes differentes, et une erreur donnerait a une entreprise l'acces aux CV
+  et aux coordonnees des candidats d'une autre.
+- **Reversible** : bouton « Detacher » sur chaque groupe deja rattache.
+- **Idempotent** : `attach` filtre sur `company_id is null`, `detach` sur
+  `company_id = ce compte`. Deux admins ne peuvent pas se voler une offre.
+- **Aucune migration necessaire** : la policy `job_offers_admin_update` autorise
+  l'admin, et le trigger `job_offers_company_guard` l'exempte explicitement
+  (`if auth.uid() is null or public.is_admin() then return new`).
+
+Verifie de bout en bout : compte « BEST PROFIL » validé → rattachement de 24
+offres → le tableau de bord affiche 24 offres publiées et 22 candidatures, CV
+telechargeables. Puis detachement et retour a l'etat initial.
 
 ## Espace candidat (comptes, consentement, alertes) — migrations `022` / `024`
 

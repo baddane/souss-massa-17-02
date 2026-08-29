@@ -59,6 +59,10 @@
       "destination": "/api/prerender?p=/observatoire/:slug"
     },
     {
+      "source": "/recrutement/:slug",
+      "destination": "/api/prerender?p=/recrutement/:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

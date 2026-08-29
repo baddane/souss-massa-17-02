@@ -4,6 +4,7 @@ import { supabaseOffers } from '../src/services/supabase';
 import { moderationService, CompanyProfile } from '../src/services/companyService';
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
+import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
@@ -456,6 +457,9 @@ const Admin: React.FC = () => {
     await moderationService.setCompanyStatus(id, 'refuse');
     setCompanies(prev => prev.map(x => x.id === id ? { ...x, statut: 'refuse' } : x));
   };
+
+  // Entreprise dont on rattache les offres deja en ligne a son nom.
+  const [claimFor, setClaimFor] = useState<CompanyProfile | null>(null);
 
   const deleteCompany = async (c: CompanyProfile) => {
     if (!confirm(`Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`)) return;
@@ -1077,6 +1081,9 @@ const Admin: React.FC = () => {
                           Renvoyer l'email
                         </button>
                       )}
+                      <button onClick={() => setClaimFor(c)} className="px-4 py-2 text-blue-700 border border-blue-200 hover:bg-blue-50 rounded-lg text-sm font-bold">
+                        Rattacher ses offres
+                      </button>
                       <button onClick={() => deleteCompany(c)} className="px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-lg text-sm font-bold">
                         Supprimer
                       </button>
@@ -1648,6 +1655,10 @@ const Admin: React.FC = () => {
           )}
         </>
       )}
+
+      {/* Surcouche modale : declenchee depuis l'onglet Entreprises, rendue au
+          niveau racine pour ne dependre d'aucun onglet actif. */}
+      {claimFor && <ClaimOffersPanel company={claimFor} onClose={() => setClaimFor(null)} />}
     </div>
   );
 };
