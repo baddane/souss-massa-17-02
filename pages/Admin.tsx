@@ -5,6 +5,7 @@ import { moderationService, CompanyProfile } from '../src/services/companyServic
 import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
+import CredentialsTab from '../components/CredentialsTab';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
@@ -98,7 +99,7 @@ const Admin: React.FC = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection'>('candidatures');
+  const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection' | 'identifiants'>('candidatures');
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -801,6 +802,14 @@ const Admin: React.FC = () => {
           }`}
         >
           Prospection ({outItems.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('identifiants')}
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'identifiants' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Identifiants
         </button>
         <button
           onClick={() => setActiveTab('compte')}
@@ -1655,6 +1664,8 @@ const Admin: React.FC = () => {
           )}
         </>
       )}
+
+      {activeTab === 'identifiants' && <CredentialsTab />}
 
       {/* Surcouche modale : declenchee depuis l'onglet Entreprises, rendue au
           niveau racine pour ne dependre d'aucun onglet actif. */}

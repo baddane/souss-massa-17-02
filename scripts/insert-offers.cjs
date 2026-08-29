@@ -36,6 +36,39 @@ async function existing() {
   return { refs, slugs };
 }
 
+// Provisionnement des comptes employeurs pour les nouvelles entreprises.
+//
+// Chaque offre importee peut concerner une societe qui n'a pas encore de compte.
+// L'endpoint cree le compte, genere le mot de passe et rattache ses offres ;
+// l'admin retrouve les identifiants dans l'onglet « Identifiants ».
+//
+// VOLONTAIREMENT NON BLOQUANT : les offres sont deja inserees a ce stade. Un
+// provisionnement en echec (secret absent, endpoint indisponible) ne doit jamais
+// faire echouer un import reussi — le bouton « Créer les N comptes » de l'admin
+// rattrape le retard a tout moment.
+async function provisionnerComptes() {
+  const secret = (process.env.CRON_SECRET || '').trim();
+  if (!secret) {
+    console.log('\nCRON_SECRET absent : provisionnement des comptes employeurs non declenche.');
+    console.log('  (a faire depuis /admin > Identifiants > « Créer les N comptes »)');
+    return;
+  }
+  const base = process.env.SITE_URL || 'https://www.soussmassa-rh.com';
+  try {
+    const res = await fetch(`${base}/api/provision-companies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ mode: 'auto' }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { console.warn(`\nProvisionnement des comptes : HTTP ${res.status} ${(body && body.error) || ''}`); return; }
+    console.log(`\nComptes employeurs : ${body.provisionnees || 0} cree(s), ${(body.ignorees || []).length} ignore(s).`);
+    for (const e of body.erreurs || []) console.warn('  ' + e);
+  } catch (e) {
+    console.warn('\nProvisionnement des comptes injoignable :', e.message);
+  }
+}
+
 async function main() {
   logKeyMode('insert-offers');
   const file = process.argv[2];
@@ -62,6 +95,9 @@ async function main() {
     console.log(`Lot ${i / 10 + 1}: ${batch.length} inseres (total ${inserted})`);
   }
   console.log(`\nTermine. ${inserted} offres inserees.`);
+
+  await provisionnerComptes();
+
   console.log('Pense a regenerer la sitemap : node scripts/gen-sitemap.cjs');
 }
 main().catch(e => { console.error('ERREUR:', e.message); process.exit(1); });

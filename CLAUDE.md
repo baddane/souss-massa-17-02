@@ -571,6 +571,56 @@ Verifie de bout en bout : compte « BEST PROFIL » validé → rattachement de 2
 offres → le tableau de bord affiche 24 offres publiées et 22 candidatures, CV
 telechargeables. Puis detachement et retour a l'etat initial.
 
+## Comptes entreprise provisionnés (onglet admin « Identifiants »)
+
+Pour que les entreprises qui recrutent deja sur le site puissent utiliser le
+service sans rien remplir, la plateforme leur cree un compte pret a l'emploi,
+avec un mot de passe genere, et **rattache automatiquement leurs offres**.
+
+- **Endpoint** : `api/provision-companies.ts` (serverless, `service_role`).
+  Appelants autorises : l'admin authentifie (`is_admin()` avec SON jeton) ou un
+  appel machine porteur de `CRON_SECRET`. Quatre modes : `auto` (toutes les
+  entreprises sans compte), `one` (creation manuelle), `password`, `email`.
+- **Table `company_credentials`** (migration `025`) : login + **mot de passe en
+  clair**, RLS **admin uniquement**. Volontairement separee de
+  `comptes_entreprise`, que chaque entreprise peut lire pour sa propre fiche.
+- **Automatique a l'import** : `scripts/insert-offers.cjs` appelle l'endpoint en
+  fin de course, **sans jamais bloquer** — les offres sont deja inserees, un
+  provisionnement en echec ne doit pas faire echouer un import reussi. Sans
+  `CRON_SECRET`, le script le signale et l'admin rattrape d'un bouton.
+  *Pas de cron dedie* : le plan Vercel limite le nombre de crons, et un
+  deploiement refuse casserait le site.
+
+### Identifiants techniques (migration `026`)
+
+170 des 177 entreprises n'ont pas d'adresse connue. Un compte Auth **est** une
+adresse email : sans elle, pas de login. On en fabrique donc une a partir des
+initiales et de l'annee — `BEST PROFIL` → `bp2026@comptes.soussmassa-rh.com` —
+avec suffixe numerique en cas de collision.
+
+> **Le sous-domaine `comptes.soussmassa-rh.com` n'existe pas volontairement** :
+> sans MX, un envoi echoue immediatement chez l'expediteur au lieu d'etre avale
+> par le routage email du domaine principal.
+
+`sendBrevoEmail()` **refuse** toute adresse de ce domaine. Le controle est dans
+la fonction d'envoi, pas chez les appelants : c'est le seul endroit qui garantit
+qu'aucun email ne partira jamais vers ces adresses. Des rebonds repetes
+degraderaient la reputation du domaine et feraient retomber en spam les emails
+legitimes — alertes candidats comprises, qui viennent tout juste d'etre reparees.
+`notify-application` sort avant de poser `notified_company`, pour que l'email
+parte le jour ou la vraie adresse sera renseignee.
+
+### Regles a ne pas contourner
+
+- **Jamais d'UPDATE direct sur le mot de passe ou l'email** : ils vivent dans
+  Supabase Auth. Un UPDATE sur `company_credentials` ferait afficher a l'admin
+  un identifiant qui ne fonctionne pas. Passer par les modes `password` / `email`.
+- **Noms non provisionnables** : « Entreprise confidentielle », « xxxx », noms de
+  moins de 3 ou plus de 60 caracteres. Ils recouvrent plusieurs societes — un
+  compte unique donnerait a l'une les CV et coordonnees des candidats des autres.
+- **Rattachement des offres** : correspondance EXACTE sur `raison_sociale`, et
+  uniquement les offres sans proprietaire.
+
 ## Espace candidat (comptes, consentement, alertes) — migrations `022` / `024`
 
 Le pendant de l'espace entreprise. Contrairement a l'entreprise, le candidat

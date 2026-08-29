@@ -70,7 +70,28 @@ export async function upsertBrevoContact(
   }
 }
 
+// Adresses fabriquees servant uniquement de LOGIN a une entreprise dont on ne
+// connait pas encore la vraie adresse (voir api/provision-companies.ts).
+// Le sous-domaine n'a pas d'enregistrement MX : tout envoi rebondirait.
+//
+// Le controle est place ICI, dans la fonction d'envoi, et non chez les
+// appelants : c'est le seul endroit qui garantit qu'aucun email ne partira
+// jamais vers ces adresses, quel que soit le code qui appelle. Des rebonds
+// repetes degraderaient la reputation du domaine et feraient retomber en spam
+// les emails legitimes — alertes candidats et notifications de candidature.
+const DOMAINE_TECHNIQUE = 'comptes.soussmassa-rh.com';
+
+export function estAdresseTechnique(email: string): boolean {
+  return (email || '').trim().toLowerCase().endsWith(`@${DOMAINE_TECHNIQUE}`);
+}
+
+/** Levee quand on tente d'ecrire a un identifiant technique. */
+export const EMAIL_TECHNIQUE =
+  "Cette entreprise n'a qu'un identifiant technique, pas d'adresse réelle : aucun email ne peut lui être envoyé.";
+
 export async function sendBrevoEmail(mail: BrevoMail): Promise<void> {
+  if (estAdresseTechnique(mail.to)) throw new Error(EMAIL_TECHNIQUE);
+
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error(BREVO_MISSING_KEY);
 

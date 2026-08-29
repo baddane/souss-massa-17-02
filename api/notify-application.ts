@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY } from './_brevo.js';
+import { sendBrevoEmail, brevoConfigured, BREVO_MISSING_KEY, estAdresseTechnique } from './_brevo.js';
 
 // Previent l'entreprise qu'une candidature vient d'arriver sur une de ses offres.
 //
@@ -79,6 +79,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!Array.isArray(comps) || comps.length === 0) return json(200, { ok: true, skipped: 'entreprise introuvable' });
     const { email: to, nom_entreprise: nom, statut } = comps[0];
     if (statut !== 'valide') return json(200, { ok: true, skipped: 'entreprise non validee' });
+    // Identifiant technique : rien a notifier tant qu'on n'a pas sa vraie
+    // adresse. On sort AVANT de poser `notified_company`, pour que l'email
+    // parte le jour ou l'adresse sera renseignee.
+    if (estAdresseTechnique(to)) return json(200, { ok: true, skipped: 'identifiant technique, pas d\'adresse réelle' });
 
     // 3. Poser le drapeau AVANT d'envoyer : au pire un email est perdu, jamais
     //    dupplique. C'est ce qui rend l'endpoint insensible au rejeu.
