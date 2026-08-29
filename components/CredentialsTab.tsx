@@ -2,6 +2,18 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { credentialsService, type CompanyCredential } from '../src/services/credentialsService';
 
+// Fiche en cours d'edition. L'email y figure comme les autres champs pour
+// l'admin, mais il emprunte un chemin different a l'enregistrement (Supabase
+// Auth), d'ou le suivi separe de sa valeur initiale.
+interface Edition {
+  nom_entreprise: string;
+  ville: string;
+  telephone: string;
+  secteur: string;
+  email: string;
+  note: string;
+}
+
 // Onglet « Identifiants » : les comptes entreprise provisionnes par la
 // plateforme, avec leur login et leur mot de passe en clair, pour pouvoir les
 // (re)transmettre.
@@ -24,6 +36,9 @@ const CredentialsTab: React.FC = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [form, setForm] = useState({ raison_sociale: '', email: '', ville: '' });
   const [progress, setProgress] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [edit, setEdit] = useState<Edition | null>(null);
+  const [orphelines, setOrphelines] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +62,58 @@ const CredentialsTab: React.FC = () => {
     try { const res = await fn(); toast.success(ok); await load(); return res; }
     catch (e: any) { toast.error(e?.message || 'Opération impossible'); }
     finally { setBusy(false); }
+  };
+
+  const ouvrirEdition = (r: CompanyCredential) => {
+    setEditId(r.company_id);
+    setEdit({
+      nom_entreprise: r.nom_entreprise || '',
+      ville: r.ville || '',
+      telephone: r.telephone || '',
+      secteur: r.secteur || '',
+      email: r.email,
+      note: r.note || '',
+    });
+    setOrphelines(null);
+  };
+
+  const fermerEdition = () => { setEditId(null); setEdit(null); setOrphelines(null); };
+
+  // Combien d'offres sans proprietaire portent deja ce nom : c'est ce que la
+  // correction du nom rendra rattachable, et la raison principale de la corriger.
+  const compterOrphelines = async (nom: string) => {
+    const n = await credentialsService.offresOrphelinesPourNom(nom);
+    setOrphelines(n);
+  };
+
+  const enregistrer = async (r: CompanyCredential) => {
+    if (!edit) return;
+    if (!edit.nom_entreprise.trim()) { toast.warning('La raison sociale ne peut pas être vide'); return; }
+    const nouvelEmail = edit.email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(nouvelEmail)) { toast.warning('Adresse e-mail invalide'); return; }
+
+    setBusy(true);
+    try {
+      // L'e-mail d'abord : c'est la seule operation qui peut echouer cote Auth,
+      // et on ne veut pas d'une fiche a moitie enregistree si elle echoue.
+      if (nouvelEmail !== r.email) await credentialsService.setEmail(r.company_id, nouvelEmail);
+
+      await credentialsService.updateProfil(r.company_id, {
+        nom_entreprise: edit.nom_entreprise,
+        ville: edit.ville,
+        telephone: edit.telephone,
+        secteur: edit.secteur,
+      });
+      if ((edit.note || '') !== (r.note || '')) await credentialsService.setNote(r.company_id, edit.note);
+
+      toast.success('Fiche mise à jour');
+      fermerEdition();
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Enregistrement impossible');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const provisionAll = () => {
@@ -83,6 +150,7 @@ const CredentialsTab: React.FC = () => {
   };
 
   const cellule = 'px-3 py-2.5 align-top';
+  const champ = 'mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-normal text-gray-900 bg-white';
 
   return (
     <div className="space-y-6">
@@ -186,7 +254,8 @@ const CredentialsTab: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {visibles.map((r) => (
-                  <tr key={r.company_id} className="hover:bg-gray-50/60">
+                  <React.Fragment key={r.company_id}>
+                  <tr className="hover:bg-gray-50/60">
                     <td className={cellule}>
                       <div className="font-semibold text-gray-900">{r.nom_entreprise || '—'}</div>
                       <div className="text-xs text-gray-500">{r.ville || ''}</div>
@@ -213,14 +282,11 @@ const CredentialsTab: React.FC = () => {
                     <td className={cellule}>
                       <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={() => {
-                            const e = window.prompt('Nouvel identifiant (email réel) :', r.email);
-                            if (e && e.trim() && e.trim() !== r.email) run(() => credentialsService.setEmail(r.company_id, e.trim()), 'Identifiant mis à jour');
-                          }}
+                          onClick={() => (editId === r.company_id ? fermerEdition() : ouvrirEdition(r))}
                           disabled={busy}
-                          className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="text-xs px-2.5 py-1.5 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 disabled:opacity-50"
                         >
-                          Changer l'email
+                          {editId === r.company_id ? 'Fermer' : 'Modifier'}
                         </button>
                         <button
                           onClick={() => {
@@ -243,6 +309,88 @@ const CredentialsTab: React.FC = () => {
                       </div>
                     </td>
                   </tr>
+                  {editId === r.company_id && edit && (
+                    <tr className="bg-blue-50/40">
+                      <td colSpan={6} className="px-4 py-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          <label className="text-xs font-semibold text-gray-600 sm:col-span-2 lg:col-span-1">
+                            Raison sociale
+                            <input
+                              value={edit.nom_entreprise}
+                              onChange={(ev) => { setEdit({ ...edit, nom_entreprise: ev.target.value }); setOrphelines(null); }}
+                              onBlur={(ev) => { const v = ev.target.value.trim(); if (v && v !== r.nom_entreprise) compterOrphelines(v); }}
+                              className={champ}
+                            />
+                            <span className="block font-normal text-gray-400 mt-1">
+                              Les offres importées sont rattachées sur ce nom exact.
+                            </span>
+                            {orphelines !== null && (
+                              <span className={`block font-normal mt-1 ${orphelines > 0 ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                {orphelines > 0
+                                  ? `${orphelines} offre(s) en ligne portent ce nom et n'ont pas de propriétaire — elles seront rattachables.`
+                                  : 'Aucune offre orpheline ne porte ce nom.'}
+                              </span>
+                            )}
+                          </label>
+
+                          <label className="text-xs font-semibold text-gray-600">
+                            Identifiant (e-mail de connexion)
+                            <input
+                              value={edit.email}
+                              onChange={(ev) => setEdit({ ...edit, email: ev.target.value })}
+                              className={champ}
+                            />
+                            <span className="block font-normal text-gray-400 mt-1">
+                              {r.email_fictif
+                                ? "Adresse technique : aucun e-mail ne part tant qu'elle n'est pas remplacée."
+                                : "Change aussi l'adresse de connexion de l'entreprise."}
+                            </span>
+                          </label>
+
+                          <label className="text-xs font-semibold text-gray-600">
+                            Ville
+                            <input value={edit.ville} onChange={(ev) => setEdit({ ...edit, ville: ev.target.value })} className={champ} />
+                          </label>
+
+                          <label className="text-xs font-semibold text-gray-600">
+                            Téléphone
+                            <input value={edit.telephone} onChange={(ev) => setEdit({ ...edit, telephone: ev.target.value })} className={champ} />
+                          </label>
+
+                          <label className="text-xs font-semibold text-gray-600">
+                            Secteur
+                            <input value={edit.secteur} onChange={(ev) => setEdit({ ...edit, secteur: ev.target.value })} className={champ} />
+                          </label>
+
+                          <label className="text-xs font-semibold text-gray-600 sm:col-span-2 lg:col-span-1">
+                            Note interne
+                            <input value={edit.note} onChange={(ev) => setEdit({ ...edit, note: ev.target.value })} className={champ} />
+                          </label>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-4">
+                          <button
+                            onClick={() => enregistrer(r)}
+                            disabled={busy}
+                            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {busy ? 'Enregistrement…' : 'Enregistrer'}
+                          </button>
+                          <button
+                            onClick={fermerEdition}
+                            disabled={busy}
+                            className="text-sm px-4 py-2 border border-gray-200 rounded-lg hover:bg-white disabled:opacity-50"
+                          >
+                            Annuler
+                          </button>
+                          <span className="text-xs text-gray-400">
+                            Le mot de passe se change avec le bouton dédié.
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

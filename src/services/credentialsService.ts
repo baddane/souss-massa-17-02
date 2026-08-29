@@ -21,8 +21,29 @@ export interface CompanyCredential {
   updated_at: string;
   nom_entreprise?: string;
   ville?: string | null;
+  telephone?: string | null;
+  secteur?: string | null;
   statut?: string;
   offres?: number;
+}
+
+// Champs de la fiche entreprise que cet ecran peut corriger en direct.
+//
+// `email` et `statut` en sont volontairement absents, et LA LISTE EST LE SEUL
+// GARDE-FOU : verifie en base, le trigger `ce_protect_moderation_fields` exempte
+// explicitement l'admin, donc un UPDATE admin sur ces colonnes PASSE. Ne pas
+// compter sur lui ici.
+//   - `email` vit dans Supabase Auth. L'ecrire en direct afficherait a l'admin
+//     un identifiant avec lequel l'entreprise ne peut pas se connecter :
+//     il passe par `setEmail`, qui met Auth et les deux tables d'accord.
+//   - `statut` est une decision de moderation, qui a son propre onglet. Le
+//     glisser dans un formulaire de correction de fiche le ferait basculer par
+//     inadvertance.
+export interface ProfilPatch {
+  nom_entreprise?: string;
+  ville?: string | null;
+  telephone?: string | null;
+  secteur?: string | null;
 }
 
 async function adminFetch(payload: Record<string, unknown>) {
@@ -41,7 +62,7 @@ export const credentialsService = {
   async list(): Promise<CompanyCredential[]> {
     const { data, error } = await supabaseOffers
       .from('company_credentials')
-      .select('*, comptes_entreprise(nom_entreprise,ville,statut)')
+      .select('*, comptes_entreprise(nom_entreprise,ville,telephone,secteur,statut)')
       .order('created_at', { ascending: false });
     if (error) { console.error('credentials.list', error); return []; }
 
@@ -58,6 +79,8 @@ export const credentialsService = {
       ...r,
       nom_entreprise: r.comptes_entreprise?.nom_entreprise,
       ville: r.comptes_entreprise?.ville ?? null,
+      telephone: r.comptes_entreprise?.telephone ?? null,
+      secteur: r.comptes_entreprise?.secteur ?? null,
       statut: r.comptes_entreprise?.statut,
       offres: parCompte.get(r.company_id) || 0,
     }));
@@ -92,6 +115,36 @@ export const credentialsService = {
 
   setEmail: (companyId: string, email: string) =>
     adminFetch({ mode: 'email', company_id: companyId, email }),
+
+  // Correction de la fiche entreprise par l'admin (policy `ce_update`).
+  // Le nom compte double : c'est sur lui que le trigger `job_offers_auto_claim`
+  // rattache les offres importees. Le corriger, c'est aussi reparer les
+  // rattachements a venir.
+  async updateProfil(companyId: string, patch: ProfilPatch) {
+    const net: Record<string, unknown> = {};
+    for (const cle of ['nom_entreprise', 'ville', 'telephone', 'secteur'] as const) {
+      if (patch[cle] !== undefined) {
+        const v = patch[cle];
+        net[cle] = typeof v === 'string' ? (v.trim() || null) : v;
+      }
+    }
+    if (net.nom_entreprise === null) throw new Error('La raison sociale ne peut pas être vide');
+    if (Object.keys(net).length === 0) return;
+    const { error } = await supabaseOffers
+      .from('comptes_entreprise').update(net).eq('id', companyId);
+    if (error) throw error;
+  },
+
+  // Offres actives sans proprietaire portant exactement ce nom : ce que le
+  // renommage rendra rattachable.
+  async offresOrphelinesPourNom(nom: string): Promise<number> {
+    const { count, error } = await supabaseOffers
+      .from('job_offers')
+      .select('id', { count: 'exact', head: true })
+      .is('company_id', null).eq('statut', 'active').ilike('raison_sociale', nom.trim());
+    if (error) return 0;
+    return count || 0;
+  },
 
   async setNote(companyId: string, note: string) {
     const { error } = await supabaseOffers

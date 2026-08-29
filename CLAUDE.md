@@ -637,6 +637,26 @@ legitimes — alertes candidats comprises, qui viennent tout juste d'etre repare
 `notify-application` sort avant de poser `notified_company`, pour que l'email
 parte le jour ou la vraie adresse sera renseignee.
 
+### Corriger une fiche provisionnee (bouton « Modifier »)
+
+Les comptes crees automatiquement portent ce que le scraping a pu deduire : un
+nom parfois approximatif, une ville, et souvent une adresse technique. L'onglet
+« Identifiants » permet donc de corriger chaque fiche sur place — raison sociale,
+identifiant (e-mail), ville, telephone, secteur, note interne.
+
+- Deux chemins d'enregistrement derriere un seul bouton : l'**e-mail** passe par
+  `api/provision-companies` (mode `email`), qui met a jour Supabase Auth **et**
+  les deux tables ; le reste part en UPDATE direct (policy `ce_update`).
+  L'e-mail est traite en premier : c'est la seule operation qui peut echouer
+  cote Auth, et on ne veut pas d'une fiche a moitie enregistree.
+- **`ProfilPatch` liste les colonnes autorisees, et c'est le SEUL garde-fou.**
+  Verifie en base : le trigger `ce_protect_moderation_fields` **exempte
+  l'admin**, donc un UPDATE admin sur `statut` ou `email` passe. Ne pas ajouter
+  ces colonnes a la liste en pensant qu'un trigger rattrapera.
+- Corriger la **raison sociale** repare aussi les rattachements a venir
+  (trigger `job_offers_auto_claim`, correspondance exacte). Le champ affiche donc
+  combien d'offres en ligne sans proprietaire portent deja le nom saisi.
+
 ### Regles a ne pas contourner
 
 - **Jamais d'UPDATE direct sur le mot de passe ou l'email** : ils vivent dans
