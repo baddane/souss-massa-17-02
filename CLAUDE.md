@@ -584,6 +584,33 @@ avec un mot de passe genere, et **rattache automatiquement leurs offres**.
 - **Table `company_credentials`** (migration `025`) : login + **mot de passe en
   clair**, RLS **admin uniquement**. Volontairement separee de
   `comptes_entreprise`, que chaque entreprise peut lire pour sa propre fiche.
+### Rattachement automatique en base (migration `027`)
+
+Le rattachement d'une offre nouvellement inseree au compte de l'entreprise qui
+la publie est fait par un **trigger** `job_offers_auto_claim` (BEFORE INSERT sur
+`job_offers`), et non plus par le rappel HTTP du script d'import.
+
+- **Pourquoi** : ce rappel exige `CRON_SECRET` ; sans lui le script abandonne
+  silencieusement (par conception, pour ne pas faire echouer un import reussi).
+  Constat du 2026-08-28 : 12 offres importees les 25-28 aout, appartenant a des
+  entreprises **deja inscrites** (Manpower, AZURA GROUP, ECO TERRE, Artus, Vital
+  Fer, Fondation Arrawaj), n'apparaissaient pas dans leur tableau de bord —
+  exactement ce qui ruine la prospection.
+- Un trigger ne depend d'aucune variable d'environnement ni d'aucun appel reseau,
+  et couvre **tous** les chemins d'ecriture (import en anon ou `service_role`,
+  SQL direct, dashboard, depot depuis l'espace entreprise).
+- **Garde-fous identiques a ceux du bouton admin, a ne pas assouplir** :
+  correspondance EXACTE sur `raison_sociale` (casse et espaces de bord ignores),
+  **un seul** compte valide correspondant, noms generiques exclus, et jamais
+  d'ecrasement d'un `company_id` deja pose.
+- `array_agg` et non `min()` : **`min(uuid)` n'existe pas en Postgres** et
+  l'erreur ferait echouer l'INSERT, donc l'import entier.
+- **Revocation d'EXECUTE : c'est l'inverse de la migration `023`.** Sur une
+  fonction *nouvelle*, Supabase pose des GRANT **nominatifs** a `anon` et
+  `authenticated` (default privileges) ; un `revoke from public` seul ne retire
+  rien et l'advisor continue de signaler la fonction. Il faut revoquer aux trois.
+  Verifie : apres revocation, un INSERT en role `anon` rattache toujours.
+
 - **Automatique a l'import** : `scripts/insert-offers.cjs` appelle l'endpoint en
   fin de course, **sans jamais bloquer** — les offres sont deja inserees, un
   provisionnement en echec ne doit pas faire echouer un import reussi. Sans
