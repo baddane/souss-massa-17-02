@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../src/i18n/LanguageContext';
+import { AUTEUR } from '../src/config/author';
 
 const OG_LOCALE: Record<string, string> = {
   fr: 'fr_MA',
@@ -119,7 +120,14 @@ export function generateArticleJsonLd(article: {
     description: article.meta_description || article.chapo || article.titre,
     datePublished: article.date_publi,
     dateModified: article.date_publi,
-    author: { '@type': 'Organization', name: article.auteur || 'Observatoire SoussMassa-RH' },
+    // Une PERSONNE, pas une organisation : c'est l'auteur identifie qui porte
+    // l'autorite de l'analyse. `sameAs` n'est publie que si le profil est connu.
+    author: {
+      '@type': 'Person',
+      name: article.auteur || AUTEUR.nom,
+      jobTitle: AUTEUR.titre,
+      ...(AUTEUR.linkedin ? { sameAs: [AUTEUR.linkedin] } : {}),
+    },
     publisher: {
       '@type': 'Organization',
       name: 'SoussMassa-RH',

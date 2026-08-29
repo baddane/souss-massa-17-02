@@ -25,6 +25,17 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const SITE_URL = 'https://www.soussmassa-rh.com';
 const SITE_NAME = 'SoussMassa-RH';
 
+// Signature des articles de l'Observatoire.
+//
+// Volontairement recopie de `src/config/author.ts` plutot qu'importe : les
+// modules de `api/` sont resolus a L'EXECUTION, pas bundles — un import vers
+// `../src/` echouerait en production (c'est l'incident ERR_MODULE_NOT_FOUND
+// qui avait casse les envois d'emails). Les deux valeurs doivent rester
+// synchronisees ; c'est signale dans OBSERVATOIRE.md.
+const AUTEUR_NOM = 'Rachid Baddane';
+const AUTEUR_TITRE = 'Expert en emploi';
+const AUTEUR_LINKEDIN = '';   // vide = aucun lien publie
+
 interface Meta {
   title: string;
   description: string;
@@ -177,12 +188,19 @@ async function articleMeta(slug: string): Promise<Meta> {
       description,
       datePublished: String(a.date_publi || '').slice(0, 10),
       dateModified: String(a.date_publi || '').slice(0, 10),
-      author: { '@type': 'Organization', name: a.auteur || `Observatoire ${SITE_NAME}` },
+      author: {
+        '@type': 'Person',
+        name: a.auteur || AUTEUR_NOM,
+        jobTitle: AUTEUR_TITRE,
+        ...(AUTEUR_LINKEDIN ? { sameAs: [AUTEUR_LINKEDIN] } : {}),
+      },
       publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
       mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/observatoire/${a.slug}` },
       inLanguage: 'fr',
     },
-    body: `<h1>${esc(a.titre)}</h1><p>${esc(a.chapo || '')}</p>`,
+    body: `<h1>${esc(a.titre)}</h1><p>${esc(a.chapo || '')}</p>` +
+          `<p>Analyse signée ${esc(a.auteur || AUTEUR_NOM)} — ${esc(AUTEUR_TITRE)}` +
+          `${AUTEUR_LINKEDIN ? ` (<a href="${AUTEUR_LINKEDIN}">LinkedIn</a>)` : ''}</p>`,
     found: true,
   };
 }

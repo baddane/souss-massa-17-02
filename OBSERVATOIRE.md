@@ -4,6 +4,32 @@ Rubrique éditoriale SEO du site : `/observatoire` (hub) et `/observatoire/{slug
 Objectif : faire de SoussMassa-RH **la référence** sur l'emploi dans la région (chômage,
 actualité, stratégie régionale, veille), avec des articles **illustrés de diagrammes**.
 
+## Signature des articles
+
+Les analyses sont signees d'une **personne**, pas d'une organisation : c'est ce
+qui leur donne leur autorite, et ce que Google evalue au titre de l'expertise de
+l'auteur.
+
+- `observatoire_articles.auteur` = **`Rachid Baddane`** pour tout nouvel article.
+- Le bloc de signature (`components/AuthorSignature.tsx`) s'affiche sous chaque
+  article : nom, **« Expert en emploi »**, et lien LinkedIn.
+- Le JSON-LD `NewsArticle` declare un `author` de type **`Person`** avec
+  `jobTitle` et, si le profil est renseigne, `sameAs`.
+
+> **REGLE A NE JAMAIS ENFREINDRE** : ne mentionner **aucune fonction
+> d'employeur ni titre administratif** dans la signature, les articles, les
+> meta-donnees ou le JSON-LD. La signature se limite a l'expertise.
+
+Le profil LinkedIn se renseigne a **un seul endroit** : `linkedin` dans
+`src/config/author.ts`. Tant qu'il est vide, aucun lien n'est affiche ni publie
+dans le JSON-LD — un lien errone vaut moins que pas de lien.
+
+> `api/prerender.ts` **recopie** ces trois valeurs (`AUTEUR_NOM`,
+> `AUTEUR_TITRE`, `AUTEUR_LINKEDIN`) au lieu de les importer : les modules de
+> `api/` sont resolus a l'execution et non bundles, un import vers `../src/`
+> casserait la fonction en production. **Les deux doivent rester synchronises.**
+
+
 ## Architecture
 
 - **Table** : `public.observatoire_articles` (migration `008_observatoire_emploi.sql`).

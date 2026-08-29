@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SEO, { generateArticleJsonLd } from '../components/SEO';
+import AuthorSignature from '../components/AuthorSignature';
 import MarkdownContent from '../components/MarkdownContent';
 import ObsChart from '../components/ObsChart';
 import { useT } from '../src/i18n/LanguageContext';
@@ -93,6 +94,8 @@ const ObservatoireArticle: React.FC = () => {
           </ul>
         </div>
       )}
+
+      <AuthorSignature nom={article.auteur} />
 
       <div className="mt-10">
         <Link to="/observatoire" className="text-blue-600 font-bold">← {t('obs.backHub')}</Link>
