@@ -41,7 +41,7 @@ const AUTEUR_TITRES = [
   'Conseiller en orientation professionnelle',
   'Consultant en ressources humaines',
 ];
-const AUTEUR_LINKEDIN = '';   // vide = aucun lien publie
+const AUTEUR_LINKEDIN = 'https://www.linkedin.com/in/rachid-baddane-40a6a061';   // forme canonique, sans parametres utm_*
 
 interface Meta {
   title: string;

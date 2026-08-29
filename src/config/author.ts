@@ -30,8 +30,12 @@ export const AUTEUR = {
     'Consultant en ressources humaines',
   ],
   /**
-   * Profil LinkedIn. Tant que cette valeur est vide, aucun lien n'est affiche
-   * ni publie dans le JSON-LD : un lien errone vaut moins que pas de lien.
+   * Profil LinkedIn, en forme CANONIQUE — sans les parametres `utm_*` que
+   * l'application mobile ajoute au partage. Ils ne servent qu'au suivi interne
+   * de LinkedIn, salissent un lien public et brouilleraient le `sameAs` du
+   * JSON-LD, dont tout l'interet est de designer une ressource stable.
+   *
+   * Vide = aucun lien affiche ni publie : un lien errone vaut moins que pas de lien.
    */
-  linkedin: '',
+  linkedin: 'https://www.linkedin.com/in/rachid-baddane-40a6a061',
 } as const;
