@@ -6,6 +6,7 @@ import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import CredentialsTab from '../components/CredentialsTab';
+import AdminSidebar, { ICONES, type AdminTabItem } from '../components/AdminSidebar';
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
@@ -101,6 +102,7 @@ const Admin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection' | 'identifiants'>('candidatures');
+  const [menuMobile, setMenuMobile] = useState(false);
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -693,136 +695,58 @@ const Admin: React.FC = () => {
   const unreadMessages = messages.filter(m => !m.is_read).length;
   const pendingCompanies = companies.filter(c => c.statut === 'en_attente').length;
 
+  const onglets: AdminTabItem[] = [
+    { id: 'candidatures', label: 'Candidatures', count: candidatures.length, icone: ICONES.candidatures },
+    { id: 'messages', label: 'Messages', count: messages.length, alerte: unreadMessages, alerteCouleur: 'rouge', icone: ICONES.messages },
+    { id: 'entreprises', label: 'Entreprises', count: companies.length, alerte: pendingCompanies, alerteCouleur: 'orange', icone: ICONES.entreprises },
+    { id: 'offres', label: 'Offres à valider', count: pendingOffers.length, icone: ICONES.offres },
+    { id: 'nouvelle', label: 'Nouvelle offre', icone: ICONES.nouvelle },
+    { id: 'cvtheque', label: 'CVthèque', count: cvCount, icone: ICONES.cvtheque },
+    { id: 'observatoire', label: 'Observatoire', count: obsItems.length, icone: ICONES.observatoire },
+    { id: 'prospection', label: 'Prospection', count: outItems.length, icone: ICONES.prospection },
+    { id: 'identifiants', label: 'Identifiants', icone: ICONES.identifiants },
+    { id: 'compte', label: 'Mon compte', icone: ICONES.compte },
+  ];
+
+  const ongletActif = onglets.find((o) => o.id === activeTab);
+
   return (
-    // Idem côté admin : la CVthèque prend toute la fenêtre, les autres onglets
-    // gardent max-w-7xl.
-    <div className={`${activeTab === 'cvtheque' ? 'w-full px-3 sm:px-5' : 'max-w-7xl mx-auto px-4'} py-8`}>
+    <div className="flex min-h-screen bg-gray-50">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-          <p className="text-gray-500 text-sm mt-1">Gérez les candidatures et messages</p>
-        </div>
-        <div className="flex gap-2 self-start">
-          <button
-            onClick={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
-          >
-            Rafraîchir
-          </button>
-          <button
-            onClick={logout}
-            className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
-          >
-            Déconnexion
-          </button>
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('candidatures')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'candidatures'
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Candidatures ({candidatures.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('messages')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
-            activeTab === 'messages'
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Messages ({messages.length})
-          {unreadMessages > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-              {unreadMessages}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('entreprises')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
-            activeTab === 'entreprises' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Entreprises ({companies.length})
-          {pendingCompanies > 0 && (
-            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-              {pendingCompanies}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('offres')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
-            activeTab === 'offres' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Offres à valider ({pendingOffers.length})
-          {pendingOffers.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-              {pendingOffers.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('nouvelle')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'nouvelle' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          + Nouvelle offre
-        </button>
-        <button
-          onClick={() => setActiveTab('cvtheque')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'cvtheque' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          CVthèque ({cvCount})
-        </button>
-        <button
-          onClick={() => setActiveTab('observatoire')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'observatoire' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Observatoire ({obsItems.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('prospection')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'prospection' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Prospection ({outItems.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('identifiants')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'identifiants' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Identifiants
-        </button>
-        <button
-          onClick={() => setActiveTab('compte')}
-          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
-            activeTab === 'compte' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Mon compte
-        </button>
-      </div>
+      <AdminSidebar
+        tabs={onglets}
+        actif={activeTab}
+        onSelect={(id) => setActiveTab(id as typeof activeTab)}
+        onRafraichir={() => { loadCandidatures(); loadMessages(); loadCompanies(); loadPendingOffers(); }}
+        onDeconnexion={logout}
+        ouvertMobile={menuMobile}
+        onFermerMobile={() => setMenuMobile(false)}
+      />
+
+      {/* `min-w-0` : sans lui, un tableau large empeche la colonne de retrecir
+          et c'est la page entiere qui defile horizontalement. */}
+      <div className="flex-1 min-w-0">
+        {/* Barre mobile : seul acces au menu quand la colonne est masquee. */}
+        <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-white border-b border-gray-200">
+          <button
+            onClick={() => setMenuMobile(true)}
+            className="w-9 h-9 -ms-1 inline-flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+            aria-label="Ouvrir le menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          </button>
+          <span className="font-bold text-gray-900 truncate">{ongletActif?.label || 'Administration'}</span>
+        </div>
+
+        <div className={`${activeTab === 'cvtheque' ? 'w-full px-3 sm:px-5' : 'max-w-7xl mx-auto px-4'} py-6 lg:py-8`}>
+          <div className="hidden lg:block mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">{ongletActif?.label || 'Administration'}</h1>
+            <p className="text-gray-500 text-sm mt-1">Gérez les candidatures et messages</p>
+          </div>
 
       {activeTab === 'candidatures' && (
         <>
@@ -1672,11 +1596,14 @@ const Admin: React.FC = () => {
       )}
 
       {activeTab === 'identifiants' && <CredentialsTab />}
+        </div>
+      </div>
 
       {linkedInFor && <LinkedInPostPanel article={linkedInFor} onClose={() => setLinkedInFor(null)} />}
 
-      {/* Surcouche modale : declenchee depuis l'onglet Entreprises, rendue au
-          niveau racine pour ne dependre d'aucun onglet actif. */}
+      {/* Surcouches modales : declenchees depuis un onglet, mais rendues au
+          niveau racine — hors de la colonne de contenu, pour ne dependre ni de
+          l'onglet actif ni du contexte d'empilement de la barre laterale. */}
       {claimFor && <ClaimOffersPanel company={claimFor} onClose={() => setClaimFor(null)} />}
     </div>
   );

@@ -393,7 +393,11 @@ pages/
   Offers.tsx        # Liste des offres avec 4 filtres (recherche, ville, contrat, secteur)
   JobDetail.tsx     # Detail d'une offre (route /emploi/:slug)
   Contact.tsx       # Formulaire de contact (stocke dans table `messages`)
-  Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), onglets :
+  Admin.tsx         # Dashboard admin — login Supabase Auth (voir « Securite »), navigation en
+                    #   barre laterale (`components/AdminSidebar.tsx`) : repliable en bande
+                    #   d'icones sur desktop (choix retenu dans localStorage), tiroir a voile
+                    #   sur mobile (Echap ou clic exterieur ferme). Les dix onglets debordaient
+                    #   de l'ecran des le format tablette en barre horizontale. Onglets :
                     #   Candidatures, Messages, Entreprises (valider/refuser/SUPPRIMER meme validee),
                     #   Offres a valider, + Nouvelle offre (SEO), CVtheque (voir section), Mon compte
   CompanyRegister/CompanyLogin/CompanyDashboard.tsx  # Espace entreprise (voir section dediee)
