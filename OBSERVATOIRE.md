@@ -94,6 +94,71 @@ dans le JSON-LD — un lien errone vaut moins que pas de lien.
 Dans `contenu`, placer `[[chart:0]]` là où le 1er diagramme doit apparaître, `[[chart:1]]`
 pour le 2e, etc. Les diagrammes non référencés sont affichés en fin d'article.
 
+Ce que `components/ObsChart.tsx` fait **tout seul** — ne pas le contourner dans les données :
+
+- **Unité** : une unité courte (`%`) est collée à la valeur ; une unité longue
+  (`milliers`, `DH/mois`, `personnes`) est affichée **une seule fois** sous le titre
+  (« en milliers »). Ne jamais recopier l'unité dans chaque `label`.
+- **Nombres** : formatés à la française (virgule décimale, séparateur de milliers,
+  espace fine avant `%`). Écrire les `value` en nombres bruts, jamais en chaînes.
+- **Valeurs négatives** : l'axe part de zéro et la barre descend sous la ligne.
+  Une destruction nette d'emploi s'écrit donc `-157`, pas `157`.
+- **Libellés longs** : coupés sur 2 lignes (y compris sur `/` ou `-` interne).
+  Inutile d'abréger à la main.
+- **Largeur** : le dessin s'élargit avec le nombre de séries et **défile**
+  horizontalement sur mobile plutôt que de s'écraser. Chaque diagramme a un
+  bouton **« Agrandir »** (plein écran + zoom jusqu'à 400 %), utilisable au
+  clavier (`Échap` ferme). Rien à prévoir côté rédaction.
+
+### Cohérence des chiffres (contrat non négociable)
+
+Un lecteur qui additionne les barres d'un diagramme doit retrouver le total
+annoncé dans le texte. À défaut, l'article perd sa crédibilité — c'est le seul
+capital de l'Observatoire. Avant publication, vérifier **chacun** de ces points :
+
+1. **Les séries somment au total du texte.** Si le chapô annonce 346 offres, la
+   répartition par ville, par contrat et par secteur doit faire 346 — y compris
+   les modalités marginales (une ville à 1 offre se met dans le graphique, ou
+   dans un poste « Autres », jamais à la poubelle).
+2. **Une base différente est écrite dans le titre du diagramme.** Si 2 offres
+   n'ont pas de salaire exploitable, le titre porte « base : 344 offres
+   exploitables » et le texte le dit aussi. Un pourcentage sans base est faux.
+3. **Les pourcentages sont recalculés sur la base réellement utilisée**, pas sur
+   le total général.
+4. **Jamais deux répartitions différentes dans un même diagramme** sans le dire :
+   « par sexe » et « par milieu » décrivent le *même* total, les empiler donne
+   une somme du double. Soit deux diagrammes, soit des libellés préfixés
+   (`Sexe — Hommes`, `Milieu — Urbain`) et un titre explicite.
+5. **Une seule année de référence par comparaison.** Comparer le SMIG de 2021 à
+   celui de 2026 en annonçant « + 5 % » est une erreur de lecture, pas un
+   arrondi : les deux barres d'un « avant / après » doivent être deux millésimes
+   consécutifs.
+6. **Barres triées de façon monotone** : décroissante par défaut ; croissante
+   quand l'article porte sur les valeurs les plus basses (un classement) ;
+   ordre naturel pour une série temporelle ou une échelle ordonnée (tranches de
+   salaire). Une barre à 40,4 placée avant une barre à 40,1 est une coquille
+   visible à l'œil nu.
+7. **Un diagramme partiel le dit dans son titre** : « principales régions », et
+   non « par région », si 4 des 12 régions manquent. Sinon un superlatif du texte
+   (« deuxième taux le plus bas ») n'est pas vérifiable par le lecteur.
+8. **Les donuts somment à ~100 %** (99,8 ou 100,1 = arrondis, acceptable ;
+   au-delà, une modalité manque).
+
+### Ton : l'auteur signe, le site n'est pas le sujet
+
+Les articles sont signés par une personne qui analyse le marché de l'emploi. Ils
+ne sont **pas** la communication d'un éditeur parlant de sa propre plateforme.
+
+- **Jamais** de « notre plateforme », « nos offres », « nous publions », « notre
+  analyse », « notre base interne ». Le lecteur ne doit pas déduire que l'auteur
+  est le propriétaire du site.
+- La plateforme se cite **à la troisième personne**, comme n'importe quelle
+  source : « les 346 offres publiées sur la plateforme SoussMassa-RH ».
+- Renvoyer aux autres articles sans possessif : « l'analyse de l'inactivité »,
+  pas « notre analyse de l'inactivité ».
+- Les entrées de `sources` suivent la même règle : « SoussMassa-RH — 346 offres
+  actives publiées sur la plateforme (2026) », jamais « base interne ».
+
 ## Publier depuis une routine (contrat)
 
 1. Rédiger l'article (FR) : titre, chapo, `contenu` markdown + jetons `[[chart:N]]`,

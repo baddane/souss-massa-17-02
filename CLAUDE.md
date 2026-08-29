@@ -784,6 +784,16 @@ Documentation complete + contrat de publication pour la routine : **`OBSERVATOIR
 - **Service** : `src/services/observatoireService.ts`.
 - **Diagrammes** : `components/ObsChart.tsx` (SVG maison, sans dependance : `bar`/`line`/`donut`),
   alimentes par le champ `charts` (JSON) et inseres dans le markdown via des jetons `[[chart:N]]`.
+  Le composant gere **pour tous les articles, presents et futurs** : bouton **« Agrandir »**
+  (plein ecran + zoom jusqu'a 400 %, `Echap` ferme), **defilement horizontal** plutot que
+  ecrasement des libelles sur mobile, axe **partant de zero** (une valeur negative descend sous
+  la ligne au lieu de disparaitre), nombres au **format francais**, et unite longue affichee
+  **une fois** sous le titre (« en milliers ») au lieu d'etre collee a chaque valeur.
+- **Coherence des chiffres et ton** : contrat detaille dans `OBSERVATOIRE.md`. Deux regles a ne
+  pas enfreindre — (1) les series d'un diagramme **somment au total annonce dans le texte**,
+  toute base differente est ecrite dans le titre du diagramme ; (2) **aucun possessif** designant
+  le site (« notre plateforme », « nos offres », « nous publions ») : l'auteur signe en analyste,
+  la plateforme est citee a la troisieme personne.
 - **Dates** : `date_publi` au format `YYYY-MM-DD` (contrainte CHECK). **Sitemap** : `/observatoire`
   + articles ajoutes dans `api/sitemap.ts` et `scripts/gen-sitemap.cjs`.
 - **i18n** : libelles nav/hub dans les 3 langues (`nav.observatoire`, `obs.*`) ; contenu des
