@@ -1,3 +1,13 @@
+-- ============================================================
+-- ⚠️  CE FICHIER NE REFLETE PAS LA BASE DE PRODUCTION
+-- ============================================================
+-- Reliquat du template « stagiaires ». Les tables qu'il cree
+-- (applications, users, companies, schools, blog_posts...) N'EXISTENT PAS
+-- dans la base du site — verifie par introspection le 2026-08-29.
+-- Ne PAS le rejouer pour reconstruire l'environnement : voir
+-- `000_baseline_job_offers_app_admins.sql` et `MIGRATION_SUPABASE.md`.
+-- ============================================================
+
 -- Supabase Schema for SoussMassa-RH
 -- Initial migration script
 
