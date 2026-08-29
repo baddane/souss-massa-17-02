@@ -23,6 +23,7 @@ const CredentialsTab: React.FC = () => {
   const [q, setQ] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [form, setForm] = useState({ raison_sociale: '', email: '', ville: '' });
+  const [progress, setProgress] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,11 +56,24 @@ const CredentialsTab: React.FC = () => {
       `récupère ses offres existantes. Les noms non identifiables (« Entreprise confidentielle », « xxxx »…) ` +
       `sont ignorés : ils recouvrent plusieurs sociétés.`,
     )) return;
+    // Enchaine les lots jusqu'a epuisement : une seule requete pour 170
+    // entreprises depasserait la duree maximale d'une fonction serverless.
     run(async () => {
-      const r = await credentialsService.provisionAll();
-      toast.info(`${r.provisionnees} compte(s) créé(s), ${r.ignorees?.length || 0} ignoré(s)`);
-      if (r.erreurs?.length) console.error('Provisionnement :', r.erreurs);
-      return r;
+      let crees = 0, ignorees = 0, tours = 0;
+      const erreurs: string[] = [];
+      for (;;) {
+        const r = await credentialsService.provisionAll();
+        crees += r.provisionnees || 0;
+        ignorees += (r.ignorees || []).length;
+        if (r.erreurs?.length) erreurs.push(...r.erreurs);
+        tours += 1;
+        setProgress(`${crees} compte(s) créé(s)…`);
+        if (!r.restantes || r.examinees === 0 || tours > 40) break;
+      }
+      setProgress('');
+      toast.info(`${crees} compte(s) créé(s), ${ignorees} ignoré(s)`);
+      if (erreurs.length) console.error('Provisionnement :', erreurs);
+      return { provisionnees: crees };
     }, 'Provisionnement terminé');
   };
 
@@ -92,7 +106,7 @@ const CredentialsTab: React.FC = () => {
             disabled={busy || pending.length === 0}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {busy ? 'Création…' : `Créer les ${pending.length} comptes`}
+            {busy ? (progress || 'Création…') : `Créer les ${pending.length} comptes`}
           </button>
         </div>
         {pending.length > 0 && (

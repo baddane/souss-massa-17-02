@@ -290,6 +290,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
     const mode = body.mode === 'one' ? 'one' : 'auto';
     let cibles: any[] = [];
+    let restantes = 0;
 
     if (mode === 'one') {
       if (!body.raison_sociale || !body.email) return json(400, { error: 'raison_sociale et email requis' });
@@ -322,13 +323,24 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         if (!parNom.has(nom.toLowerCase())) parNom.set(nom.toLowerCase(), { raison_sociale: nom, ville: o.ville || null });
       }
 
-      cibles = Array.from(parNom.values())
+      const toutes = Array.from(parNom.values())
         .filter((e) => nomProvisionnable(e.raison_sociale))
         .map((e) => {
           const connu = emailsConnus.get(e.raison_sociale.toLowerCase());
           if (connu) { pris.add(connu.email.toLowerCase()); return { ...e, email: connu.email }; }
           return { ...e, email: emailTechnique(e.raison_sociale, pris) };
         });
+
+      // TRAITEMENT PAR LOTS. Chaque entreprise demande cinq appels HTTP
+      // (creation du compte, fiche, identifiants, rattachement des offres,
+      // prospection) : traiter 170 societes d'un coup depasserait largement la
+      // duree maximale d'une fonction serverless, et le lot serait perdu en
+      // plein milieu. On borne, et on renvoie ce qui reste pour que l'appelant
+      // rappelle. L'operation est idempotente — une entreprise deja pourvue
+      // d'un compte n'est plus dans la liste au tour suivant.
+      const limite = Math.min(Math.max(Number(body.limit) || 20, 1), 50);
+      restantes = Math.max(toutes.length - limite, 0);
+      cibles = toutes.slice(0, limite);
     }
 
     const resultats: any[] = [];
@@ -344,6 +356,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return json(200, {
       ok: true,
       examinees: cibles.length,
+      restantes,
       provisionnees: resultats.filter((r) => r.statut !== 'ignoré').length,
       ignorees: resultats.filter((r) => r.statut === 'ignoré'),
       resultats: resultats.filter((r) => r.statut !== 'ignoré'),
