@@ -647,12 +647,19 @@ legitimes — alertes candidats comprises, qui viennent tout juste d'etre repare
 `notify-application` sort avant de poser `notified_company`, pour que l'email
 parte le jour ou la vraie adresse sera renseignee.
 
-### Corriger une fiche provisionnee (bouton « Modifier »)
+### Corriger une fiche entreprise (bouton « Modifier »)
 
 Les comptes crees automatiquement portent ce que le scraping a pu deduire : un
-nom parfois approximatif, une ville, et souvent une adresse technique. L'onglet
-« Identifiants » permet donc de corriger chaque fiche sur place — raison sociale,
-identifiant (e-mail), ville, telephone, secteur, note interne.
+nom parfois approximatif, une ville, et souvent une adresse technique. Le bouton
+« Modifier » ouvre `components/CompanyEditPanel.tsx` — raison sociale,
+identifiant (e-mail), ville, telephone, secteur (+ note interne cote
+Identifiants).
+
+**Le meme composant sert dans les DEUX onglets** qui listent les entreprises,
+« Entreprises » et « Identifiants » : l'admin travaille dans l'un ou dans
+l'autre, et deux formulaires distincts divergeraient a la premiere correction.
+La note vit dans `company_credentials`, absente des comptes crees par
+l'entreprise elle-meme : elle n'apparait qu'avec `avecNote`.
 
 - Deux chemins d'enregistrement derriere un seul bouton : l'**e-mail** passe par
   `api/provision-companies` (mode `email`), qui met a jour Supabase Auth **et**

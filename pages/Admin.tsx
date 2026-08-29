@@ -6,6 +6,7 @@ import { cvthequeService, CvthequeRow } from '../src/services/cvthequeService';
 import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import CredentialsTab from '../components/CredentialsTab';
+import CompanyEditPanel from '../components/CompanyEditPanel';
 import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
@@ -103,6 +104,7 @@ const Admin: React.FC = () => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection' | 'identifiants'>('candidatures');
   const [menuMobile, setMenuMobile] = useState(false);
+  const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -1005,7 +1007,14 @@ const Admin: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    {/* `flex-wrap` : sans lui, cinq boutons sur une seule ligne
+                        sortaient de l'ecran sur telephone et « Supprimer »
+                        etait coupe au bord. */}
+                    <div className="flex flex-wrap gap-2 lg:flex-shrink-0">
+                      <button onClick={() => setEditCompanyId(editCompanyId === c.id ? null : c.id)}
+                        className="px-4 py-2 text-blue-700 border border-blue-200 hover:bg-blue-50 rounded-lg text-sm font-bold">
+                        {editCompanyId === c.id ? 'Fermer' : 'Modifier'}
+                      </button>
                       {c.statut === 'en_attente' && (
                         <>
                           <button onClick={() => validateCompany(c)} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
@@ -1029,6 +1038,22 @@ const Admin: React.FC = () => {
                       </button>
                     </div>
                   </div>
+
+                  {editCompanyId === c.id && (
+                    <CompanyEditPanel
+                      valeurs={{
+                        id: c.id,
+                        nom_entreprise: c.nom_entreprise,
+                        email: c.email,
+                        ville: c.ville,
+                        telephone: c.telephone,
+                        secteur: c.secteur,
+                        email_fictif: (c.email || '').endsWith('@comptes.soussmassa-rh.com'),
+                      }}
+                      onEnregistre={async () => { setEditCompanyId(null); await loadCompanies(); }}
+                      onAnnuler={() => setEditCompanyId(null)}
+                    />
+                  )}
                 </div>
               ))}
             </div>
