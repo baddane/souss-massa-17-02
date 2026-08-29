@@ -18,6 +18,14 @@ interface Props {
   onDelete?: (row: CvthequeRow) => void;
   reloadKey?: number;
   /**
+   * Previent la page quand la vue « detail » mobile s'ouvre ou se ferme, pour
+   * qu'elle escamote ce qu'elle affiche AU-DESSUS de la CVtheque (bloc
+   * d'import cote admin, bandeau de statistiques cote entreprise). Sans cela
+   * ces blocs repoussent le CV hors du premier ecran, alors qu'on vient
+   * justement de demander a le lire.
+   */
+  onDetailMobile?: (ouvert: boolean) => void;
+  /**
    * Filtres appliques a l'ouverture. Sert au rapprochement offre → profils :
    * l'entreprise clique « Profils correspondants » sur une de ses offres et
    * arrive ici deja filtree sur l'intitule et la ville. Absent = comportement
@@ -52,7 +60,7 @@ const avatarColor = (seed: string) => {
 const surGrandEcran = () =>
   typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
-const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete, reloadKey = 0, initialFilters }) => {
+const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete, reloadKey = 0, initialFilters, onDetailMobile }) => {
   const { t } = useT();
   const [rows, setRows] = useState<CvthequeRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +72,7 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   const [zoom, setZoom] = useState(100);
   // Vue « detail » du schema maitre-detail, sur mobile uniquement.
   const [detailMobile, setDetailMobile] = useState(false);
+  useEffect(() => { onDetailMobile?.(detailMobile); }, [detailMobile, onDetailMobile]);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [pdfRendering, setPdfRendering] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);

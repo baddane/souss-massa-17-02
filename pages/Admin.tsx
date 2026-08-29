@@ -105,6 +105,9 @@ const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection' | 'identifiants'>('candidatures');
   const [menuMobile, setMenuMobile] = useState(false);
   const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
+  // Vue detail de la CVtheque sur mobile : le bloc d'import s'efface, sinon il
+  // repousse le CV hors du premier ecran.
+  const [cvDetailMobile, setCvDetailMobile] = useState(false);
   const [acctEmail, setAcctEmail] = useState('');
   const [acctPwd, setAcctPwd] = useState('');
   const [savingAcct, setSavingAcct] = useState(false);
@@ -1269,8 +1272,9 @@ const Admin: React.FC = () => {
 
       {activeTab === 'cvtheque' && (
         <>
-          {/* Import */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 mb-6">
+          {/* Import. Escamote en vue detail sur mobile : il repousserait le CV
+              hors du premier ecran alors qu'on vient de demander a le lire. */}
+          <div className={`bg-white p-5 rounded-xl border border-gray-200 mb-6 ${cvDetailMobile ? 'hidden lg:block' : ''}`}>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900">Ajouter des CV à la CVthèque</h3>
@@ -1307,6 +1311,7 @@ const Admin: React.FC = () => {
             reloadKey={cvReloadKey}
             onEdit={(row) => setCvEditing(row)}
             onDelete={(row) => deleteCv(row)}
+            onDetailMobile={setCvDetailMobile}
           />
 
           {/* Modal d'édition */}

@@ -35,6 +35,10 @@ const CompanyDashboard: React.FC = () => {
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
   const [menuMobile, setMenuMobile] = useState(false);
+  // Vue detail de la CVtheque sur mobile : le bandeau de statistiques et le
+  // rappel des candidatures s'effacent, sinon ils repoussent le CV hors du
+  // premier ecran.
+  const [cvDetailMobile, setCvDetailMobile] = useState(false);
   // Rapprochement offre → profils : filtres transmis a la CVtheque quand
   // l'entreprise demande les profils correspondant a une de ses offres.
   const [cvSeed, setCvSeed] = useState<{ q?: string; ville?: string } | undefined>(undefined);
@@ -364,7 +368,7 @@ const CompanyDashboard: React.FC = () => {
   return shellAvecMenu(
     <>
       {/* Situation en un coup d'œil, avant le détail */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-200 border border-gray-200 rounded-2xl overflow-hidden mb-8">
+      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-200 border border-gray-200 rounded-2xl overflow-hidden mb-8 ${cvDetailMobile ? 'hidden lg:grid' : ''}`}>
         {[
           { n: stats.publiees, l: t('company.stat.published') },
           { n: stats.enAttente, l: t('company.stat.pending') },
@@ -380,7 +384,7 @@ const CompanyDashboard: React.FC = () => {
 
       {stats.nouvelles > 0 && (
         <button onClick={() => { setTab('candidatures'); setCandStatus('nouvelle'); setCandPage(1); }}
-          className="w-full text-start bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-8 text-sm text-blue-900 hover:bg-blue-100 transition-colors">
+          className={`w-full text-start bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-8 text-sm text-blue-900 hover:bg-blue-100 transition-colors ${cvDetailMobile ? 'hidden lg:block' : ''}`}>
           {t('company.stat.newApplicationsCta', { count: stats.nouvelles })}
         </button>
       )}
@@ -600,7 +604,7 @@ const CompanyDashboard: React.FC = () => {
       )}
 
       {/* CVthèque — composant partagé avec l'admin, pour un affichage identique */}
-      {tab === 'cvtheque' && <CvthequeExplorer initialFilters={cvSeed} />}
+      {tab === 'cvtheque' && <CvthequeExplorer initialFilters={cvSeed} onDetailMobile={setCvDetailMobile} />}
 
       {/* Mon compte — remplacer le mot de passe reçu par email */}
       {tab === 'compte' && (
