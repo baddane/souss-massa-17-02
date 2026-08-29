@@ -38,6 +38,7 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.close': 'Fermer le menu',
     'dash.menu.collapse': 'Replier le menu',
     'dash.menu.expand': 'Déplier le menu',
+    'cvt.backToList': 'Retour à la liste',
     'nav.menu': 'Menu',
     'nav.language': 'Langue',
 
@@ -547,6 +548,7 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.close': 'Close menu',
     'dash.menu.collapse': 'Collapse menu',
     'dash.menu.expand': 'Expand menu',
+    'cvt.backToList': 'Back to list',
     'nav.menu': 'Menu',
     'nav.language': 'Language',
 
@@ -1045,6 +1047,7 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.close': 'إغلاق القائمة',
     'dash.menu.collapse': 'طي القائمة',
     'dash.menu.expand': 'توسيع القائمة',
+    'cvt.backToList': 'العودة إلى اللائحة',
     'nav.menu': 'القائمة',
     'nav.language': 'اللغة',
 

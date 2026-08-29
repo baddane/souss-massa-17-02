@@ -47,6 +47,11 @@ const avatarColor = (seed: string) => {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 };
 
+// `lg` de Tailwind : au-dessus, la grille a deux colonnes affiche liste et
+// detail cote a cote, il n'y a rien a basculer.
+const surGrandEcran = () =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+
 const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete, reloadKey = 0, initialFilters }) => {
   const { t } = useT();
   const [rows, setRows] = useState<CvthequeRow[]>([]);
@@ -57,6 +62,8 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   const [cvLoading, setCvLoading] = useState(false);
   const [cvHidden, setCvHidden] = useState(false);
   const [zoom, setZoom] = useState(100);
+  // Vue « detail » du schema maitre-detail, sur mobile uniquement.
+  const [detailMobile, setDetailMobile] = useState(false);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [pdfRendering, setPdfRendering] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -187,6 +194,18 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
   const selectRow = (r: CvthequeRow) => {
     setSelected(r);
     setCvHidden(false);
+
+    // Sous `lg`, la grille passe a une seule colonne : la liste entiere (112
+    // fiches, ~13 000 px) se retrouve AU-DESSUS du detail. Choisir un profil ne
+    // montrait donc rien — le detail se mettait a jour hors de l'ecran, quinze
+    // ecrans plus bas, et l'apercu du CV passait pour casse. On bascule en vue
+    // detail, comme n'importe quelle liste maitre-detail sur telephone.
+    if (!surGrandEcran()) {
+      setDetailMobile(true);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+      return;
+    }
+
     requestAnimationFrame(() => {
       const el = document.getElementById('cv-detail');
       if (!el) return;
@@ -199,8 +218,11 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
 
   return (
     <div>
-      {/* Barre de recherche + filtres */}
-      <form onSubmit={search} className="bg-white rounded-2xl border border-gray-200 p-4 mb-5 space-y-3">
+      {/* Barre de recherche + filtres. Masquee en vue detail sur mobile : elle
+          repousserait le CV d'un ecran entier, alors qu'on vient justement de
+          demander a le lire. */}
+      <form onSubmit={search}
+        className={`bg-white rounded-2xl border border-gray-200 p-4 mb-5 space-y-3 ${detailMobile ? 'hidden lg:block' : ''}`}>
         <div className="flex flex-col sm:flex-row gap-3">
           <input type="search" value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })}
             placeholder={t('cvt.searchPlaceholder')}
@@ -236,7 +258,7 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
       </form>
 
       {/* Compteur + tri */}
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className={`flex items-center justify-between gap-3 mb-3 ${detailMobile ? 'hidden lg:flex' : ''}`}>
         <p className="text-sm text-gray-600 font-medium tabular-nums">
           {loading ? t('cvt.loading') : t('cvt.count', { count: visible.length })}
         </p>
@@ -249,8 +271,9 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)] gap-4 items-start">
-        {/* Volet gauche : liste des profils */}
-        <div ref={listRef} className="space-y-2">
+        {/* Volet gauche : liste des profils. Masquee sur mobile quand un profil
+            est ouvert — les deux volets cote a cote n'existent qu'a partir de `lg`. */}
+        <div ref={listRef} className={`space-y-2 ${detailMobile ? 'hidden lg:block' : ''}`}>
           {loading ? (
             <p className="text-gray-500 text-sm bg-white rounded-xl border border-gray-200 p-6 text-center">{t('cvt.loading')}</p>
           ) : visible.length === 0 ? (
@@ -286,7 +309,16 @@ const CvthequeExplorer: React.FC<Props> = ({ canManage = false, onEdit, onDelete
         </div>
 
         {/* Volet droit : fiche + aperçu du CV */}
-        <div id="cv-detail" className="bg-white rounded-2xl border border-gray-200 p-5 scroll-mt-4">
+        <div id="cv-detail"
+          className={`bg-white rounded-2xl border border-gray-200 p-5 scroll-mt-4 ${detailMobile ? '' : 'hidden lg:block'}`}>
+          {detailMobile && (
+            <button
+              onClick={() => setDetailMobile(false)}
+              className="lg:hidden mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700"
+            >
+              <span aria-hidden="true" className="rtl:-scale-x-100">←</span> {t('cvt.backToList')}
+            </button>
+          )}
           {!selected ? (
             <p className="text-gray-500 text-sm text-center py-10">{t('cvt.selectProfile')}</p>
           ) : (
