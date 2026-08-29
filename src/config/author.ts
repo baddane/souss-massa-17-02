@@ -12,7 +12,23 @@
 
 export const AUTEUR = {
   nom: 'Rachid Baddane',
-  titre: 'Expert en emploi',
+  /**
+   * Libelle affiche sous l'article. Une seule phrase : majuscule en tete,
+   * minuscules ensuite (apposition apres un nom), « et » avant le dernier
+   * element et pas de virgule devant.
+   */
+  titre: 'Expert en emploi, conseiller en orientation professionnelle et consultant en ressources humaines',
+  /**
+   * Les memes intitules, separes, pour le JSON-LD. `jobTitle` doit porter
+   * plusieurs VALEURS et non une phrase : un moteur qui lirait
+   * « expert en emploi, conseiller… » comme un titre unique ne reconnaitrait
+   * aucune des trois competences.
+   */
+  titres: [
+    'Expert en emploi',
+    'Conseiller en orientation professionnelle',
+    'Consultant en ressources humaines',
+  ],
   /**
    * Profil LinkedIn. Tant que cette valeur est vide, aucun lien n'est affiche
    * ni publie dans le JSON-LD : un lien errone vaut moins que pas de lien.

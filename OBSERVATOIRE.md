@@ -12,9 +12,14 @@ l'auteur.
 
 - `observatoire_articles.auteur` = **`Rachid Baddane`** pour tout nouvel article.
 - Le bloc de signature (`components/AuthorSignature.tsx`) s'affiche sous chaque
-  article : nom, **« Expert en emploi »**, et lien LinkedIn.
+  article : nom, intitule complet — **« Expert en emploi, conseiller en
+  orientation professionnelle et consultant en ressources humaines »** — et
+  lien LinkedIn.
 - Le JSON-LD `NewsArticle` declare un `author` de type **`Person`** avec
   `jobTitle` et, si le profil est renseigne, `sameAs`.
+- `jobTitle` porte **trois valeurs distinctes** (`AUTEUR.titres`), pas la phrase
+  affichee : un moteur qui lirait « expert en emploi, conseiller… » comme un
+  titre unique ne reconnaitrait aucune des trois competences.
 
 > **REGLE A NE JAMAIS ENFREINDRE** : ne mentionner **aucune fonction
 > d'employeur ni titre administratif** dans la signature, les articles, les

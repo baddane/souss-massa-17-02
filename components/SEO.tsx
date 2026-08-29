@@ -125,7 +125,7 @@ export function generateArticleJsonLd(article: {
     author: {
       '@type': 'Person',
       name: article.auteur || AUTEUR.nom,
-      jobTitle: AUTEUR.titre,
+      jobTitle: AUTEUR.titres,
       ...(AUTEUR.linkedin ? { sameAs: [AUTEUR.linkedin] } : {}),
     },
     publisher: {

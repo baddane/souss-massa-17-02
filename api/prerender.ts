@@ -33,7 +33,14 @@ const SITE_NAME = 'SoussMassa-RH';
 // qui avait casse les envois d'emails). Les deux valeurs doivent rester
 // synchronisees ; c'est signale dans OBSERVATOIRE.md.
 const AUTEUR_NOM = 'Rachid Baddane';
-const AUTEUR_TITRE = 'Expert en emploi';
+const AUTEUR_TITRE = 'Expert en emploi, conseiller en orientation professionnelle et consultant en ressources humaines';
+// `jobTitle` porte plusieurs VALEURS et non une phrase : un titre unique
+// « expert en emploi, conseiller… » ne serait reconnu comme aucune des trois.
+const AUTEUR_TITRES = [
+  'Expert en emploi',
+  'Conseiller en orientation professionnelle',
+  'Consultant en ressources humaines',
+];
 const AUTEUR_LINKEDIN = '';   // vide = aucun lien publie
 
 interface Meta {
@@ -191,7 +198,7 @@ async function articleMeta(slug: string): Promise<Meta> {
       author: {
         '@type': 'Person',
         name: a.auteur || AUTEUR_NOM,
-        jobTitle: AUTEUR_TITRE,
+        jobTitle: AUTEUR_TITRES,
         ...(AUTEUR_LINKEDIN ? { sameAs: [AUTEUR_LINKEDIN] } : {}),
       },
       publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
