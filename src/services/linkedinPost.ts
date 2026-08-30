@@ -1,5 +1,4 @@
 import type { ObsArticle } from './observatoireService';
-import { AUTEUR } from '../config/author';
 
 // Fabrique l'extrait LinkedIn d'un article de l'Observatoire.
 //
@@ -117,7 +116,9 @@ export function buildLinkedInPost(article: ObsArticle): string {
     `${accroche}` +
     `${blocChiffres}\n\n` +
     `Analyse complète 👉 ${url}\n\n` +
-    `${AUTEUR.titre}.\n\n` +
+    // Aucune ligne de qualite personnelle : le texte est publie sur le compte de
+    // son auteur, qui n'a pas a s'y presenter, et le nom ne doit etre associe ni
+    // aux articles ni a ce qui en decoule.
     `${hashtags}`;
 
   return post.length > LINKEDIN_MAX ? couper(post, LINKEDIN_MAX) : post;

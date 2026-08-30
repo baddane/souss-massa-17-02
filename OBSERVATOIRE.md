@@ -45,6 +45,30 @@ le brider n'aurait aucun sens.
 > verifiable, donc verifiee, donc fausse aux yeux du lecteur. Verifier l'adresse
 > (reponse 200) avant de l'ecrire ; sinon laisser le texte seul.
 
+### L'extrait LinkedIn non plus
+
+`src/services/linkedinPost.ts` fabrique l'extrait a publier (bouton
+« LinkedIn » de l'onglet Observatoire). Il ne porte **aucune ligne de qualite
+personnelle** : le texte est publie sur le compte de son auteur, qui n'a pas a
+s'y presenter, et le nom ne doit etre associe ni aux articles ni a ce qui en
+decoule. Structure produite :
+
+```
+{emoji} {titre}
+
+{chapo raccourci a 320 caracteres}
+
+Ce que disent les chiffres :
+• …
+
+Analyse complète 👉 {url}
+
+{3 a 5 hashtags}
+```
+
+`src/config/author.ts` et `components/AuthorSignature.tsx` ont ete supprimes :
+plus aucun fichier ne porte de nom de personne.
+
 ## Architecture
 
 - **Table** : `public.observatoire_articles` (migration `008_observatoire_emploi.sql`).
