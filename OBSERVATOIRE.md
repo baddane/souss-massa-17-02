@@ -4,36 +4,46 @@ Rubrique éditoriale SEO du site : `/observatoire` (hub) et `/observatoire/{slug
 Objectif : faire de SoussMassa-RH **la référence** sur l'emploi dans la région (chômage,
 actualité, stratégie régionale, veille), avec des articles **illustrés de diagrammes**.
 
-## Signature des articles
+## Les articles ne sont pas signes
 
-Les analyses sont signees d'une **personne**, pas d'une organisation : c'est ce
-qui leur donne leur autorite, et ce que Google evalue au titre de l'expertise de
-l'auteur.
+**Aucun nom de personne ne doit apparaitre sur un article de l'Observatoire**,
+ni dans le corps, ni sous l'article, ni dans les meta-donnees, ni dans le
+JSON-LD. C'est une demande explicite du proprietaire du site : son nom ne doit
+pas etre associe a la plateforme.
 
-- `observatoire_articles.auteur` = **`Rachid Baddane`** pour tout nouvel article.
-- Le bloc de signature (`components/AuthorSignature.tsx`) s'affiche sous chaque
-  article : nom, intitule complet — **« Expert en emploi, conseiller en
-  orientation professionnelle et consultant en ressources humaines »** — et
-  lien LinkedIn.
-- Le JSON-LD `NewsArticle` declare un `author` de type **`Person`** avec
-  `jobTitle` et, si le profil est renseigne, `sameAs`.
-- `jobTitle` porte **trois valeurs distinctes** (`AUTEUR.titres`), pas la phrase
-  affichee : un moteur qui lirait « expert en emploi, conseiller… » comme un
-  titre unique ne reconnaitrait aucune des trois competences.
+- `observatoire_articles.auteur` reste **vide** (`null`). La colonne existe
+  encore mais n'est plus lue par aucune vue ; ne pas la reintroduire.
+- Le JSON-LD `NewsArticle` declare un `author` de type **`Organization`**
+  (« Observatoire de l'emploi Souss-Massa »), dans `components/SEO.tsx` **et**
+  dans `api/prerender.ts`. `NewsArticle` exige un `author` : l'omettre ferait
+  remonter un champ manquant dans les outils de Google, d'ou l'organisation
+  plutot que rien.
+- Le pre-rendu ne produit plus de phrase « Analyse signee … » dans son
+  `<noscript>`.
 
-> **REGLE A NE JAMAIS ENFREINDRE** : ne mentionner **aucune fonction
-> d'employeur ni titre administratif** dans la signature, les articles, les
-> meta-donnees ou le JSON-LD. La signature se limite a l'expertise.
+### Ce qui porte l'autorite a la place : les sources
 
-Le profil LinkedIn se renseigne a **un seul endroit** : `linkedin` dans
-`src/config/author.ts`. Tant qu'il est vide, aucun lien n'est affiche ni publie
-dans le JSON-LD — un lien errone vaut moins que pas de lien.
+Une analyse se defend par ses references verifiables. La liste des sources ferme
+donc l'article, et **chaque source dont l'adresse est connue est cliquable**
+(`SourceLink` dans `pages/ObservatoireArticle.tsx`).
 
-> `api/prerender.ts` **recopie** ces trois valeurs (`AUTEUR_NOM`,
-> `AUTEUR_TITRE`, `AUTEUR_LINKEDIN`) au lieu de les importer : les modules de
-> `api/` sont resolus a l'execution et non bundles, un import vers `../src/`
-> casserait la fonction en production. **Les deux doivent rester synchronises.**
+Trois ecritures possibles dans `sources`, par ordre de precision :
 
+| Ecriture | Rendu |
+|---|---|
+| `[HCP — resultats annuels 2025](https://…)` | lien portant le libelle |
+| `https://…` | lien affichant le domaine |
+| `HCP — resultats annuels 2025` | texte simple |
+
+Les trois coexistent : les sources deja saisies restent lisibles sans migration.
+Les liens s'ouvrent dans un nouvel onglet, en `rel="noopener noreferrer"` —
+**pas** en `nofollow` : citer le HCP ou Bank Al-Maghrib est un signal de qualite,
+le brider n'aurait aucun sens.
+
+> **NE JAMAIS INVENTER UNE ADRESSE** pour rendre une ligne cliquable. Une source
+> qui pointe dans le vide vaut moins qu'une source en texte simple : elle est
+> verifiable, donc verifiee, donc fausse aux yeux du lecteur. Verifier l'adresse
+> (reponse 200) avant de l'ecrire ; sinon laisser le texte seul.
 
 ## Architecture
 

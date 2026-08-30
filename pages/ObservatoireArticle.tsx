@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SEO, { generateArticleJsonLd } from '../components/SEO';
-import AuthorSignature from '../components/AuthorSignature';
 import MarkdownContent from '../components/MarkdownContent';
 import ObsChart from '../components/ObsChart';
 import { useT } from '../src/i18n/LanguageContext';
@@ -18,6 +17,41 @@ function renderBody(article: ObsArticle) {
     return <MarkdownContent key={i} text={part} size="lg" />;
   });
 }
+
+// Une source peut s'ecrire de trois facons, par ordre de precision :
+//   « [HCP — resultats 2025](https://…) »  libelle + adresse
+//   « https://… »                          adresse seule
+//   « HCP — resultats 2025 »               texte seul, quand l'adresse est
+//                                          inconnue ou le document hors ligne
+// Les trois coexistent : les sources deja saisies restent lisibles, et on
+// n'invente jamais une adresse pour rendre une ligne cliquable.
+const MD_LIEN = /^\s*\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)\s*$/;
+const URL_NUE = /(https?:\/\/[^\s)]+)/;
+
+const SourceLink: React.FC<{ source: string }> = ({ source }) => {
+  const classes = 'text-blue-600 hover:text-blue-700 underline decoration-blue-200 hover:decoration-blue-400 break-words';
+
+  const md = source.match(MD_LIEN);
+  if (md) {
+    return <a href={md[2]} target="_blank" rel="noopener noreferrer" className={classes}>{md[1]}</a>;
+  }
+
+  const nue = source.match(URL_NUE);
+  if (nue) {
+    const avant = source.slice(0, nue.index);
+    const apres = source.slice((nue.index || 0) + nue[1].length);
+    // Une adresse seule s'affiche par son domaine : la ligne reste lisible.
+    const libelle = avant.trim() || nue[1].replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+    return (
+      <>
+        <a href={nue[1]} target="_blank" rel="noopener noreferrer" className={classes}>{libelle}</a>
+        {apres.trim() && <span className="text-gray-500"> {apres.trim()}</span>}
+      </>
+    );
+  }
+
+  return <span className="text-gray-500">{source}</span>;
+};
 
 const ObservatoireArticle: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -85,17 +119,18 @@ const ObservatoireArticle: React.FC = () => {
       <div className="space-y-2">{renderBody(article)}</div>
       {trailingCharts.map((spec, i) => <ObsChart key={`t${i}`} spec={spec} />)}
 
-      {/* Sources */}
+      {/* Sources. Ce qui donne son autorite a l'analyse, ce sont les references
+          verifiables, pas une signature : elles ferment donc l'article, et
+          chaque source dont l'adresse est connue est cliquable. */}
       {article.sources && article.sources.length > 0 && (
         <div className="mt-10 pt-6 border-t border-gray-200">
-          <h2 className="text-sm font-bold text-gray-900 mb-2">{t('obs.sources')}</h2>
-          <ul className="list-disc pl-5 text-sm text-gray-500 space-y-1">
-            {article.sources.map((s, i) => <li key={i}>{s}</li>)}
+          <h2 className="text-sm font-bold text-gray-900 mb-3">{t('obs.sources')}</h2>
+          <ul className="list-disc ps-5 text-sm text-gray-600 space-y-1.5 marker:text-gray-300">
+            {article.sources.map((s, i) => <li key={i}><SourceLink source={s} /></li>)}
           </ul>
         </div>
       )}
 
-      <AuthorSignature nom={article.auteur} />
 
       <div className="mt-10">
         <Link to="/observatoire" className="text-blue-600 font-bold">← {t('obs.backHub')}</Link>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../src/i18n/LanguageContext';
-import { AUTEUR } from '../src/config/author';
 
 const OG_LOCALE: Record<string, string> = {
   fr: 'fr_MA',
@@ -120,13 +119,13 @@ export function generateArticleJsonLd(article: {
     description: article.meta_description || article.chapo || article.titre,
     datePublished: article.date_publi,
     dateModified: article.date_publi,
-    // Une PERSONNE, pas une organisation : c'est l'auteur identifie qui porte
-    // l'autorite de l'analyse. `sameAs` n'est publie que si le profil est connu.
+    // Les analyses ne sont pas signees d'une personne : l'auteur declare est
+    // l'Observatoire lui-meme. `NewsArticle` exige un `author` — l'omettre
+    // ferait remonter un champ manquant dans les outils de Google.
     author: {
-      '@type': 'Person',
-      name: article.auteur || AUTEUR.nom,
-      jobTitle: AUTEUR.titres,
-      ...(AUTEUR.linkedin ? { sameAs: [AUTEUR.linkedin] } : {}),
+      '@type': 'Organization',
+      name: 'Observatoire de l’emploi Souss-Massa',
+      url: 'https://www.soussmassa-rh.com/observatoire',
     },
     publisher: {
       '@type': 'Organization',
