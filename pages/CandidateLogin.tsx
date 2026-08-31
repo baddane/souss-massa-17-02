@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import { useT } from '../src/i18n/LanguageContext';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 import { candidateAuth, candidateService } from '../src/services/candidateService';
 import { companyService } from '../src/services/companyService';
 
@@ -72,10 +73,14 @@ const CandidateLogin: React.FC = () => {
             className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-colors disabled:opacity-60">
             {sending ? t('cand.login.submitting') : t('cand.login.submit')}
           </button>
-          <p className="text-center text-sm text-gray-500">
-            {t('cand.login.noAccount')}{' '}
-            <Link to="/inscription-candidat" className="text-orange-600 font-medium hover:underline">{t('cand.toRegister')}</Link>
-          </p>
+          {/* Les comptes existants se connectent toujours ; on ne propose l'inscription
+              que si elle est ouverte. */}
+          {INSCRIPTION_CANDIDAT_OUVERTE && (
+            <p className="text-center text-sm text-gray-500">
+              {t('cand.login.noAccount')}{' '}
+              <Link to="/inscription-candidat" className="text-orange-600 font-medium hover:underline">{t('cand.toRegister')}</Link>
+            </p>
+          )}
         </form>
       </div>
     </>

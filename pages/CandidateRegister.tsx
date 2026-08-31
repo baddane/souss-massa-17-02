@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import { useT } from '../src/i18n/LanguageContext';
 import { candidateAuth } from '../src/services/candidateService';
 import { EmailAlreadyRegisteredError } from '../src/services/companyService';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 
 const CandidateRegister: React.FC = () => {
   const { t } = useT();
@@ -14,6 +15,13 @@ const CandidateRegister: React.FC = () => {
   // Consentement explicite, coche par defaut mais decochable : c'est ce qui
   // distingue une CVtheque legitime d'un fichier constitue a l'insu des gens.
   const [consent, setConsent] = useState(true);
+
+  // Inscriptions fermees : on renvoie vers les offres, ou le depot de CV reste
+  // possible en postulant. `replace` pour que le bouton « retour » du
+  // navigateur ne ramene pas sur une page vide.
+  useEffect(() => {
+    if (!INSCRIPTION_CANDIDAT_OUVERTE) navigate('/offres', { replace: true });
+  }, [navigate]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -38,6 +46,8 @@ const CandidateRegister: React.FC = () => {
       setSending(false);
     }
   };
+
+  if (!INSCRIPTION_CANDIDAT_OUVERTE) return null;
 
   return (
     <>

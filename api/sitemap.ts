@@ -50,7 +50,11 @@ export default async function handler() {
       { url: '/offres', priority: '0.9', changefreq: 'daily' },
       { url: '/recruter', priority: '0.8', changefreq: 'monthly' },
       { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
-      { url: '/inscription-candidat', priority: '0.7', changefreq: 'monthly' },
+      // '/inscription-candidat' retire tant que les inscriptions candidat sont
+      // fermees (`INSCRIPTION_CANDIDAT_OUVERTE` dans src/config/features.ts) :
+      // la page redirige, l'indexer enverrait Google sur une redirection.
+      // `api/` est resolu a l'execution et ne peut pas importer `src/`, d'ou
+      // cette ligne a rebasculer a la main lors de la reouverture.
       { url: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];
 

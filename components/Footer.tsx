@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT, cityLabel } from '../src/i18n/LanguageContext';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 import { slugify } from './SEO';
 
 const SECTOR_LINKS = [
@@ -62,7 +63,7 @@ const Footer: React.FC = () => {
               <Link to="/offres" className="hover:text-white transition-colors">{t('nav.allOffers')}</Link>
               <Link to="/observatoire" className="hover:text-white transition-colors">{t('nav.observatoire')}</Link>
               <Link to="/contact" className="hover:text-white transition-colors">{t('nav.contact')}</Link>
-              <Link to="/inscription-candidat" className="hover:text-white transition-colors">{t('nav.depositCv')}</Link>
+              <Link to={INSCRIPTION_CANDIDAT_OUVERTE ? '/inscription-candidat' : '/offres'} className="hover:text-white transition-colors">{t('nav.depositCv')}</Link>
               <Link to="/recruter" className="hover:text-white transition-colors">{t('nav.postOffer')}</Link>
             </nav>
           </div>

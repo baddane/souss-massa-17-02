@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useT } from '../src/i18n/LanguageContext';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 import { useAccount } from '../src/hooks/useAccount';
 import { candidateAuth, alertsService } from '../src/services/candidateService';
 import { EmailAlreadyRegisteredError } from '../src/services/companyService';
@@ -44,6 +45,12 @@ const AlertSignupCard: React.FC<Props> = ({ intitule, ville, contrat }) => {
   // Une entreprise n'a rien a faire ici ; tant qu'on ne sait pas qui regarde, on
   // n'affiche rien plutot que de faire clignoter le mauvais formulaire.
   if (account.kind === 'company' || account.kind === 'loading') return null;
+
+  // Inscriptions fermees : pour un visiteur anonyme, cette carte est un
+  // formulaire de creation de compte, on la retire. Un candidat DEJA inscrit
+  // continue de creer ses alertes en un clic — fermer les inscriptions n'est
+  // pas retirer une fonction a ceux qui ont deja un compte.
+  if (!INSCRIPTION_CANDIDAT_OUVERTE && account.kind !== 'candidate') return null;
 
   const criteria = [intitule, ville, contrat].filter(Boolean).join(' · ');
 

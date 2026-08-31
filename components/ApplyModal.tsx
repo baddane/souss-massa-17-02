@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { supabaseOffers } from '../src/services/supabase';
 import { useT } from '../src/i18n/LanguageContext';
 import { candidateAuth, candidateService, type CandidateProfile } from '../src/services/candidateService';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 import { EmailAlreadyRegisteredError } from '../src/services/companyService';
 
 interface ApplyModalProps {
@@ -212,14 +213,16 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
         </div>
 
         {applied ? (
-        /* Le depot est enregistre. Plutot que de refermer et de laisser repartir
-           un visiteur anonyme, on lui propose de garder ce qu'il vient de saisir
-           sous la forme d'un compte : un seul champ, aucune ressaisie. */
+        /* Le depot est enregistre. Le panneau de creation de compte n'est
+           propose que si les inscriptions sont ouvertes : tant qu'elles sont
+           fermees, on confirme et on s'arrete la — la candidature et son CV
+           sont deja enregistres, demander autre chose serait une barriere. */
         <div className="space-y-5">
           <p className="text-sm text-green-800 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
             {t('apply.successText', { company: companyName })}
           </p>
 
+          {INSCRIPTION_CANDIDAT_OUVERTE && (
           <div className="border border-orange-200 bg-orange-50/60 rounded-xl p-5 space-y-3">
             <h3 className="font-bold text-gray-900">{t('apply.createSpaceTitle')}</h3>
             <p className="text-sm text-gray-600">{t('apply.createSpaceText')}</p>
@@ -254,9 +257,13 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
               </button>
             </form>
           </div>
+          )}
 
-          <button onClick={onClose} className="w-full text-sm text-gray-500 hover:text-gray-800 underline">
-            {t('apply.noThanks')}
+          <button onClick={onClose}
+            className={INSCRIPTION_CANDIDAT_OUVERTE
+              ? 'w-full text-sm text-gray-500 hover:text-gray-800 underline'
+              : 'w-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors'}>
+            {INSCRIPTION_CANDIDAT_OUVERTE ? t('apply.noThanks') : t('apply.close')}
           </button>
         </div>
         ) : (
@@ -354,7 +361,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, jobTitle, jobR
           </button>
         </form>
 
-        {!profile && (
+        {!profile && INSCRIPTION_CANDIDAT_OUVERTE && (
           <p className="text-center text-sm">
             <Link to="/inscription-candidat" className="text-blue-600 font-medium hover:underline">
               {t('apply.createAccount')}

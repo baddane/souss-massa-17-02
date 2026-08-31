@@ -755,6 +755,27 @@ Chaque offre de l'espace entreprise porte un bouton **« Profils correspondants 
 qui ouvre la CVtheque pre-filtree sur l'intitule et la ville
 (`CvthequeExplorer` accepte `initialFilters`).
 
+## Inscriptions candidat FERMEES (drapeau `src/config/features.ts`)
+
+`INSCRIPTION_CANDIDAT_OUVERTE = false` : on collecte le maximum de CV sans
+dresser la moindre barriere. Aucun parcours ne propose plus de creer un compte
+candidat — le panneau de mot de passe apres candidature, la page
+`/inscription-candidat` (qui redirige vers `/offres`), la carte d'alerte sous
+les offres pour un visiteur anonyme, et les liens du header, du pied de page et
+de la page de connexion.
+
+**Ce qui continue de fonctionner, et ne doit pas etre casse en rouvrant** :
+- la candidature et le depot du CV, seul chemin de collecte desormais ;
+- la **case de consentement CVtheque**, base juridique permettant aux
+  entreprises de consulter ces CV. La retirer viderait la collecte de son
+  interet — verifie : une candidature anonyme cree bien sa fiche CVtheque ;
+- les **comptes deja crees** (4 a ce jour) : connexion, espace candidat,
+  alertes. Fermer les inscriptions n'est pas fermer les comptes.
+
+Rouvrir = repasser le booleen a `true`. Seule exception, a rebasculer a la
+main : `/inscription-candidat` dans `api/sitemap.ts`, car `api/` est resolu a
+l'execution et ne peut pas importer `src/`.
+
 ## Parcours d'inscription (principe : 0 friction)
 
 **Regle** : ne jamais demander un compte avant d'avoir rendu le service. Le

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useT } from '../src/i18n/LanguageContext';
+import { INSCRIPTION_CANDIDAT_OUVERTE } from '../src/config/features';
 import { useAccount } from '../src/hooks/useAccount';
 import LanguageSwitcher from './LanguageSwitcher';
 
@@ -45,12 +46,16 @@ const Header: React.FC = () => {
       : { to: '/recruter', label: t('nav.postOffer') };
 
   // Bouton candidat (plein). Tant qu'on ne sait pas encore qui regarde, on
-  // affiche l'action d'inscription : c'est vrai pour la majorite des visiteurs,
-  // et un candidat connecte voit le libelle corrige en une fraction de seconde.
+  // affiche l'action de depot : c'est vrai pour la majorite des visiteurs, et
+  // un candidat connecte voit le libelle corrige en une fraction de seconde.
+  //
+  // Inscriptions fermees : le depot passe par la candidature a une offre, donc
+  // le bouton mene aux offres. Le libelle ne change pas — c'est bien un depot
+  // de CV, seul le chemin differe.
   const candidate =
     account.kind === 'candidate'
       ? { to: '/espace-candidat', label: t('nav.candidateSpaceFull') }
-      : { to: '/inscription-candidat', label: t('nav.depositCv') };
+      : { to: INSCRIPTION_CANDIDAT_OUVERTE ? '/inscription-candidat' : '/offres', label: t('nav.depositCv') };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
