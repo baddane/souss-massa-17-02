@@ -30,7 +30,10 @@ const safeName = (name: string) =>
 
 export const cvthequeService = {
   // Upload le fichier dans le bucket privé + parse (script) + insert la fiche
-  async uploadAndParse(file: File): Promise<{ row: CvthequeRow | null; supported: boolean; error?: string }> {
+  // `doublon` : le CV est deja dans la CVtheque. Ce n'est PAS une erreur, et il
+  // ne faut pas le presenter comme telle a l'admin : le garde-fou en base
+  // (migration 029) a simplement refuse de creer une seconde fiche.
+  async uploadAndParse(file: File): Promise<{ row: CvthequeRow | null; supported: boolean; doublon?: boolean; error?: string }> {
     const path = `${Date.now()}-${rand()}-${safeName(file.name)}`;
 
     const { error: upErr } = await supabaseOffers.storage.from(BUCKET).upload(path, file, {
@@ -76,13 +79,41 @@ export const cvthequeService = {
       raw_text: parsed.raw_text || null,
     };
 
-    const { data, error } = await supabaseOffers.from('cvtheque').insert(insert).select('*').single();
+    // `maybeSingle` et non `single` : quand le garde-fou anti-doublon abandonne
+    // la ligne, l'insertion renvoie zero ligne SANS erreur. `single` traduirait
+    // ce cas normal en « JSON object requested, multiple (or no) rows returned »,
+    // un message d'erreur incomprehensible pour l'admin.
+    const { data, error } = await supabaseOffers.from('cvtheque').insert(insert).select('*').maybeSingle();
     if (error) {
       // Rollback du fichier uploadé pour ne pas laisser d'orphelin
       await supabaseOffers.storage.from(BUCKET).remove([path]);
       return { row: null, supported, error: error.message };
     }
+    if (!data) {
+      // Doublon : le fichier vient d'etre televerse pour rien, on le retire du
+      // bucket. Le laisser ferait grossir le stockage d'une copie invisible.
+      await supabaseOffers.storage.from(BUCKET).remove([path]);
+      const existante = await this.trouverExistante(parsed);
+      return { row: existante, supported, doublon: true };
+    }
     return { row: data as CvthequeRow, supported };
+  },
+
+  // Retrouve la fiche qui a fait rejeter l'import, pour pouvoir nommer le
+  // candidat concerne dans le message. Best effort : si le CV n'a livre ni
+  // email ni telephone, on rend null et le message reste generique.
+  async trouverExistante(parsed: ParsedCv): Promise<CvthequeRow | null> {
+    const email = (parsed.email || '').trim();
+    if (email) {
+      const { data } = await supabaseOffers.from('cvtheque').select('*').ilike('email', email).limit(1);
+      if (data && data.length) return data[0] as CvthequeRow;
+    }
+    const tel9 = (parsed.telephone || '').replace(/\D/g, '').slice(-9);
+    if (tel9.length === 9) {
+      const { data } = await supabaseOffers.from('cvtheque').select('*').ilike('telephone', `%${tel9}%`).limit(1);
+      if (data && data.length) return data[0] as CvthequeRow;
+    }
+    return null;
   },
 
   // Recherche dynamique

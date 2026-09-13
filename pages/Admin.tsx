@@ -254,16 +254,21 @@ const Admin: React.FC = () => {
     if (!files || !files.length) return;
     setCvUploading(true);
     let unsupported = 0, failed = 0;
+    const doublons: string[] = [];
     for (const file of Array.from(files)) {
       try {
-        const { supported, error } = await cvthequeService.uploadAndParse(file);
+        const { supported, doublon, row, error } = await cvthequeService.uploadAndParse(file);
         if (error) failed++;
+        else if (doublon) doublons.push(`${file.name}${row?.nom_complet ? ` → déjà présent sous « ${row.nom_complet} »` : ''}`);
         else if (!supported) unsupported++;
       } catch { failed++; }
     }
     setCvUploading(false);
     await loadCvtheque();
     if (failed) alert(`${failed} fichier(s) en erreur lors de l'import.`);
+    // Un doublon n'est pas un échec : on le dit à part, sinon l'admin croit
+    // que l'import a planté et recommence.
+    if (doublons.length) alert(`${doublons.length} CV déjà présent(s) dans la CVthèque, non réimporté(s) :\n\n${doublons.join('\n')}`);
     if (unsupported) alert(`${unsupported} fichier(s) importé(s) mais non lisibles automatiquement (image ou ancien .doc). Complétez les champs à la main via « Éditer ».`);
   };
 

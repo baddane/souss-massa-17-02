@@ -909,6 +909,55 @@ parses et classes dans une table dediee pour un **moteur de recherche dynamique*
   bucket (`cvtheque_obj_select/insert/delete`). Aucune donnee personnelle exposee au public.
 - **Dependances ajoutees** : `pdfjs-dist`, `mammoth` (uniquement chargees a la demande dans l'admin).
 
+### Aucun doublon dans la CVtheque (migrations `029` a `031`)
+
+Le garde-fou de la migration `007` dedoublonnait sur `lower(email)` et
+uniquement parmi les fiches `source='candidature'`. Deux trous : une faute de
+frappe dans l'adresse (`gmail`/`gamail`, `aherbil`/`ahernil`) creait une
+seconde fiche pour la meme personne et le meme PDF, et un import admin
+(`source='upload'`) n'etait compare a rien. Constat du 2026-09-13 : **4
+personnes presentes deux fois**, a chaque fois avec un fichier octet pour
+octet identique.
+
+- **Le critere principal est l'empreinte du FICHIER** (`file_hash`, le MD5 que
+  le stockage expose en `eTag`), pas le texte analyse : elle fonctionne aussi
+  pour les **CV scannes**, dont `raw_text` est vide — c'etait le cas de 2 des 4
+  doublons. Deux personnes differentes ne peuvent pas deposer un PDF identique.
+- **Trois criteres** dans `cvtheque_anti_doublon()` : meme empreinte, OU meme
+  e-mail, OU (**meme telephone ET meme nom normalise**). Le troisieme couvre le
+  CV mis a jour depose avec une adresse mal saisie. Les deux reunis, car un
+  numero partage (famille, cyber) ne suffit pas a conclure — un critere
+  telephone seul aurait exclu de vraies personnes de la CVtheque.
+- **Le trigger est pose sur `cvtheque`, pas dans le service ni dans le trigger
+  des candidatures** : c'est le seul endroit que TOUS les chemins d'ecriture
+  traversent (candidature anonyme, import admin, SQL direct, `service_role`).
+- **Il renvoie NULL** (la ligne est abandonnee) apres avoir **comble les champs
+  vides** de la fiche existante. Il n'ecrase jamais une valeur : une correction
+  faite a la main par l'admin ne doit pas etre remplacee par une extraction
+  automatique. Verifie : une candidature d'un candidat deja present **reussit**,
+  elle ne cree simplement pas de seconde fiche.
+- **Le consentement ne s'elargit jamais par fusion** : `visible_recruteurs`
+  devient le ET des deux valeurs. Un profil retire de la CVtheque ne doit pas y
+  revenir parce qu'une nouvelle candidature est arrivee.
+- **Index uniques en filet** (`cvtheque_email_uq`, `cvtheque_file_hash_uq`) :
+  un trigger se desactive (`DISABLE TRIGGER`, restauration), un index non.
+  L'ancien `cvtheque_candidature_email_uq`, trop partiel, est supprime.
+- `cvtheque_maj_empreinte()` **recalcule l'empreinte tant qu'elle est NULL**
+  (migration `030`) : si la ligne de stockage n'existait pas encore a l'INSERT,
+  la fiche se repare a sa premiere mise a jour, sans tache planifiee.
+- Cote interface, `uploadAndParse` utilise **`maybeSingle`** et renvoie
+  `doublon: true` : avec `single`, le refus (zero ligne, **sans erreur**) se
+  serait affiche comme « JSON object requested, multiple (or no) rows
+  returned ». Le fichier televerse est retire du bucket, et l'admin lit « CV
+  deja present sous <nom> » — un doublon n'est pas un echec d'import.
+- `search_path` fige sur les 5 fonctions et EXECUTE revoque a **`public`, `anon`
+  ET `authenticated`** (migration `031` ; cf. la note de la `027` : sur une
+  fonction nouvelle, revoquer a `public` seul ne retire rien).
+
+> Pour verifier a tout moment qu'aucun doublon n'est passe : compter les
+> groupes ayant plus d'une fiche sur `file_hash`, sur `lower(btrim(email))`,
+> et sur le couple `cvtheque_tel9(telephone)` / `cvtheque_nom_cle(nom_complet)`.
+
 ## Observatoire de l'emploi (rubrique editoriale SEO)
 
 Rubrique `/observatoire` (hub) + `/observatoire/{slug}` (article) : analyses du marche du travail
