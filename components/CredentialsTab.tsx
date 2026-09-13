@@ -98,6 +98,39 @@ const CredentialsTab: React.FC = () => {
     }, 'Provisionnement terminé');
   };
 
+  // Identifiants au format « raison-sociale@… ». Rejouable : les comptes deja
+  // au bon format sont ecartes cote serveur, et ceux dont l'identifiant a deja
+  // ete envoye ne sont jamais touches.
+  const renommerIdentifiants = async () => {
+    if (!(await confirmer({
+      title: 'Mettre les identifiants au nom des entreprises ?',
+      message:
+        `Les identifiants techniques deviennent « raison-sociale@comptes.soussmassa-rh.com » `
+        + `(exemple : concentrix@… au lieu de c2026@…). Les mots de passe ne changent pas.\n\n`
+        + `Les entreprises dont les accès ont DÉJÀ été envoyés ne sont pas touchées : `
+        + `changer leur identifiant les empêcherait de se connecter.`,
+      confirmLabel: 'Renommer',
+    }))) return;
+    run(async () => {
+      let total = 0, tours = 0;
+      const erreurs: string[] = [];
+      for (;;) {
+        const r = await credentialsService.renameIds(25);
+        total += r.renommes || 0;
+        if (r.erreurs?.length) erreurs.push(...r.erreurs.map((e) => `${e.nom} : ${e.erreur}`));
+        tours += 1;
+        setProgress(`${total} identifiant(s) renommé(s)…`);
+        // Garde-fou de boucle : un lot qui ne renomme rien signale qu'il n'y a
+        // plus rien a faire, meme si le serveur annonce des restantes.
+        if (!r.restantes || r.renommes === 0 || tours > 20) break;
+      }
+      setProgress('');
+      toast.info(`${total} identifiant(s) renommé(s)`);
+      if (erreurs.length) console.error('Renommage :', erreurs);
+      return { total };
+    }, 'Identifiants mis à jour');
+  };
+
   const copier = async (txt: string, quoi: string) => {
     try { await navigator.clipboard.writeText(txt); toast.success(`${quoi} copié`); }
     catch { toast.info(txt); }
@@ -178,6 +211,14 @@ const CredentialsTab: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={renommerIdentifiants}
+              disabled={busy}
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50 disabled:opacity-50"
+              title="Remplace les identifiants techniques (c2026@…) par le nom de l'entreprise (concentrix@…)"
+            >
+              Identifiants au nom des entreprises
+            </button>
             <button
               onClick={() => setVoirRapport((v) => !v)}
               className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50"

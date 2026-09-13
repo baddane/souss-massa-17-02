@@ -56,9 +56,29 @@ export function corpsInvitation(d: InvitationData): string {
          Un espace recruteur vous est ouvert pour les gérer et recevoir les candidatures.
        </p>`;
 
-  const cvtheque = d.profilsCvtheque
-    ? `<li style="margin-bottom:6px">Consulter la CVthèque régionale et contacter les profils directement</li>`
-    : '';
+  // Les quatre onglets de l'espace entreprise, nommes comme ils apparaissent a
+  // l'ecran. Un recruteur qui ne sait pas ce qu'il va trouver derriere le lien
+  // ne clique pas : la liste doit decrire le service, pas le vanter.
+  const li = (titre: string, texte: string) =>
+    `<li style="margin-bottom:10px"><strong style="color:#111827">${titre}</strong><br>
+       <span style="color:#4b5563">${texte}</span></li>`;
+
+  const services = [
+    li('Candidatures',
+       `Toutes les candidatures reçues sur vos offres, avec le nom, le téléphone,
+        l'e-mail du candidat et <strong>son CV téléchargeable</strong>.`),
+    li('Mes offres',
+       `Publier une nouvelle annonce, corriger ou retirer une offre en ligne, à tout
+        moment et sans passer par nous. Chaque offre a sa page indexée sur Google.`),
+    d.profilsCvtheque
+      ? li('CVthèque régionale',
+           `${d.profilsCvtheque} profils du Souss-Massa, filtrables par métier, ville,
+            diplôme, compétence et années d'expérience — CV téléchargeables. Un bouton
+            « Profils correspondants » part de chaque offre et pré-filtre la recherche.`)
+      : '',
+    li('Mon compte',
+       `Changer votre mot de passe et mettre à jour vos coordonnées.`),
+  ].join('');
 
   // Presentation courte, factuelle et chiffree : elle doit tenir en deux
   // phrases. Au-dela, le lecteur decroche avant d'arriver a ce qui l'interesse.
@@ -111,15 +131,15 @@ export function corpsInvitation(d: InvitationData): string {
         </td></tr>
 
         <tr><td>
-          <p style="margin:0 0 8px;font-size:14px;color:#374151">Depuis votre espace, vous pouvez :</p>
-          <ul style="margin:0 0 18px;padding-left:20px;font-size:14px;color:#374151">
-            <li style="margin-bottom:6px">Lire les candidatures reçues et télécharger les CV</li>
-            <li style="margin-bottom:6px">Publier, modifier ou retirer vos offres</li>
-            ${cvtheque}
+          <p style="margin:0 0 10px;font-size:15px;font-weight:700;color:#111827">
+            Ce que vous trouverez dans votre espace recruteur
+          </p>
+          <ul style="margin:0 0 18px;padding-left:20px;font-size:14px;line-height:1.55;color:#374151">
+            ${services}
           </ul>
           <p style="margin:0 0 18px;font-size:14px;color:#374151">
-            Nous vous conseillons de changer votre mot de passe à la première connexion
-            (onglet « Mon compte »).
+            Tout cela est gratuit et sans engagement. Nous vous conseillons de changer votre
+            mot de passe à la première connexion (onglet « Mon compte »).
           </p>
         </td></tr>
 

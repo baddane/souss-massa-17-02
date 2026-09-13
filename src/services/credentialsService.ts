@@ -143,6 +143,17 @@ export const credentialsService = {
   /** Envoi groupe, par lots courts : voir `envoyerLot` cote serveur. */
   sendBatch: (limit = 5) => adminFetch({ mode: 'invite_all', limit }),
 
+  /**
+   * Passe les identifiants techniques au format « raison-sociale@… ».
+   * Ne touche JAMAIS un identifiant deja envoye : ce serait mettre
+   * l'entreprise dehors de son propre compte.
+   */
+  renameIds: (limit = 25) => adminFetch({ mode: 'rename_ids', limit }) as Promise<{
+    renommes: number; restantes: number; ignores_deja_envoyes: number;
+    details: { nom: string; ancien: string; nouveau: string }[];
+    erreurs: { nom: string; erreur: string }[];
+  }>,
+
   // --- Campagne pilotee depuis l'onglet Prospection -------------------------
   // Les cibles de prospection portent l'adresse trouvee a la main, differente
   // de l'identifiant de connexion (souvent technique). Le serveur resout la

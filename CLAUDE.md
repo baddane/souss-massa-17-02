@@ -631,9 +631,32 @@ la publie est fait par un **trigger** `job_offers_auto_claim` (BEFORE INSERT sur
 ### Identifiants techniques (migration `026`)
 
 170 des 177 entreprises n'ont pas d'adresse connue. Un compte Auth **est** une
-adresse email : sans elle, pas de login. On en fabrique donc une a partir des
-initiales et de l'annee — `BEST PROFIL` → `bp2026@comptes.soussmassa-rh.com` —
+adresse email : sans elle, pas de login. On en fabrique donc une **a partir de
+la raison sociale** — `CONCENTRIX` → `concentrix@comptes.soussmassa-rh.com` —
 avec suffixe numerique en cas de collision.
+
+> **Anciennement les initiales et l'annee** (`c2026@…`). Illisible : une
+> entreprise qui recoit ses acces doit reconnaitre son identifiant au premier
+> coup d'oeil puis le retaper sans se tromper, et `c2026` ne dit rien a personne.
+> Les 151 identifiants existants ont ete renommes (2026-09-13) ; bouton
+> **« Identifiants au nom des entreprises »** dans l'onglet Identifiants pour
+> rejouer l'operation.
+>
+> **`renommerIdentifiants()` ne touche JAMAIS un identifiant deja envoye**
+> (`envoye_le is null` obligatoire) : un identifiant communique est une cle que
+> l'entreprise detient, le renommer la met dehors de son propre compte. Il
+> n'ecrase pas non plus une **vraie** adresse par une adresse technique.
+>
+> **Nom non identifiable** (« Entreprise confidentielle », « xxxx ») :
+> identifiant **aleatoire** (`ent-<hex>`), jamais un slug — « Entreprise
+> confidentielle » couvre 68 offres d'employeurs differents, et un identifiant
+> partage donnerait a l'une les candidatures des autres.
+>
+> **Decoupage en lots** : les cibles sont calculees AVANT le decoupage, et
+> seules celles qui changent vraiment y entrent. Decouper d'abord puis sauter
+> les identifiants deja corrects bloquait la progression — les comptes deja
+> renommes remplissaient le lot et chaque appel suivant renommait zero compte
+> en annoncant qu'il en restait 126 (constate a l'usage, apres 47 renommages).
 
 > **Le sous-domaine `comptes.soussmassa-rh.com` n'existe pas volontairement** :
 > sans MX, un envoi echoue immediatement chez l'expediteur au lieu d'etre avale
@@ -706,6 +729,11 @@ entreprises cochees dans son tableau (`components/InvitationCampaignPanel.tsx`).
   l'envoi des que l'IDENTIFIANT etait technique — 145 entreprises restaient
   injoignables alors qu'on avait leur vraie adresse. Le controle porte donc
   maintenant sur la **destination**, jamais sur l'identifiant.
+- **Le message decrit les quatre onglets de l'espace recruteur**, nommes comme
+  ils apparaissent a l'ecran (Candidatures, Mes offres, CVtheque regionale avec
+  le nombre de profils, Mon compte). Un recruteur qui ne sait pas ce qu'il
+  trouvera derriere le lien ne clique pas : la liste decrit le service, elle ne
+  le vante pas.
 - **Le corps n'est pas un modele editable**, contrairement au « Message libre »
   du meme onglet : il contient un mot de passe. Le laisser saisir exposerait a
   envoyer un mot de passe errone (l'entreprise ne peut plus se connecter) ou

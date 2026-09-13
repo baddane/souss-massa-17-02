@@ -48,26 +48,48 @@ export function estEmailTechnique(email: string): boolean {
   return (email || '').toLowerCase().endsWith(`@${DOMAINE_TECHNIQUE}`);
 }
 
-// Identifiant fabrique a partir des initiales de la raison sociale et de
-// l'annee : « BEST PROFIL » -> bp2026@comptes.soussmassa-rh.com.
-// Les collisions sont inevitables (deux societes peuvent partager leurs
-// initiales) : un suffixe numerique est ajoute jusqu'a obtenir un identifiant
-// libre.
-function initiales(nom: string): string {
-  const mots = (nom || '')
+// Identifiant fabrique a partir de la RAISON SOCIALE :
+// « CONCENTRIX » -> concentrix@comptes.soussmassa-rh.com.
+//
+// Anciennement les initiales et l'annee (« c2026@... ») : illisible, et une
+// entreprise qui recoit ses acces par e-mail doit reconnaitre son identifiant
+// au premier coup d'oeil, puis le retaper sans se tromper. « c2026 » ne dit
+// rien a personne et se confond avec le compte d'une autre societe en « c ».
+const LOCAL_MAX = 40;   // au-dela, l'identifiant devient penible a recopier
+
+function slugEntreprise(nom: string): string {
+  return (nom || '')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^A-Za-z0-9 ]+/g, ' ')
-    .split(/\s+/).filter(Boolean);
-  const ini = mots.map((m) => m[0]).join('').toLowerCase().slice(0, 4);
-  return ini || 'ent';
+    .replace(/['\u2019.]/g, '')          // « S.A. » -> « sa », « L'Oasis » -> « loasis »
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-function emailTechnique(nom: string, pris: Set<string>): string {
-  const base = `${initiales(nom)}${new Date().getFullYear()}`;
+/** Tronque au dernier mot entier : « societe-regionale-multiservices-souss-ma »
+    couperait un mot en deux et se lirait comme une faute de frappe. */
+function tronquerAuMot(slug: string, max: number): string {
+  if (slug.length <= max) return slug;
+  const coupe = slug.slice(0, max);
+  const tiret = coupe.lastIndexOf('-');
+  return (tiret >= 12 ? coupe.slice(0, tiret) : coupe).replace(/-+$/, '');
+}
+
+function identifiantEntreprise(nom: string, pris: Set<string>): string {
+  const slug = nomProvisionnable(nom) ? tronquerAuMot(slugEntreprise(nom), LOCAL_MAX) : '';
+  const aleatoire = () => `ent-${randomBytes(5).toString('hex')}`;
+
+  // Nom non identifiable (« Entreprise confidentielle », « xxxx ») : un slug
+  // serait PARTAGE par plusieurs societes — « Entreprise confidentielle »
+  // couvre a elle seule 68 offres d'employeurs differents, et un identifiant
+  // commun donnerait a l'une les candidatures des autres. On tire donc un
+  // identifiant aleatoire, unique par construction.
+  let base = slug.length >= 3 ? slug : aleatoire();
   let candidat = `${base}@${DOMAINE_TECHNIQUE}`;
   let n = 2;
   while (pris.has(candidat.toLowerCase())) {
-    candidat = `${base}-${n}@${DOMAINE_TECHNIQUE}`;
+    base = slug.length >= 3 ? `${slug}-${n}` : aleatoire();
+    candidat = `${base}@${DOMAINE_TECHNIQUE}`;
     n += 1;
   }
   pris.add(candidat.toLowerCase());
@@ -242,6 +264,78 @@ async function changerEmail(ctx: Ctx, companyId: string, nouvelEmail: string) {
     body: JSON.stringify({ email, email_fictif: estEmailTechnique(email) }),
   });
   return { company_id: companyId, email, email_fictif: estEmailTechnique(email), statut: 'identifiant mis à jour' };
+}
+
+/**
+ * Renomme les identifiants techniques au format « raison-sociale@... ».
+ *
+ * NE TOUCHE QUE LES IDENTIFIANTS JAMAIS ENVOYES (`envoye_le is null`). Un
+ * identifiant deja communique a une entreprise est une cle qu'elle detient :
+ * le renommer la met dehors de son propre compte, sans qu'elle comprenne
+ * pourquoi. C'est le seul garde-fou qui compte ici, et il ne doit pas etre
+ * assoupli.
+ *
+ * Les identifiants REELS (vraie adresse de l'entreprise) ne sont pas concernes
+ * non plus : on ne remplace jamais une adresse qui fonctionne par une adresse
+ * technique.
+ *
+ * Par lots : chaque renommage fait trois appels HTTP (Auth + deux tables), et
+ * une fonction serverless a une duree maximale.
+ */
+async function renommerIdentifiants(ctx: Ctx, limite: number) {
+  const plafond = Math.max(1, Math.min(limite || 25, 60));
+
+  const [ccRes, ceRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/company_credentials?select=company_id,email,envoye_le`, { headers: ctx.sb }),
+    fetch(`${SUPABASE_URL}/rest/v1/comptes_entreprise?select=id,nom_entreprise`, { headers: ctx.sb }),
+  ]);
+  const creds = (await ccRes.json()) as { company_id: string; email: string; envoye_le: string | null }[];
+  const noms = new Map(((await ceRes.json()) as { id: string; nom_entreprise: string }[])
+    .map((c) => [c.id, c.nom_entreprise]));
+
+  // Tous les identifiants existants, envoyes ou non, alimentent le jeu des
+  // noms deja pris : un renommage ne doit pas percuter un compte intact.
+  const pris = new Set(creds.map((c) => (c.email || '').toLowerCase()));
+
+  const candidats = creds.filter((c) =>
+    estEmailTechnique(c.email) && !c.envoye_le && noms.get(c.company_id));
+
+  // On calcule l'identifiant cible de TOUS les candidats AVANT de decouper le
+  // lot, puis on ne garde que ceux qui changent vraiment.
+  //
+  // Decouper d'abord et sauter ensuite les identifiants deja corrects bloquait
+  // la progression : les comptes deja renommes restaient en tete de file et
+  // remplissaient le lot, chaque appel suivant renommait zero compte en
+  // rapportant qu'il en restait 126. Constate a l'usage, apres 47 renommages.
+  const aRenommer: { company_id: string; nom: string; ancien: string; nouveau: string }[] = [];
+  for (const c of candidats) {
+    const nom = noms.get(c.company_id) as string;
+    pris.delete((c.email || '').toLowerCase());     // son propre nom se libere
+    const nouveau = identifiantEntreprise(nom, pris);
+    if (nouveau.toLowerCase() === (c.email || '').toLowerCase()) continue;
+    aRenommer.push({ company_id: c.company_id, nom, ancien: c.email, nouveau });
+  }
+
+  const lot = aRenommer.slice(0, plafond);
+  const faits: { company_id: string; nom: string; ancien: string; nouveau: string }[] = [];
+  const erreurs: { company_id: string; nom: string; erreur: string }[] = [];
+
+  for (const c of lot) {
+    try {
+      await changerEmail(ctx, c.company_id, c.nouveau);
+      faits.push(c);
+    } catch (e: any) {
+      erreurs.push({ company_id: c.company_id, nom: c.nom, erreur: String(e?.message || e).slice(0, 200) });
+    }
+  }
+
+  return {
+    renommes: faits.length,
+    details: faits,
+    erreurs,
+    restantes: Math.max(0, aRenommer.length - lot.length),
+    ignores_deja_envoyes: creds.filter((c) => estEmailTechnique(c.email) && c.envoye_le).length,
+  };
 }
 
 // Acces d'une entreprise deja presente sur la plateforme : collecte, apercu,
@@ -644,6 +738,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
     if (!autorise) return json(403, { error: 'Réservé à l’administrateur' });
 
+    if (body.mode === 'rename_ids') {
+      return json(200, { ok: true, ...(await renommerIdentifiants(ctx, Number(body.limit) || 25)) });
+    }
+
     // --- Campagne depuis l'onglet Prospection -------------------------------
     // L'apercu et le test ne touchent a rien ; seul `invite_targets` envoie.
     if (body.mode === 'preview_target') {
@@ -731,7 +829,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         .map((e) => {
           const connu = emailsConnus.get(e.raison_sociale.toLowerCase());
           if (connu) { pris.add(connu.email.toLowerCase()); return { ...e, email: connu.email }; }
-          return { ...e, email: emailTechnique(e.raison_sociale, pris) };
+          return { ...e, email: identifiantEntreprise(e.raison_sociale, pris) };
         });
 
       // TRAITEMENT PAR LOTS. Chaque entreprise demande cinq appels HTTP
