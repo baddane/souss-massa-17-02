@@ -379,9 +379,27 @@ async function envoyerInvitation(ctx: Ctx, companyId: string) {
  */
 async function envoyerLot(ctx: Ctx, limite: number) {
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/company_credentials?select=company_id,email,envoye_le&envoye_le=is.null&email_fictif=is.false&order=created_at.asc`,
+    `${SUPABASE_URL}/rest/v1/company_credentials?select=company_id&envoye_le=is.null&email_fictif=is.false`,
     { headers: ctx.sb });
   const cibles = (await r.json()) as { company_id: string }[];
+
+  // Priorite au nombre de candidatures en attente, et non a l'ordre de creation
+  // des comptes : c'est la l'urgence. Constate a l'usage — un premier lot trie
+  // par date a contacte deux entreprises a 0 candidature avant BEST PROFIL, qui
+  // en avait 34 qui dormaient.
+  const parOffre = new Map<string, number>();
+  const oRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/job_offers?select=company_id,ref_offre&company_id=not.is.null`, { headers: ctx.sb });
+  const offres = (await oRes.json()) as { company_id: string; ref_offre: string }[];
+  const cRes = await fetch(`${SUPABASE_URL}/rest/v1/candidatures?select=job_ref`, { headers: ctx.sb });
+  const cands = (await cRes.json()) as { job_ref: string }[];
+  const parRef = new Map<string, number>();
+  for (const c of cands) parRef.set(c.job_ref, (parRef.get(c.job_ref) || 0) + 1);
+  for (const o of offres) {
+    parOffre.set(o.company_id, (parOffre.get(o.company_id) || 0) + (parRef.get(o.ref_offre) || 0));
+  }
+  cibles.sort((a, b) => (parOffre.get(b.company_id) || 0) - (parOffre.get(a.company_id) || 0));
+
   const aTraiter = cibles.slice(0, Math.max(1, Math.min(limite || 5, 25)));
 
   const envoyes: any[] = [];
