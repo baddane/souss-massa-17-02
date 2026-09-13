@@ -54,16 +54,30 @@ async function provisionnerComptes() {
     return;
   }
   const base = process.env.SITE_URL || 'https://www.soussmassa-rh.com';
+  // ENCHAINER LES LOTS. L'endpoint borne chaque appel a 20 entreprises (une
+  // fonction serverless a une duree maximale) et renvoie `restantes`. Un appel
+  // unique ne provisionnait donc que les 20 premieres : apres un import qui
+  // amene 40 nouveaux employeurs, la moitie restait sans compte, sans que rien
+  // ne le signale.
+  let crees = 0, ignorees = 0, tours = 0;
   try {
-    const res = await fetch(`${base}/api/provision-companies`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
-      body: JSON.stringify({ mode: 'auto' }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) { console.warn(`\nProvisionnement des comptes : HTTP ${res.status} ${(body && body.error) || ''}`); return; }
-    console.log(`\nComptes employeurs : ${body.provisionnees || 0} cree(s), ${(body.ignorees || []).length} ignore(s).`);
-    for (const e of body.erreurs || []) console.warn('  ' + e);
+    for (;;) {
+      const res = await fetch(`${base}/api/provision-companies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ mode: 'auto' }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { console.warn(`\nProvisionnement des comptes : HTTP ${res.status} ${(body && body.error) || ''}`); return; }
+      crees += body.provisionnees || 0;
+      ignorees += (body.ignorees || []).length;
+      for (const e of body.erreurs || []) console.warn('  ' + e);
+      tours += 1;
+      // `examinees === 0` autant que `restantes` : sans cette seconde condition,
+      // un lot entierement ignore (noms non identifiables) tournerait en boucle.
+      if (!body.restantes || body.examinees === 0 || tours > 40) break;
+    }
+    console.log(`\nComptes employeurs : ${crees} cree(s), ${ignorees} ignore(s), en ${tours} lot(s).`);
   } catch (e) {
     console.warn('\nProvisionnement des comptes injoignable :', e.message);
   }

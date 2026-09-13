@@ -1083,6 +1083,57 @@ Onglet **Prospection** dans `pages/Admin.tsx` : liste des employeurs presents vi
   ajouter `BREVO_API_KEY` dans **Vercel** (Settings → Environment Variables). Plan gratuit
   Brevo = ~300 envois/jour. Modeles d'e-mail/message : `MARKETING_OUTREACH.md`.
 
+### Les offres scrapees alimentent la campagne (migrations `033` / `034`)
+
+Une offre nouvellement importee doit parcourir toute la chaine sans
+intervention : **cible de prospection → compte → identifiant lisible → offres
+rattachees**. Deux maillons manquaient.
+
+**1. `outreach_targets` n'etait plus alimentee.** Remplie une fois depuis
+`job_offers`, rien ne la mettait a jour. Constat du 2026-09-13 : **27
+employeurs** avec des offres en ligne etaient absents de l'onglet Prospection,
+dont des imports du jour meme. Invisibles la, ils sont hors de la campagne :
+ni compte, ni identifiants, ni invitation — tout le scraping cessait
+d'alimenter le seul canal qui le valorise.
+
+Corrige par le **trigger `outreach_sync_offre`** (AFTER INSERT sur
+`job_offers`), et non par un rappel HTTP, pour la raison de la `027` : le
+rappel exige `CRON_SECRET` et, sans lui, abandonne silencieusement.
+
+- Ne traite que les offres **`active` et sans `company_id`** : une offre
+  deposee par une entreprise inscrite n'a rien a faire en prospection.
+- **Noms non identifiables exclus** (`nom_entreprise_identifiable`, memes
+  exclusions que `nomProvisionnable`) : « Entreprise confidentielle » couvre a
+  elle seule 112 offres d'employeurs differents.
+- `on conflict (slug) do update` ne touche **que les compteurs** : `statut`,
+  `email`, `date_contact` et `notes` sont le travail de l'admin — une nouvelle
+  offre ne doit pas repasser en « a contacter » une entreprise deja contactee.
+- Un compte existant empeche la **creation** d'une ligne, **jamais la mise a
+  jour** d'une ligne existante (migration `034`) : la campagne d'acces vise
+  justement les entreprises qui ont un compte sans le savoir, et l'admin y
+  trie par nombre de postes. La `033` figeait ces compteurs.
+- `exception when others then return new` : **ne jamais faire echouer un import**
+  a cause de la liste de prospection.
+- `outreach_slug()` doit rester equivalent a `slugify()` de `components/SEO.tsx`
+  et `slugifyCompany()` de `api/prerender.ts` — sinon la cible pointe vers une
+  page `/recrutement/{slug}` inexistante.
+
+**2. `scripts/insert-offers.cjs` ne provisionnait qu'un lot.** L'endpoint borne
+chaque appel a 20 entreprises et renvoie `restantes` ; le script appelait une
+seule fois. Apres un import amenant 40 nouveaux employeurs, la moitie restait
+sans compte sans que rien ne le signale. Le script **enchaine desormais les
+lots** (garde-fou `examinees === 0` en plus de `restantes` : un lot entierement
+ignore tournerait en boucle).
+
+> **Verifie de bout en bout** sur un employeur de test insere en role `anon`
+> (comme le fait l'import), puis supprime : cible de prospection creee avec le
+> bon slug et les bons compteurs → compte provisionne
+> (`zitoune-agro-services@comptes.soussmassa-rh.com`) → 2 offres sur 2
+> rattachees → cible passee a « inscrit » → **connexion de l'entreprise
+> reussie**. Noms anonymes (« Entreprise confidentielle », « xxxx ») : non
+> ajoutes. Entreprise deja contactee : compteurs a jour, `statut` et `email`
+> intacts.
+
 ## Securite (RLS, donnees candidats, auth admin)
 
 Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc
