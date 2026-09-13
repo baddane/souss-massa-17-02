@@ -998,6 +998,15 @@ Onglet **Prospection** dans `pages/Admin.tsx` : liste des employeurs presents vi
   Pre-remplie depuis `job_offers` (statut='active'), regroupee par slug entreprise, emails vides.
 - **Service** : `src/services/outreachService.ts` (`list`, `update`, `importEmails`, `send`).
   L'admin saisit les emails a la main (inline) ou en masse (`Nom;email` par ligne).
+- **Tri : les entreprises joignables en tete** (`rangEmail` dans `list`) — adresse
+  exploitable, puis adresse saisie mais invalide (celles a corriger, qui sinon se
+  perdraient parmi les 150 sans adresse), puis les autres. `EMAIL_RE` est exporte et
+  reutilise par `pages/Admin.tsx` : **une seule** definition decide du tri, de la case
+  a cocher et de l'envoi. Le tri est fait dans `list()` et **jamais dans le rendu** :
+  la saisie d'un e-mail met a jour `outItems` a chaque frappe, un tri au rendu ferait
+  remonter la ligne en cours d'edition sous le curseur des le premier caractere.
+  Le tri de JavaScript etant stable, l'ordre postes / nb_offres est conserve dans
+  chaque rang. L'onglet s'ouvre filtre sur `a_contacter` (`outFilter` par defaut).
 - **Envoi** : serverless `api/send-outreach.ts` → **Brevo transactional API**
   (`https://api.brevo.com/v3/smtp/email`). Expediteur `contact@soussmassa-rh.com`
   (surchargeable via `BREVO_SENDER_EMAIL`/`BREVO_SENDER_NAME`). Jetons `{entreprise}`,

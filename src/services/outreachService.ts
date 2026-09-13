@@ -24,6 +24,19 @@ export const OUTREACH_STATUTS: { value: OutreachTarget['statut']; label: string;
 
 const SELECT = 'id,created_at,raison_sociale,slug,ville,nb_offres,postes,email,statut,date_contact,notes';
 
+export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// Rang d'affichage : les entreprises joignables d'abord.
+//   0 = e-mail exploitable (les seules cochables, donc les seules envoyables)
+//   1 = e-mail saisi mais invalide — ce sont celles a corriger, elles ne
+//       doivent pas se perdre en bas de liste avec les 160 sans adresse
+//   2 = aucune adresse
+const rangEmail = (t: OutreachTarget): number => {
+  const e = (t.email || '').trim();
+  if (!e) return 2;
+  return EMAIL_RE.test(e) ? 0 : 1;
+};
+
 export const outreachService = {
   async list(): Promise<OutreachTarget[]> {
     const { data, error } = await supabaseOffers
@@ -32,7 +45,13 @@ export const outreachService = {
       .order('postes', { ascending: false })
       .order('nb_offres', { ascending: false });
     if (error) { console.error('outreach.list', error); return []; }
-    return (data || []) as OutreachTarget[];
+
+    // Tri fait ICI et non dans le rendu : la saisie d'un e-mail met a jour la
+    // liste a chaque frappe, et un tri au rendu ferait remonter la ligne en
+    // cours d'edition des le premier caractere, sous le curseur de l'admin.
+    // Le tri de JavaScript est stable : l'ordre postes / nb_offres renvoye par
+    // la base est conserve a l'interieur de chaque rang.
+    return ((data || []) as OutreachTarget[]).sort((a, b) => rangEmail(a) - rangEmail(b));
   },
 
   async update(id: string, patch: Partial<OutreachTarget>): Promise<boolean> {

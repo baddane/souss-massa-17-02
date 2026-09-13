@@ -11,7 +11,7 @@ import { useConfirm } from '../src/hooks/useConfirm';
 import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
-import { outreachService, OutreachTarget, OUTREACH_STATUTS } from '../src/services/outreachService';
+import { outreachService, OutreachTarget, OUTREACH_STATUTS, EMAIL_RE } from '../src/services/outreachService';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -385,7 +385,7 @@ const Admin: React.FC = () => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
   const selectAllOut = () => {
-    const selectable = outVisible.filter(t => t.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.email));
+    const selectable = outVisible.filter(t => t.email && EMAIL_RE.test(t.email));
     const allSel = selectable.length > 0 && selectable.every(t => outSel.has(t.id));
     setOutSel(allSel ? new Set() : new Set(selectable.map(t => t.id)));
   };
@@ -1614,7 +1614,7 @@ const Admin: React.FC = () => {
                 </thead>
                 <tbody>
                   {outVisible.map((t) => {
-                    const validEmail = !!t.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t.email);
+                    const validEmail = !!t.email && EMAIL_RE.test(t.email);
                     return (
                       <tr key={t.id} className="border-t border-gray-100 hover:bg-gray-50">
                         <td className="p-3 text-center">
