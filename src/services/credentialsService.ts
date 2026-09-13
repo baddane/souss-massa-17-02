@@ -116,6 +116,17 @@ export const credentialsService = {
   setEmail: (companyId: string, email: string) =>
     adminFetch({ mode: 'email', company_id: companyId, email }),
 
+  // Compose le message sans l'envoyer : un envoi a une entreprise reelle est
+  // irreversible, on doit pouvoir le relire d'abord.
+  previewInvitation: (companyId: string) =>
+    adminFetch({ mode: 'preview', company_id: companyId }) as Promise<{
+      destinataire: string; nom_entreprise: string; candidatures: number;
+      offres: number; deja_envoye_le: string | null; sujet: string; html: string;
+    }>,
+
+  sendInvitation: (companyId: string) =>
+    adminFetch({ mode: 'invite', company_id: companyId }),
+
   // Correction de la fiche entreprise par l'admin (policy `ce_update`).
   // Le nom compte double : c'est sur lui que le trigger `job_offers_auto_claim`
   // rattache les offres importees. Le corriger, c'est aussi reparer les

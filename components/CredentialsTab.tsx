@@ -28,6 +28,13 @@ const CredentialsTab: React.FC = () => {
   const [form, setForm] = useState({ raison_sociale: '', email: '', ville: '' });
   const [progress, setProgress] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
+  // Apercu du message d'invitation : on le lit avant d'envoyer, un envoi a une
+  // entreprise reelle ne se rattrape pas.
+  const [apercu, setApercu] = useState<null | {
+    company_id: string; destinataire: string; nom_entreprise: string;
+    candidatures: number; offres: number; deja_envoye_le: string | null;
+    sujet: string; html: string;
+  }>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -238,6 +245,22 @@ const CredentialsTab: React.FC = () => {
                         >
                           Mot de passe
                         </button>
+                        {!r.email_fictif && (
+                          <button
+                            onClick={async () => {
+                              setBusy(true);
+                              try {
+                                const p = await credentialsService.previewInvitation(r.company_id);
+                                setApercu({ ...p, company_id: r.company_id });
+                              } catch (e: any) { toast.error(e?.message || 'Aperçu impossible'); }
+                              finally { setBusy(false); }
+                            }}
+                            disabled={busy}
+                            className="text-xs px-2.5 py-1.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            Envoyer les accès
+                          </button>
+                        )}
                         <button
                           onClick={() => run(() => credentialsService.markSent(r.company_id), 'Marqué comme envoyé')}
                           disabled={busy}
@@ -276,6 +299,63 @@ const CredentialsTab: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Aperçu avant envoi : le message exact que recevra l'entreprise. */}
+      {apercu && (
+        <div className="fixed inset-0 z-[150] bg-black/50 flex items-center justify-center p-3"
+          role="dialog" aria-modal="true" aria-label="Aperçu du message"
+          onClick={() => setApercu(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-full flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900">Aperçu — {apercu.nom_entreprise}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 break-all">
+                    À : {apercu.destinataire} · {apercu.candidatures} candidature(s) · {apercu.offres} offre(s) en ligne
+                  </p>
+                </div>
+                <button onClick={() => setApercu(null)} aria-label="Fermer"
+                  className="w-8 h-8 shrink-0 rounded-lg bg-gray-100 hover:bg-gray-200 text-xl leading-none">×</button>
+              </div>
+              <p className="text-sm text-gray-800 mt-2"><span className="text-gray-400">Objet :</span> {apercu.sujet}</p>
+              {apercu.deja_envoye_le && (
+                <p className="mt-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                  Déjà envoyé le {new Date(apercu.deja_envoye_le).toLocaleDateString('fr-FR')} — un nouvel envoi fera doublon.
+                </p>
+              )}
+            </div>
+
+            {/* `srcDoc` et non `innerHTML` : le message est du HTML d'e-mail
+                complet, avec ses propres styles. L'iframe l'isole de la page. */}
+            <iframe title="Aperçu du message" srcDoc={apercu.html}
+              className="flex-1 w-full min-h-[380px] bg-gray-50" sandbox="" />
+
+            <div className="flex flex-wrap items-center gap-2 p-3 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={async () => {
+                  if (!(await confirmer({
+                    title: 'Envoyer maintenant ?',
+                    message: `Le message part immédiatement à ${apercu.destinataire}. Un e-mail envoyé ne se rappelle pas.`,
+                    confirmLabel: 'Envoyer',
+                  }))) return;
+                  const id = apercu.company_id;
+                  setApercu(null);
+                  run(() => credentialsService.sendInvitation(id), 'Accès envoyés');
+                }}
+                disabled={busy}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                Envoyer pour de vrai
+              </button>
+              <button onClick={() => setApercu(null)}
+                className="px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm hover:bg-gray-50">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

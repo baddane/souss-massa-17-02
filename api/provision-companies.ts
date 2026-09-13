@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
+import { sendBrevoEmail, estAdresseTechnique } from './_brevo.js';
+import { corpsInvitation, sujetInvitation } from './_invitation.js';
 
 // Provisionne des comptes entreprise prets a l'emploi pour les societes qui
 // recrutent deja sur la plateforme, et leur rattache leurs offres existantes.
@@ -242,6 +244,103 @@ async function changerEmail(ctx: Ctx, companyId: string, nouvelEmail: string) {
   return { company_id: companyId, email, email_fictif: estEmailTechnique(email), statut: 'identifiant mis à jour' };
 }
 
+// Acces d'une entreprise deja presente sur la plateforme : collecte, apercu,
+// envoi.
+//
+// Le compteur de candidatures n'est pas decoratif : c'est l'argument du message,
+// et il doit etre EXACT. On le recalcule cote serveur plutot que de le faire
+// passer par le client — un chiffre annonce a une entreprise puis dementi par
+// son tableau de bord detruirait la credibilite de toute la campagne.
+async function collecterInvitation(ctx: Ctx, companyId: string) {
+  const [ceRes, ccRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/comptes_entreprise?id=eq.${companyId}&select=id,nom_entreprise,ville,email,statut`, { headers: ctx.sb }),
+    fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}&select=email,mot_de_passe,envoye_le`, { headers: ctx.sb }),
+  ]);
+  const ce = (await ceRes.json())[0];
+  const cc = (await ccRes.json())[0];
+  if (!ce) throw new Error('Compte introuvable');
+  if (!cc?.mot_de_passe) throw new Error("Ce compte n'a pas de mot de passe enregistré : regénérez-le d'abord.");
+  if (ce.statut !== 'valide') throw new Error(`Compte au statut « ${ce.statut} » : validez-le avant d'envoyer ses accès.`);
+  // `sendBrevoEmail` refuse deja ces adresses ; on verifie ici pour rendre
+  // l'erreur explicite plutot que generique, et des l'apercu.
+  if (estAdresseTechnique(ce.email)) {
+    throw new Error("Identifiant technique : renseignez d'abord la vraie adresse de l'entreprise.");
+  }
+
+  const offresRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/job_offers?company_id=eq.${companyId}&select=ref_offre,statut`, { headers: ctx.sb });
+  const offres = (await offresRes.json()) as { ref_offre: string; statut: string }[];
+
+  const compter = async (url: string) => {
+    const r = await fetch(url, { headers: { ...ctx.sb, Prefer: 'count=exact', Range: '0-0' } });
+    return Number((r.headers.get('content-range') || '').split('/')[1] || 0);
+  };
+
+  let candidatures = 0;
+  const refs = Array.from(new Set(offres.map((o) => o.ref_offre).filter(Boolean)));
+  if (refs.length) {
+    const liste = refs.map((r) => `"${String(r).replace(/"/g, '')}"`).join(',');
+    candidatures = await compter(
+      `${SUPABASE_URL}/rest/v1/candidatures?job_ref=in.(${encodeURIComponent(liste)})&select=id`);
+  }
+  const profils = await compter(
+    `${SUPABASE_URL}/rest/v1/cvtheque?select=id&visible_recruteurs=is.true`);
+
+  return {
+    ce,
+    envoye_le: cc.envoye_le as string | null,
+    data: {
+      nomEntreprise: ce.nom_entreprise as string,
+      ville: ce.ville as string | null,
+      email: (cc.email || ce.email) as string,
+      motDePasse: cc.mot_de_passe as string,
+      candidatures,
+      offres: offres.filter((o) => o.statut === 'active').length,
+      profilsCvtheque: profils,
+    },
+  };
+}
+
+/** Compose le message SANS RIEN ENVOYER : un envoi reel est irreversible. */
+async function previsualiserInvitation(ctx: Ctx, companyId: string) {
+  const { ce, envoye_le, data } = await collecterInvitation(ctx, companyId);
+  return {
+    destinataire: ce.email,
+    nom_entreprise: data.nomEntreprise,
+    candidatures: data.candidatures,
+    offres: data.offres,
+    deja_envoye_le: envoye_le,
+    sujet: sujetInvitation(data),
+    html: corpsInvitation(data),
+  };
+}
+
+async function envoyerInvitation(ctx: Ctx, companyId: string) {
+  const { ce, data } = await collecterInvitation(ctx, companyId);
+
+  await sendBrevoEmail({
+    to: ce.email,
+    toName: data.nomEntreprise,
+    subject: sujetInvitation(data),
+    html: corpsInvitation(data),
+    replyTo: 'contact@soussmassa-rh.com',
+    tags: ['invitation-entreprise'],
+  });
+
+  // Date d'envoi posee APRES l'envoi : si Brevo echoue, l'entreprise reste
+  // dans la liste des a-contacter plutot que d'etre marquee a tort comme
+  // traitee — l'inverse ferait disparaitre une cible sans qu'on le sache.
+  await fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}`, {
+    method: 'PATCH', headers: { ...ctx.sb, Prefer: 'return=minimal' },
+    body: JSON.stringify({ envoye_le: new Date().toISOString() }),
+  });
+
+  return {
+    company_id: companyId, email: ce.email, nom_entreprise: data.nomEntreprise,
+    candidatures: data.candidatures, offres: data.offres, statut: 'accès envoyés',
+  };
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const json = (status: number, obj: unknown) => {
     res.statusCode = status;
@@ -274,6 +373,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       autorise = r.ok && (await r.json()) === true;
     }
     if (!autorise) return json(403, { error: 'Réservé à l’administrateur' });
+
+    // Mode « apercu » : compose le message SANS RIEN ENVOYER, pour pouvoir le
+    // relire avant une campagne. Un envoi a des entreprises reelles est
+    // irreversible ; pouvoir verifier le rendu exact ne coute rien.
+    if (body.mode === 'preview' || body.mode === 'invite') {
+      if (!body.company_id) return json(400, { error: 'company_id requis' });
+      if (body.mode === 'invite') {
+        return json(200, { ok: true, ...(await envoyerInvitation(ctx, String(body.company_id))) });
+      }
+      const apercu = await previsualiserInvitation(ctx, String(body.company_id));
+      return json(200, { ok: true, ...apercu });
+    }
 
     if (body.mode === 'email') {
       if (!body.company_id || !body.email) return json(400, { error: 'company_id et email requis' });
