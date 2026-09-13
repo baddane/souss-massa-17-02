@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useConfirm } from '../src/hooks/useConfirm';
 import { toast } from 'react-toastify';
 import { credentialsService, type CompanyCredential } from '../src/services/credentialsService';
 import CompanyEditPanel from './CompanyEditPanel';
@@ -17,6 +18,7 @@ import CompanyEditPanel from './CompanyEditPanel';
 // afficher un mot de passe qui ne fonctionne pas.
 
 const CredentialsTab: React.FC = () => {
+  const confirmer = useConfirm();
   const [rows, setRows] = useState<CompanyCredential[]>([]);
   const [pending, setPending] = useState<{ raison_sociale: string; offres: number; ville: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,13 +53,16 @@ const CredentialsTab: React.FC = () => {
     finally { setBusy(false); }
   };
 
-  const provisionAll = () => {
-    if (!window.confirm(
-      `Créer un compte pour chaque entreprise ayant des offres en ligne et pas encore de compte ?\n\n` +
-      `${pending.length} entreprise(s) concernée(s). Chaque compte reçoit un mot de passe généré et ` +
-      `récupère ses offres existantes. Les noms non identifiables (« Entreprise confidentielle », « xxxx »…) ` +
-      `sont ignorés : ils recouvrent plusieurs sociétés.`,
-    )) return;
+  const provisionAll = async () => {
+    if (!(await confirmer({
+      title: 'Créer les comptes manquants ?',
+      message:
+        `${pending.length} entreprise(s) ont des offres en ligne et pas encore de compte. ` +
+        `Chaque compte reçoit un mot de passe généré et récupère ses offres existantes.\n\n` +
+        `Les noms non identifiables (« Entreprise confidentielle », « xxxx »…) sont ignorés : ` +
+        `ils recouvrent plusieurs sociétés.`,
+      confirmLabel: 'Créer les comptes',
+    }))) return;
     // Enchaine les lots jusqu'a epuisement : une seule requete pour 170
     // entreprises depasserait la duree maximale d'une fonction serverless.
     run(async () => {

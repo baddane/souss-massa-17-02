@@ -25,6 +25,7 @@ import CompanyJobs from './pages/CompanyJobs';
 import CityJobs from './pages/CityJobs';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
+import { ConfirmProvider } from './src/hooks/useConfirm';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -82,9 +83,12 @@ const App: React.FC = () => {
   return (
     <HelmetProvider>
       <LanguageProvider>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
+        {/* A l'interieur de LanguageProvider : la modale de confirmation est traduite. */}
+        <ConfirmProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </ConfirmProvider>
       </LanguageProvider>
     </HelmetProvider>
   );

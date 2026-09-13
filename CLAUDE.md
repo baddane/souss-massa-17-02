@@ -776,6 +776,35 @@ Rouvrir = repasser le booleen a `true`. Seule exception, a rebasculer a la
 main : `/inscription-candidat` dans `api/sitemap.ts`, car `api/` est resolu a
 l'execution et ne peut pas importer `src/`.
 
+## Confirmations : `src/hooks/useConfirm.tsx`, jamais `window.confirm`
+
+Les 14 `confirm()` natifs ont ete remplaces par une modale maison
+(`ConfirmProvider` monte dans `App.tsx`, **a l'interieur de `LanguageProvider`**
+puisqu'elle est traduite). Trois raisons :
+
+- `confirm()` **gele le fil principal** tant que l'utilisateur n'a pas repondu.
+  Les outils de mesure (INP de Vercel) comptent ce temps de reflexion humain
+  comme un blocage — d'ou les alertes « Event handlers on this element blocked
+  UI updates for 1 723 ms » sur un simple bouton « Supprimer » ;
+- il **n'est pas traduisible** : un visiteur en arabe voyait une boite en
+  francais, avec des boutons dans la langue de son navigateur ;
+- il ignore la charte du site.
+
+L'API garde la forme de `confirm` pour que tout remplacement reste mecanique :
+
+```ts
+const confirmer = useConfirm();
+if (!(await confirmer({ message: '...', danger: true }))) return;
+```
+
+`danger: true` = bouton rouge et libelle « Supprimer » par defaut. `Echap`, le
+clic sur le voile et « Annuler » renvoient `false` ; le focus part sur le bouton
+d'action, comme dans la boite native. Cles i18n : `confirm.*` (3 langues).
+
+> Les `alert()` de `pages/Admin.tsx` n'ont **pas** ete convertis : ce sont des
+> messages de resultat, pas des questions, et l'admin n'est pas traduit. Ils
+> restent bloquants — a reprendre si le sujet revient.
+
 ## Parcours d'inscription (principe : 0 friction)
 
 **Regle** : ne jamais demander un compte avant d'avoir rendu le service. Le

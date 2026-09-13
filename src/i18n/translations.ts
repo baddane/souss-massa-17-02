@@ -40,6 +40,10 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.expand': 'Déplier le menu',
     'cvt.backToList': 'Retour à la liste',
     'apply.close': 'Fermer',
+    'confirm.title': 'Confirmer l\u2019action',
+    'confirm.ok': 'Confirmer',
+    'confirm.cancel': 'Annuler',
+    'confirm.delete': 'Supprimer',
     'nav.menu': 'Menu',
     'nav.language': 'Langue',
 
@@ -551,6 +555,10 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.expand': 'Expand menu',
     'cvt.backToList': 'Back to list',
     'apply.close': 'Close',
+    'confirm.title': 'Confirm action',
+    'confirm.ok': 'Confirm',
+    'confirm.cancel': 'Cancel',
+    'confirm.delete': 'Delete',
     'nav.menu': 'Menu',
     'nav.language': 'Language',
 
@@ -1051,6 +1059,10 @@ export const translations: Record<Lang, Dict> = {
     'dash.menu.expand': 'توسيع القائمة',
     'cvt.backToList': 'العودة إلى اللائحة',
     'apply.close': 'إغلاق',
+    'confirm.title': 'تأكيد الإجراء',
+    'confirm.ok': 'تأكيد',
+    'confirm.cancel': 'إلغاء',
+    'confirm.delete': 'حذف',
     'nav.menu': 'القائمة',
     'nav.language': 'اللغة',
 

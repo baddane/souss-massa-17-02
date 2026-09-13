@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { useT, cityLabel, contractLong } from '../src/i18n/LanguageContext';
+import { useConfirm } from '../src/hooks/useConfirm';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import { companyAuth, companyService, CompanyProfile, CandidatureRow, CandidatureStatus, CANDIDATURE_STATUSES, candidatureStatusKey } from '../src/services/companyService';
 import { cvthequeService } from '../src/services/cvthequeService';
@@ -35,6 +36,7 @@ const CompanyDashboard: React.FC = () => {
   const [savingPw, setSavingPw] = useState(false);
   const [tab, setTab] = useState<Tab>('offres');
   const [menuMobile, setMenuMobile] = useState(false);
+  const confirmer = useConfirm();
   // Vue detail de la CVtheque sur mobile : le bandeau de statistiques et le
   // rappel des candidatures s'effacent, sinon ils repoussent le CV hors du
   // premier ecran.
@@ -181,7 +183,7 @@ const CompanyDashboard: React.FC = () => {
 
   // Retrait / remise en validation d'une offre.
   const changeOfferStatus = async (o: any, statut: 'retire' | 'en_attente') => {
-    if (statut === 'retire' && !confirm(t('company.offer.withdrawConfirm'))) return;
+    if (statut === 'retire' && !(await confirmer({ message: t('company.offer.withdrawConfirm'), danger: true, confirmLabel: t('company.offer.withdraw') }))) return;
     try {
       await companyService.setMyOfferStatus(o.id, statut);
       if (profile) setOffers(await companyService.getMyOffers(profile.id));

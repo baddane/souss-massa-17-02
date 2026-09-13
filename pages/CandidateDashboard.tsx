@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import SEO from '../components/SEO';
 import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import { useT } from '../src/i18n/LanguageContext';
+import { useConfirm } from '../src/hooks/useConfirm';
 import { SOUSS_MASSA_CITIES } from '../constants';
 import { candidatureStatusKey, companyService } from '../src/services/companyService';
 import {
@@ -540,6 +541,7 @@ const ApplicationsTab: React.FC<{ apps: MyCandidature[]; lang: string }> = ({ ap
 
 // ---------------------------------------------------------------------------
 const AlertsTab: React.FC<{ profile: CandidateProfile; alerts: JobAlert[]; onChange: () => Promise<void> }> = ({ profile, alerts, onChange }) => {
+  const confirmer = useConfirm();
   const { t } = useT();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ intitule: '', ville: '', type_contrat: '', frequence: 'quotidienne' as JobAlert['frequence'] });
@@ -635,7 +637,7 @@ const AlertsTab: React.FC<{ profile: CandidateProfile; alerts: JobAlert[]; onCha
                 </button>
                 <button
                   onClick={async () => {
-                    if (!window.confirm(t('cand.alerts.deleteConfirm'))) return;
+                    if (!(await confirmer({ message: t('cand.alerts.deleteConfirm'), danger: true }))) return;
                     await alertsService.remove(a.id);
                     await onChange();
                   }}

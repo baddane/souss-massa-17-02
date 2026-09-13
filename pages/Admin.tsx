@@ -7,6 +7,7 @@ import CvthequeExplorer from '../components/CvthequeExplorer';
 import ClaimOffersPanel from '../components/ClaimOffersPanel';
 import CredentialsTab from '../components/CredentialsTab';
 import CompanyEditPanel from '../components/CompanyEditPanel';
+import { useConfirm } from '../src/hooks/useConfirm';
 import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/DashboardSidebar';
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
@@ -104,6 +105,7 @@ const Admin: React.FC = () => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [activeTab, setActiveTab] = useState<'candidatures' | 'messages' | 'entreprises' | 'offres' | 'nouvelle' | 'compte' | 'cvtheque' | 'observatoire' | 'prospection' | 'identifiants'>('candidatures');
   const [menuMobile, setMenuMobile] = useState(false);
+  const confirmer = useConfirm();
   const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
   // Vue detail de la CVtheque sur mobile : le bloc d'import s'efface, sinon il
   // repousse le CV hors du premier ecran.
@@ -230,7 +232,10 @@ const Admin: React.FC = () => {
   const parseUnparsedCvs = async () => {
     const pending = await cvthequeService.unparsed();
     if (!pending.length) { alert('Toutes les fiches ont déjà été analysées.'); return; }
-    if (!confirm(`Analyser ${pending.length} CV non traité(s) ? Cela peut prendre quelques minutes.`)) return;
+    if (!(await confirmer({
+      message: `Analyser ${pending.length} CV non traité(s) ? Cela peut prendre quelques minutes.`,
+      confirmLabel: 'Analyser',
+    }))) return;
 
     setCvParsing(true);
     let done = 0, unsupported = 0, failed = 0;
@@ -266,7 +271,7 @@ const Admin: React.FC = () => {
     const msg = row.source === 'candidature'
       ? `Retirer « ${row.nom_complet || row.file_name} » de la CVthèque ? (Le CV du postulant et sa candidature sont conservés.)`
       : `Supprimer la fiche de « ${row.nom_complet || row.file_name} » ? Le fichier sera aussi supprimé.`;
-    if (!confirm(msg)) return;
+    if (!(await confirmer({ message: msg, danger: true }))) return;
     const ok = await cvthequeService.remove(row.id, row.file_path, row.bucket);
     if (ok) { setCvCount(c => Math.max(0, c - 1)); setCvReloadKey(k => k + 1); }
   };
@@ -307,7 +312,10 @@ const Admin: React.FC = () => {
   });
 
   const deleteObs = async (a: ObsArticle) => {
-    if (!confirm(`Supprimer l'article « ${a.titre} » ? Cette action est irréversible.`)) return;
+    if (!(await confirmer({
+      message: `Supprimer l'article « ${a.titre} » ? Cette action est irréversible.`,
+      danger: true,
+    }))) return;
     if (await observatoireService.remove(a.id)) setObsItems(prev => prev.filter(x => x.id !== a.id));
   };
 
@@ -388,7 +396,10 @@ const Admin: React.FC = () => {
   const sendOutreach = async () => {
     const selected = outItems.filter(t => outSel.has(t.id) && t.email);
     if (selected.length === 0) { alert('Sélectionnez au moins une entreprise avec un e-mail.'); return; }
-    if (!confirm(`Envoyer l'e-mail de prospection à ${selected.length} entreprise(s) via Brevo ?`)) return;
+    if (!(await confirmer({
+      message: `Envoyer l'e-mail de prospection à ${selected.length} entreprise(s) via Brevo ?`,
+      confirmLabel: 'Envoyer',
+    }))) return;
     setOutSending(true);
     const r = await outreachService.send(
       selected.map(t => ({ id: t.id, email: t.email as string, raison_sociale: t.raison_sociale, slug: t.slug, ville: t.ville })),
@@ -462,7 +473,7 @@ const Admin: React.FC = () => {
   };
 
   const refuseCompany = async (id: string) => {
-    if (!confirm('Refuser cette entreprise ?')) return;
+    if (!(await confirmer({ message: 'Refuser cette entreprise ?', danger: true, confirmLabel: 'Refuser' }))) return;
     await moderationService.setCompanyStatus(id, 'refuse');
     setCompanies(prev => prev.map(x => x.id === id ? { ...x, statut: 'refuse' } : x));
   };
@@ -473,7 +484,10 @@ const Admin: React.FC = () => {
   const [linkedInFor, setLinkedInFor] = useState<ObsArticle | null>(null);
 
   const deleteCompany = async (c: CompanyProfile) => {
-    if (!confirm(`Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`)) return;
+    if (!(await confirmer({
+      message: `Supprimer définitivement l'entreprise « ${c.nom_entreprise} » ? Cette action est irréversible.`,
+      danger: true,
+    }))) return;
     try {
       const warning = await moderationService.deleteCompany(c.id);
       setCompanies(prev => prev.filter(x => x.id !== c.id));
@@ -534,7 +548,7 @@ const Admin: React.FC = () => {
   };
 
   const refuseOffer = async (id: string) => {
-    if (!confirm('Refuser cette offre ?')) return;
+    if (!(await confirmer({ message: 'Refuser cette offre ?', danger: true, confirmLabel: 'Refuser' }))) return;
     await moderationService.setOfferStatus(id, 'refuse');
     setPendingOffers(prev => prev.filter(o => o.id !== id));
   };
@@ -581,7 +595,7 @@ const Admin: React.FC = () => {
   };
 
   const deleteMessage = async (id: string) => {
-    if (!confirm('Supprimer ce message ?')) return;
+    if (!(await confirmer({ message: 'Supprimer ce message ?', danger: true }))) return;
     const { error } = await supabaseOffers
       .from('messages')
       .delete()
@@ -617,7 +631,7 @@ const Admin: React.FC = () => {
   };
 
   const deleteCandidature = async (id: string) => {
-    if (!confirm('Supprimer cette candidature ?')) return;
+    if (!(await confirmer({ message: 'Supprimer cette candidature ?', danger: true }))) return;
     const { error } = await supabaseOffers
       .from('candidatures')
       .delete()

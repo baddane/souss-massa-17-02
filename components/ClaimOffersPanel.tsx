@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useConfirm } from '../src/hooks/useConfirm';
 import { toast } from 'react-toastify';
 import { claimService, type CompanyProfile, type UnclaimedGroup } from '../src/services/companyService';
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 const ClaimOffersPanel: React.FC<Props> = ({ company, onClose }) => {
+  const confirmer = useConfirm();
   const [term, setTerm] = useState(company.nom_entreprise || '');
   const [groups, setGroups] = useState<UnclaimedGroup[]>([]);
   const [attached, setAttached] = useState<any[]>([]);
@@ -53,12 +55,15 @@ const ClaimOffersPanel: React.FC<Props> = ({ company, onClose }) => {
   const doAttach = async () => {
     if (chosen.length === 0) return;
     const noms = chosen.map((g) => `« ${g.raison_sociale} »`).join(', ');
-    const ok = window.confirm(
-      `Rattacher ${nbOffres} offre(s) à « ${company.nom_entreprise} » ?\n\n` +
-      `Nom(s) concerné(s) : ${noms}\n\n` +
-      `Cette entreprise pourra alors consulter ${nbCands} candidature(s), ` +
-      `avec les CV et les coordonnées des candidats. Vérifiez qu'il s'agit bien de la même société.`,
-    );
+    const ok = await confirmer({
+      title: 'Rattacher ces offres ?',
+      message:
+        `Rattacher ${nbOffres} offre(s) à « ${company.nom_entreprise} » ?\n\n` +
+        `Nom(s) concerné(s) : ${noms}\n\n` +
+        `Cette entreprise pourra alors consulter ${nbCands} candidature(s), ` +
+        `avec les CV et les coordonnées des candidats. Vérifiez qu'il s'agit bien de la même société.`,
+      confirmLabel: 'Rattacher',
+    });
     if (!ok) return;
 
     setBusy(true);
@@ -75,7 +80,10 @@ const ClaimOffersPanel: React.FC<Props> = ({ company, onClose }) => {
   };
 
   const doDetach = async (ids: string[], label: string) => {
-    if (!window.confirm(`Détacher ${ids.length} offre(s) (${label}) de ce compte ?`)) return;
+    if (!(await confirmer({
+      message: `Détacher ${ids.length} offre(s) (${label}) de ce compte ?`,
+      confirmLabel: 'Détacher',
+    }))) return;
     setBusy(true);
     try {
       const n = await claimService.detach(company.id, ids);
