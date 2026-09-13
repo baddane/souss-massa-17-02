@@ -1,14 +1,16 @@
 // Message d'invitation envoye a une entreprise deja presente sur la plateforme.
 //
-// ANGLE ASSUME : le message s'ouvre sur un fait verifiable et propre a
-// l'entreprise — « 16 personnes ont postule a vos offres » — et non sur la
-// presentation du service. Un e-mail non sollicite qui commence par un
-// identifiant et un mot de passe ressemble a du hameconnage : il serait
+// ORDRE DU MESSAGE, dans cet ordre exactement :
+//   1. ce qu'est le service, et qu'il est GRATUIT. Un recruteur qui n'a jamais
+//      entendu parler du site doit savoir a quoi il a affaire avant qu'on lui
+//      propose quoi que ce soit ;
+//   2. ce qui l'attend deja — « 16 personnes ont postule a vos offres » ;
+//   3. seulement ensuite, les identifiants.
+//
+// Les identifiants ne viennent JAMAIS en premier : un e-mail non sollicite qui
+// s'ouvre sur un login et un mot de passe ressemble a du hameconnage. Il serait
 // signale, et un domaine signale fait retomber en spam TOUS les envois
 // legitimes, alertes candidats comprises.
-//
-// Les identifiants viennent donc en second, comme le moyen d'acceder a ce qui
-// attend deja l'entreprise.
 
 const SITE = 'https://www.soussmassa-rh.com';
 
@@ -55,8 +57,17 @@ export function corpsInvitation(d: InvitationData): string {
        </p>`;
 
   const cvtheque = d.profilsCvtheque
-    ? `<li style="margin-bottom:6px">Consulter la CVthèque régionale (${d.profilsCvtheque} profils)</li>`
+    ? `<li style="margin-bottom:6px">Consulter la CVthèque régionale et contacter les profils directement</li>`
     : '';
+
+  // Presentation courte, factuelle et chiffree : elle doit tenir en deux
+  // phrases. Au-dela, le lecteur decroche avant d'arriver a ce qui l'interesse.
+  const presentation = `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#374151">
+      <strong style="color:#111827">SoussMassa-RH</strong> est le portail de l'emploi de la région
+      Souss-Massa. Publier vos offres, recevoir les candidatures et consulter la CVthèque régionale
+      ${d.profilsCvtheque ? `(${d.profilsCvtheque} profils)` : ''} y sont
+      <strong style="color:#111827">entièrement gratuits</strong>, sans engagement ni carte bancaire.
+    </p>`;
 
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -70,7 +81,8 @@ export function corpsInvitation(d: InvitationData): string {
         </td></tr>
 
         <tr><td>
-          <p style="margin:0 0 4px;font-size:15px;color:#374151">Bonjour,</p>
+          <p style="margin:0 0 14px;font-size:15px;color:#374151">Bonjour,</p>
+          ${presentation}
           ${accroche}
         </td></tr>
 
@@ -106,8 +118,8 @@ export function corpsInvitation(d: InvitationData): string {
             ${cvtheque}
           </ul>
           <p style="margin:0 0 18px;font-size:14px;color:#374151">
-            <strong>Le service est gratuit</strong>, sans engagement. Nous vous conseillons de changer
-            votre mot de passe à la première connexion (onglet « Mon compte »).
+            Nous vous conseillons de changer votre mot de passe à la première connexion
+            (onglet « Mon compte »).
           </p>
         </td></tr>
 
