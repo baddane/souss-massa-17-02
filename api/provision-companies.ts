@@ -315,21 +315,48 @@ async function previsualiserInvitation(ctx: Ctx, companyId: string) {
   };
 }
 
+/** Journalise un envoi — reussi ou non. Volontairement non bloquant : perdre
+    une ligne de journal ne doit jamais faire echouer un envoi qui a abouti. */
+async function journaliser(ctx: Ctx, ligne: Record<string, unknown>) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/invitation_envois`, {
+      method: 'POST', headers: { ...ctx.sb, Prefer: 'return=minimal' },
+      body: JSON.stringify(ligne),
+    });
+  } catch (e) {
+    console.error('journal invitation :', e);
+  }
+}
+
 async function envoyerInvitation(ctx: Ctx, companyId: string) {
   const { ce, data } = await collecterInvitation(ctx, companyId);
+  const sujet = sujetInvitation(data);
+  const base = {
+    company_id: companyId, destinataire: ce.email, nom_entreprise: data.nomEntreprise,
+    sujet, candidatures: data.candidatures, offres: data.offres,
+  };
 
-  await sendBrevoEmail({
-    to: ce.email,
-    toName: data.nomEntreprise,
-    subject: sujetInvitation(data),
-    html: corpsInvitation(data),
-    replyTo: 'contact@soussmassa-rh.com',
-    tags: ['invitation-entreprise'],
-  });
+  try {
+    await sendBrevoEmail({
+      to: ce.email,
+      toName: data.nomEntreprise,
+      subject: sujet,
+      html: corpsInvitation(data),
+      replyTo: 'contact@soussmassa-rh.com',
+      tags: ['invitation-entreprise'],
+    });
+  } catch (e: any) {
+    // Un echec se journalise aussi : sans cette ligne, l'entreprise
+    // ressemblerait a une cible jamais tentee, et personne ne saurait qu'il y a
+    // un probleme a corriger sur son adresse.
+    await journaliser(ctx, { ...base, statut: 'echec', erreur: String(e?.message || e).slice(0, 300) });
+    throw e;
+  }
 
-  // Date d'envoi posee APRES l'envoi : si Brevo echoue, l'entreprise reste
-  // dans la liste des a-contacter plutot que d'etre marquee a tort comme
-  // traitee — l'inverse ferait disparaitre une cible sans qu'on le sache.
+  await journaliser(ctx, { ...base, statut: 'envoye' });
+
+  // Date posee APRES l'envoi : si Brevo echoue, l'entreprise reste dans la
+  // liste des a-contacter plutot que d'etre marquee a tort comme traitee.
   await fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}`, {
     method: 'PATCH', headers: { ...ctx.sb, Prefer: 'return=minimal' },
     body: JSON.stringify({ envoye_le: new Date().toISOString() }),
@@ -339,6 +366,34 @@ async function envoyerInvitation(ctx: Ctx, companyId: string) {
     company_id: companyId, email: ce.email, nom_entreprise: data.nomEntreprise,
     candidatures: data.candidatures, offres: data.offres, statut: 'accès envoyés',
   };
+}
+
+/**
+ * Envoi groupe aux entreprises joignables jamais contactees, par lots.
+ *
+ * Le lot est court par defaut : une fonction serverless a une duree maximale, et
+ * surtout un envoi en masse vers des adresses non verifiees produirait une rafale
+ * de rebonds — ce qui degrade la reputation du domaine et ferait retomber en
+ * spam les alertes candidats. Mieux vaut avancer par petits paquets et regarder
+ * les rebonds entre deux.
+ */
+async function envoyerLot(ctx: Ctx, limite: number) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/company_credentials?select=company_id,email,envoye_le&envoye_le=is.null&email_fictif=is.false&order=created_at.asc`,
+    { headers: ctx.sb });
+  const cibles = (await r.json()) as { company_id: string }[];
+  const aTraiter = cibles.slice(0, Math.max(1, Math.min(limite || 5, 25)));
+
+  const envoyes: any[] = [];
+  const erreurs: { company_id: string; erreur: string }[] = [];
+  for (const c of aTraiter) {
+    try {
+      envoyes.push(await envoyerInvitation(ctx, c.company_id));
+    } catch (e: any) {
+      erreurs.push({ company_id: c.company_id, erreur: String(e?.message || e).slice(0, 200) });
+    }
+  }
+  return { envoyes: envoyes.length, erreurs, details: envoyes, restantes: Math.max(0, cibles.length - aTraiter.length) };
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
@@ -373,6 +428,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       autorise = r.ok && (await r.json()) === true;
     }
     if (!autorise) return json(403, { error: 'Réservé à l’administrateur' });
+
+    // Envoi groupe, par lots courts (voir `envoyerLot`).
+    if (body.mode === 'invite_all') {
+      return json(200, { ok: true, ...(await envoyerLot(ctx, Number(body.limit) || 5)) });
+    }
 
     // Mode « apercu » : compose le message SANS RIEN ENVOYER, pour pouvoir le
     // relire avant une campagne. Un envoi a des entreprises reelles est

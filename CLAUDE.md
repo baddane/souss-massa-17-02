@@ -674,6 +674,31 @@ l'entreprise elle-meme : elle n'apparait qu'avec `avecNote`.
   (trigger `job_offers_auto_claim`, correspondance exacte). Le champ affiche donc
   combien d'offres en ligne sans proprietaire portent deja le nom saisi.
 
+### Campagne d'acces (invitation + journal, migration `028`)
+
+Reveiller les entreprises qui ont deja des candidatures sans les avoir vues.
+Tout se pilote depuis l'onglet **Identifiants**.
+
+- **Message** : `api/_invitation.ts`. Ordre impose — (1) ce qu'est le service et
+  qu'il est GRATUIT, (2) ce qui attend deja l'entreprise, (3) les identifiants.
+  Jamais l'inverse : un e-mail non sollicite qui s'ouvre sur un login ressemble
+  a du hameconnage, et un domaine signale fait retomber en spam TOUS les envois
+  legitimes, alertes candidats comprises.
+- **`preview`** compose sans envoyer, **`invite`** envoie a une entreprise,
+  **`invite_all`** traite un lot court (5 par defaut, 25 maximum).
+- **Le compteur de candidatures est recalcule cote serveur**, jamais transmis
+  par le client : un chiffre annonce puis dementi par le tableau de bord
+  detruirait la credibilite de la campagne.
+- **Journal `invitation_envois`** (admin-only) : une ligne par envoi, succes
+  comme echec, avec les chiffres annonces CE jour-la. Une date seule ne
+  permettrait pas de repondre a « je ne vois que 3 candidatures », ni de
+  distinguer « jamais contactee » de « tentee, echouee ».
+
+> **AVANCER PAR LOTS DE 5, EN REGARDANT LES REBONDS ENTRE DEUX.** Le message
+> contient un mot de passe : une adresse erronee ne produit pas qu'un rebond,
+> elle donne l'acces au compte d'une entreprise — et aux CV de ses candidats —
+> a un inconnu. Et une rafale de rebonds degrade la reputation du domaine.
+
 ### Regles a ne pas contourner
 
 - **Jamais d'UPDATE direct sur le mot de passe ou l'email** : ils vivent dans

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConfirm } from '../src/hooks/useConfirm';
 import { toast } from 'react-toastify';
-import { credentialsService, type CompanyCredential } from '../src/services/credentialsService';
+import { credentialsService, type CompanyCredential, type EnvoiLigne } from '../src/services/credentialsService';
 import CompanyEditPanel from './CompanyEditPanel';
 
 // Onglet « Identifiants » : les comptes entreprise provisionnes par la
@@ -30,6 +30,8 @@ const CredentialsTab: React.FC = () => {
   const [editId, setEditId] = useState<string | null>(null);
   // Apercu du message d'invitation : on le lit avant d'envoyer, un envoi a une
   // entreprise reelle ne se rattrape pas.
+  const [envois, setEnvois] = useState<EnvoiLigne[]>([]);
+  const [voirRapport, setVoirRapport] = useState(false);
   const [apercu, setApercu] = useState<null | {
     company_id: string; destinataire: string; nom_entreprise: string;
     candidatures: number; offres: number; deja_envoye_le: string | null;
@@ -38,8 +40,10 @@ const CredentialsTab: React.FC = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [r, p] = await Promise.all([credentialsService.list(), credentialsService.pending()]);
-    setRows(r); setPending(p); setLoading(false);
+    const [r, p, e] = await Promise.all([
+      credentialsService.list(), credentialsService.pending(), credentialsService.envois(),
+    ]);
+    setRows(r); setPending(p); setEnvois(e); setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -52,6 +56,9 @@ const CredentialsTab: React.FC = () => {
   }, [rows, q]);
 
   const fictifs = rows.filter((r) => r.email_fictif).length;
+  const joignablesNonContactes = rows.filter((r) => !r.email_fictif && !r.envoye_le).length;
+  const envoisOk = envois.filter((e) => e.statut === 'envoye').length;
+  const envoisKo = envois.filter((e) => e.statut === 'echec').length;
 
   const run = async (fn: () => Promise<any>, ok: string) => {
     setBusy(true);
@@ -157,6 +164,91 @@ const CredentialsTab: React.FC = () => {
           Le mot de passe est généré automatiquement et les offres portant exactement cette raison
           sociale sont rattachées au compte.
         </p>
+      </section>
+
+      {/* Campagne : envoi groupé + rapport */}
+      <section className="bg-white border border-gray-200 rounded-2xl p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900">Campagne d'accès</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {joignablesNonContactes} entreprise(s) joignable(s) jamais contactée(s)
+              {envoisOk > 0 && <> · {envoisOk} envoi(s) réussi(s)</>}
+              {envoisKo > 0 && <> · <span className="text-red-600 font-semibold">{envoisKo} échec(s)</span></>}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setVoirRapport((v) => !v)}
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-gray-50"
+            >
+              {voirRapport ? 'Masquer le rapport' : `Rapport (${envois.length})`}
+            </button>
+            <button
+              onClick={async () => {
+                if (!(await confirmer({
+                  title: 'Envoyer le prochain lot ?',
+                  message:
+                    `Les accès partent aux ${Math.min(5, joignablesNonContactes)} prochaine(s) entreprise(s) ` +
+                    `joignable(s) jamais contactée(s).\n\n` +
+                    `Par lots de 5 volontairement : une rafale vers des adresses non vérifiées produirait ` +
+                    `des rebonds, qui dégradent la réputation du domaine et renverraient les alertes ` +
+                    `candidats en spam. Vérifiez les rebonds dans Brevo entre deux lots.`,
+                  confirmLabel: 'Envoyer le lot',
+                }))) return;
+                run(() => credentialsService.sendBatch(5), 'Lot envoyé');
+              }}
+              disabled={busy || joignablesNonContactes === 0}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              Envoyer les 5 suivants
+            </button>
+          </div>
+        </div>
+
+        {voirRapport && (
+          envois.length === 0 ? (
+            <p className="mt-4 text-sm text-gray-500">Aucun envoi pour l'instant.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-3 py-2 text-start">Date</th>
+                    <th className="px-3 py-2 text-start">Entreprise</th>
+                    <th className="px-3 py-2 text-start">Destinataire</th>
+                    <th className="px-3 py-2 text-start">Annoncé</th>
+                    <th className="px-3 py-2 text-start">Résultat</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {envois.map((e) => (
+                    <tr key={e.id} className="align-top">
+                      <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                        {new Date(e.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-3 py-2 font-semibold text-gray-900">{e.nom_entreprise}</td>
+                      <td className="px-3 py-2 text-gray-600 break-all">{e.destinataire}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-gray-600">
+                        {e.candidatures} cand. · {e.offres} offre(s)
+                      </td>
+                      <td className="px-3 py-2">
+                        {e.statut === 'envoye' ? (
+                          <span className="text-green-700 font-semibold">Envoyé</span>
+                        ) : (
+                          <>
+                            <span className="text-red-600 font-semibold">Échec</span>
+                            {e.erreur && <span className="block text-xs text-gray-500 mt-0.5">{e.erreur}</span>}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
       </section>
 
       {/* Liste */}

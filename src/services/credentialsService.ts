@@ -39,6 +39,19 @@ export interface CompanyCredential {
 //   - `statut` est une decision de moderation, qui a son propre onglet. Le
 //     glisser dans un formulaire de correction de fiche le ferait basculer par
 //     inadvertance.
+export interface EnvoiLigne {
+  id: string;
+  company_id: string;
+  destinataire: string;
+  nom_entreprise: string;
+  sujet: string;
+  candidatures: number;
+  offres: number;
+  statut: 'envoye' | 'echec';
+  erreur: string | null;
+  created_at: string;
+}
+
 export interface ProfilPatch {
   nom_entreprise?: string;
   ville?: string | null;
@@ -126,6 +139,20 @@ export const credentialsService = {
 
   sendInvitation: (companyId: string) =>
     adminFetch({ mode: 'invite', company_id: companyId }),
+
+  /** Envoi groupe, par lots courts : voir `envoyerLot` cote serveur. */
+  sendBatch: (limit = 5) => adminFetch({ mode: 'invite_all', limit }),
+
+  /** Journal des envois, le plus recent en tete. */
+  async envois(): Promise<EnvoiLigne[]> {
+    const { data, error } = await supabaseOffers
+      .from('invitation_envois')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (error) { console.error('credentials.envois', error); return []; }
+    return (data || []) as EnvoiLigne[];
+  },
 
   // Correction de la fiche entreprise par l'admin (policy `ce_update`).
   // Le nom compte double : c'est sur lui que le trigger `job_offers_auto_claim`
