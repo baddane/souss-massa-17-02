@@ -694,6 +694,44 @@ Tout se pilote depuis l'onglet **Identifiants**.
   permettrait pas de repondre a « je ne vois que 3 candidatures », ni de
   distinguer « jamais contactee » de « tentee, echouee ».
 
+### Campagne pilotee depuis l'onglet Prospection (migration `029`… `032`)
+
+L'onglet **Prospection** declenche desormais lui-meme l'envoi des acces, sur les
+entreprises cochees dans son tableau (`components/InvitationCampaignPanel.tsx`).
+
+- **L'identifiant et la destination sont DEUX adresses differentes.** L'identifiant
+  de connexion est souvent technique (`c2026@comptes.soussmassa-rh.com`, faute
+  d'adresse connue) ; l'adresse ou l'on ecrit est celle trouvee a la main, dans
+  `outreach_targets.email`. Avant cette separation, `collecterInvitation` refusait
+  l'envoi des que l'IDENTIFIANT etait technique — 145 entreprises restaient
+  injoignables alors qu'on avait leur vraie adresse. Le controle porte donc
+  maintenant sur la **destination**, jamais sur l'identifiant.
+- **Le corps n'est pas un modele editable**, contrairement au « Message libre »
+  du meme onglet : il contient un mot de passe. Le laisser saisir exposerait a
+  envoyer un mot de passe errone (l'entreprise ne peut plus se connecter) ou
+  celui d'une autre societe. Il est compose par le serveur depuis Supabase
+  Auth ; l'admin le **relit**, il ne l'ecrit pas.
+- **Resolution cible → compte** (`compteDeLaCible`) : correspondance EXACTE sur
+  la raison sociale, **un seul** compte valide, noms generiques exclus — les
+  memes garde-fous que le trigger `job_offers_auto_claim`, et pour la meme
+  raison. En cas d'ambiguite, on refuse plutot que de donner a une societe
+  l'acces aux CV des candidats d'une autre.
+- **Bouton « Envoyer un test »** : le message exact d'une cible, expedie a
+  l'adresse saisie, avec sujet prefixe `[TEST]` et bandeau rappelant le vrai
+  destinataire. Il contient le **vrai** mot de passe — c'est tout son interet.
+  **Un test ne marque RIEN** : ni `company_credentials.envoye_le`, ni
+  `outreach_targets.statut`. Verifie en base : apres un test, la cible est
+  toujours « a contacter ». Journalise avec `statut='test'` (migration `032`).
+- **Un envoi en echec ne marque rien non plus** : le statut `contacte` et
+  `date_contact` sont poses APRES un envoi reussi seulement. Verifie : un lot
+  de 5 entierement en echec laisse les 5 cibles en « a contacter ».
+- **Ordre du lot deterministe** : `in.(...)` ne garantit aucun ordre, donc le
+  serveur rejoue l'ordre des `target_ids` envoyes par le client — celui du
+  tableau de l'admin. Sans cela, « les 5 premieres » auraient ete 5 cibles
+  arbitraires, differentes a chaque appel.
+- Chaque cible est traitee **independamment** : une erreur n'interrompt pas le
+  lot et remonte dans le rapport avec sa raison.
+
 > **AVANCER PAR LOTS DE 5, EN REGARDANT LES REBONDS ENTRE DEUX.** Le message
 > contient un mot de passe : une adresse erronee ne produit pas qu'un rebond,
 > elle donne l'acces au compte d'une entreprise — et aux CV de ses candidats —

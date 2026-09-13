@@ -12,6 +12,7 @@ import DashboardSidebar, { ICONES, type AdminTabItem } from '../components/Dashb
 import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS, EMAIL_RE } from '../src/services/outreachService';
+import InvitationCampaignPanel from '../components/InvitationCampaignPanel';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -1549,14 +1550,27 @@ const Admin: React.FC = () => {
         <>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-sm text-amber-900">
             <p className="font-bold mb-1">📣 Prospection entreprises — envoi via Brevo</p>
-            <p>Cochez les entreprises (celles ayant un e-mail), personnalisez le message et envoyez depuis
-            <strong> contact@soussmassa-rh.com</strong>. Jetons disponibles : <code>{'{entreprise}'}</code>, <code>{'{ville}'}</code>, <code>{'{url}'}</code>.</p>
+            <p>Cochez les entreprises (celles ayant un e-mail) dans le tableau, puis choisissez :</p>
+            <ul className="list-disc ps-5 mt-1 space-y-0.5">
+              <li><strong>Invitation avec accès</strong> — message complet avec identifiant et mot de passe,
+                  composé automatiquement pour chaque entreprise. C'est l'envoi de la campagne.</li>
+              <li><strong>Message libre</strong> (plus bas) — annonce simple <em>sans identifiants</em>.
+                  Jetons : <code>{'{entreprise}'}</code>, <code>{'{ville}'}</code>, <code>{'{url}'}</code>.</li>
+            </ul>
+            <p className="mt-1">Tout part de <strong>contact@soussmassa-rh.com</strong>.</p>
             <p className="mt-1 text-amber-800">Prérequis (une seule fois) : dans <strong>Brevo</strong>, valider l'expéditeur/domaine <em>soussmassa-rh.com</em> ; dans <strong>Vercel</strong>, ajouter la variable <code>BREVO_API_KEY</code>.</p>
           </div>
 
-          {/* Modèle d'e-mail */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-5 space-y-3">
-            <h3 className="font-bold text-gray-900 text-sm">Modèle d'e-mail</h3>
+          {/* Message libre, sans identifiants. Conserve tel quel : il sert aux
+              relances et aux entreprises sans compte, pour lesquelles il n'y a
+              aucun identifiant a envoyer. Le titre dit explicitement ce qu'il
+              n'envoie PAS, sinon les deux boutons de la page se confondent. */}
+          <details className="bg-white rounded-2xl border border-gray-200 mb-5">
+            <summary className="p-5 cursor-pointer font-bold text-gray-900 text-sm select-none">
+              Message libre — sans identifiants
+              <span className="ms-2 font-normal text-gray-400">(relance, entreprise sans compte)</span>
+            </summary>
+            <div className="px-5 pb-5 space-y-3">
             <label className="block text-xs font-semibold text-gray-500">Objet
               <input value={outSubject} onChange={(e) => setOutSubject(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-normal text-gray-900 focus:ring-2 focus:ring-blue-500" />
@@ -1565,7 +1579,15 @@ const Admin: React.FC = () => {
               <textarea rows={8} value={outBody} onChange={(e) => setOutBody(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono text-gray-900 focus:ring-2 focus:ring-blue-500" />
             </label>
-          </div>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button onClick={sendOutreach} disabled={outSending || outSel.size === 0}
+                className="px-5 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 disabled:opacity-50">
+                {outSending ? 'Envoi…' : `Envoyer ce message libre (${outSel.size})`}
+              </button>
+              <span className="text-xs text-gray-400">Sans identifiant ni mot de passe.</span>
+            </div>
+            </div>
+          </details>
 
           {/* Import d'emails en masse */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-5 space-y-2">
@@ -1588,11 +1610,14 @@ const Admin: React.FC = () => {
             </div>
             <div className="flex-1" />
             <span className="text-sm text-gray-500">{outSel.size} sélectionnée(s)</span>
-            <button onClick={sendOutreach} disabled={outSending || outSel.size === 0}
-              className="px-5 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 disabled:opacity-50">
-              {outSending ? 'Envoi…' : `Envoyer via Brevo (${outSel.size})`}
-            </button>
           </div>
+
+          {/* Campagne d'acces : le message porte les identifiants, il est compose
+              par le serveur et non saisi ici (voir InvitationCampaignPanel). */}
+          <InvitationCampaignPanel
+            cibles={outVisible.filter(t => outSel.has(t.id))}
+            onEnvoye={() => { setOutSel(new Set()); loadOutreach(); }}
+          />
 
           {outLoading ? (
             <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>

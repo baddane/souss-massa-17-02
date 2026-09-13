@@ -143,6 +143,32 @@ export const credentialsService = {
   /** Envoi groupe, par lots courts : voir `envoyerLot` cote serveur. */
   sendBatch: (limit = 5) => adminFetch({ mode: 'invite_all', limit }),
 
+  // --- Campagne pilotee depuis l'onglet Prospection -------------------------
+  // Les cibles de prospection portent l'adresse trouvee a la main, differente
+  // de l'identifiant de connexion (souvent technique). Le serveur resout la
+  // cible vers son compte par correspondance EXACTE du nom, et refuse si le
+  // rapprochement est ambigu.
+
+  /** Compose le message d'une cible sans rien envoyer. */
+  previewTarget: (targetId: string) =>
+    adminFetch({ mode: 'preview_target', target_id: targetId }) as Promise<{
+      target_id: string; company_id: string; destinataire: string; identifiant: string;
+      nom_entreprise: string; candidatures: number; offres: number;
+      profils_cvtheque: number; deja_envoye_le: string | null; sujet: string; html: string;
+    }>,
+
+  /** Envoi d'essai a une adresse choisie. Ne marque RIEN comme contacte. */
+  testTarget: (targetId: string, testEmail: string) =>
+    adminFetch({ mode: 'test_invite', target_id: targetId, test_email: testEmail }),
+
+  /** Envoi reel aux cibles selectionnees, par lots courts (25 maximum). */
+  sendTargets: (targetIds: string[], limit = 5) =>
+    adminFetch({ mode: 'invite_targets', target_ids: targetIds, limit }) as Promise<{
+      envoyes: number; restantes: number;
+      details: { target_id: string; nom_entreprise: string; email: string; candidatures: number }[];
+      erreurs: { target_id: string; raison_sociale: string; erreur: string }[];
+    }>,
+
   /** Journal des envois, le plus recent en tete. */
   async envois(): Promise<EnvoiLigne[]> {
     const { data, error } = await supabaseOffers

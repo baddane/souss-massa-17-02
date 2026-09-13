@@ -251,7 +251,19 @@ async function changerEmail(ctx: Ctx, companyId: string, nouvelEmail: string) {
 // et il doit etre EXACT. On le recalcule cote serveur plutot que de le faire
 // passer par le client — un chiffre annonce a une entreprise puis dementi par
 // son tableau de bord detruirait la credibilite de toute la campagne.
-async function collecterInvitation(ctx: Ctx, companyId: string) {
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/**
+ * Rassemble tout ce qu'il faut pour composer l'invitation d'une entreprise.
+ *
+ * `destinataire` dissocie DEUX adresses que l'on confondait jusqu'ici :
+ *   - l'IDENTIFIANT de connexion (`cc.email`), souvent une adresse technique
+ *     `@comptes.soussmassa-rh.com` fabriquee faute d'adresse connue ;
+ *   - l'ADRESSE OU L'ON ECRIT, trouvee a la main en prospection.
+ * Sans cette distinction, les 145 entreprises a identifiant technique
+ * restaient injoignables alors qu'on avait leur vraie adresse de recrutement.
+ */
+async function collecterInvitation(ctx: Ctx, companyId: string, destinataire?: string) {
   const [ceRes, ccRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/comptes_entreprise?id=eq.${companyId}&select=id,nom_entreprise,ville,email,statut`, { headers: ctx.sb }),
     fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}&select=email,mot_de_passe,envoye_le`, { headers: ctx.sb }),
@@ -261,10 +273,16 @@ async function collecterInvitation(ctx: Ctx, companyId: string) {
   if (!ce) throw new Error('Compte introuvable');
   if (!cc?.mot_de_passe) throw new Error("Ce compte n'a pas de mot de passe enregistré : regénérez-le d'abord.");
   if (ce.statut !== 'valide') throw new Error(`Compte au statut « ${ce.statut} » : validez-le avant d'envoyer ses accès.`);
-  // `sendBrevoEmail` refuse deja ces adresses ; on verifie ici pour rendre
-  // l'erreur explicite plutot que generique, et des l'apercu.
-  if (estAdresseTechnique(ce.email)) {
-    throw new Error("Identifiant technique : renseignez d'abord la vraie adresse de l'entreprise.");
+  // Le controle porte sur l'adresse OU L'ON ECRIT, jamais sur l'identifiant :
+  // un identifiant technique se connecte tres bien, il ne se lit simplement
+  // pas. `sendBrevoEmail` refuse deja ces adresses ; on verifie ici pour que
+  // l'erreur soit explicite, et des l'apercu.
+  const dest = String(destinataire || ce.email || '').trim();
+  if (!EMAIL_RE.test(dest)) {
+    throw new Error(`Adresse de destination invalide : « ${dest || 'vide'} ».`);
+  }
+  if (estAdresseTechnique(dest)) {
+    throw new Error("Adresse technique : renseignez la vraie adresse de l'entreprise avant d'envoyer.");
   }
 
   const offresRes = await fetch(
@@ -288,8 +306,10 @@ async function collecterInvitation(ctx: Ctx, companyId: string) {
 
   return {
     ce,
+    destinataire: dest,
     envoye_le: cc.envoye_le as string | null,
     data: {
+      // `email` est l'IDENTIFIANT affiche dans le message, pas la destination.
       nomEntreprise: ce.nom_entreprise as string,
       ville: ce.ville as string | null,
       email: (cc.email || ce.email) as string,
@@ -302,17 +322,39 @@ async function collecterInvitation(ctx: Ctx, companyId: string) {
 }
 
 /** Compose le message SANS RIEN ENVOYER : un envoi reel est irreversible. */
-async function previsualiserInvitation(ctx: Ctx, companyId: string) {
-  const { ce, envoye_le, data } = await collecterInvitation(ctx, companyId);
+async function previsualiserInvitation(ctx: Ctx, companyId: string, destinataire?: string) {
+  const { destinataire: dest, envoye_le, data } = await collecterInvitation(ctx, companyId, destinataire);
   return {
-    destinataire: ce.email,
+    destinataire: dest,
+    identifiant: data.email,
     nom_entreprise: data.nomEntreprise,
     candidatures: data.candidatures,
     offres: data.offres,
+    profils_cvtheque: data.profilsCvtheque,
     deja_envoye_le: envoye_le,
     sujet: sujetInvitation(data),
     html: corpsInvitation(data),
   };
+}
+
+/**
+ * Banniere d'en-tete d'un envoi de TEST.
+ *
+ * Le test contient le vrai mot de passe de l'entreprise — c'est tout son
+ * interet, on verifie ce qui partira reellement. Il doit donc etre impossible
+ * de le confondre avec le message recu par l'entreprise : sujet prefixe et
+ * bandeau en tete, avec le destinataire reel rappele.
+ */
+function banniereTest(destinataireReel: string, nom: string): string {
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+      background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:14px 16px;margin:16px auto;max-width:560px">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e">APERÇU DE TEST — ce message n'a PAS été envoyé à l'entreprise</p>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#92400e">
+        En envoi réel, il partirait à <strong>${String(destinataireReel).replace(/</g, '&lt;')}</strong>
+        pour <strong>${String(nom).replace(/</g, '&lt;')}</strong>.
+        Le mot de passe affiché ci-dessous est le vrai : ne transférez pas cet e-mail.
+      </p>
+    </div>`;
 }
 
 /** Journalise un envoi — reussi ou non. Volontairement non bloquant : perdre
@@ -328,22 +370,45 @@ async function journaliser(ctx: Ctx, ligne: Record<string, unknown>) {
   }
 }
 
-async function envoyerInvitation(ctx: Ctx, companyId: string) {
-  const { ce, data } = await collecterInvitation(ctx, companyId);
-  const sujet = sujetInvitation(data);
+/**
+ * Envoie l'invitation.
+ *
+ * `opts.destinataire` : adresse de l'entreprise (prospection) a la place de
+ * celle du compte. `opts.testVers` : envoi d'essai vers l'admin — rien n'est
+ * marque comme contacte, et le journal porte le statut « test ».
+ */
+async function envoyerInvitation(
+  ctx: Ctx,
+  companyId: string,
+  opts: { destinataire?: string; testVers?: string } = {},
+) {
+  const { destinataire: dest, data } = await collecterInvitation(ctx, companyId, opts.destinataire);
+
+  const estTest = Boolean(opts.testVers);
+  if (estTest && !EMAIL_RE.test(String(opts.testVers))) {
+    throw new Error(`Adresse de test invalide : « ${opts.testVers} ».`);
+  }
+  if (estTest && estAdresseTechnique(String(opts.testVers))) {
+    throw new Error('Adresse de test technique : choisissez une vraie boîte.');
+  }
+
+  const arrivee = estTest ? String(opts.testVers) : dest;
+  const sujet = (estTest ? '[TEST] ' : '') + sujetInvitation(data);
+  const html = estTest ? banniereTest(dest, data.nomEntreprise) + corpsInvitation(data) : corpsInvitation(data);
+
   const base = {
-    company_id: companyId, destinataire: ce.email, nom_entreprise: data.nomEntreprise,
+    company_id: companyId, destinataire: arrivee, nom_entreprise: data.nomEntreprise,
     sujet, candidatures: data.candidatures, offres: data.offres,
   };
 
   try {
     await sendBrevoEmail({
-      to: ce.email,
+      to: arrivee,
       toName: data.nomEntreprise,
       subject: sujet,
-      html: corpsInvitation(data),
+      html,
       replyTo: 'contact@soussmassa-rh.com',
-      tags: ['invitation-entreprise'],
+      tags: [estTest ? 'invitation-test' : 'invitation-entreprise'],
     });
   } catch (e: any) {
     // Un echec se journalise aussi : sans cette ligne, l'entreprise
@@ -353,18 +418,150 @@ async function envoyerInvitation(ctx: Ctx, companyId: string) {
     throw e;
   }
 
-  await journaliser(ctx, { ...base, statut: 'envoye' });
+  await journaliser(ctx, { ...base, statut: estTest ? 'test' : 'envoye' });
 
-  // Date posee APRES l'envoi : si Brevo echoue, l'entreprise reste dans la
-  // liste des a-contacter plutot que d'etre marquee a tort comme traitee.
-  await fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}`, {
-    method: 'PATCH', headers: { ...ctx.sb, Prefer: 'return=minimal' },
-    body: JSON.stringify({ envoye_le: new Date().toISOString() }),
-  });
+  // Un TEST ne marque rien : l'entreprise n'a rien recu, elle doit rester dans
+  // la liste des a-contacter. Confondre les deux ferait disparaitre une cible
+  // de la campagne sans que personne chez elle n'ait jamais ete joint.
+  if (!estTest) {
+    // Date posee APRES l'envoi : si Brevo echoue, l'entreprise reste dans la
+    // liste des a-contacter plutot que d'etre marquee a tort comme traitee.
+    await fetch(`${SUPABASE_URL}/rest/v1/company_credentials?company_id=eq.${companyId}`, {
+      method: 'PATCH', headers: { ...ctx.sb, Prefer: 'return=minimal' },
+      body: JSON.stringify({ envoye_le: new Date().toISOString() }),
+    });
+  }
 
   return {
-    company_id: companyId, email: ce.email, nom_entreprise: data.nomEntreprise,
-    candidatures: data.candidatures, offres: data.offres, statut: 'accès envoyés',
+    company_id: companyId, email: arrivee, destinataire: dest, test: estTest,
+    nom_entreprise: data.nomEntreprise,
+    candidatures: data.candidatures, offres: data.offres,
+    statut: estTest ? 'test envoyé' : 'accès envoyés',
+  };
+}
+
+/**
+ * Resout une cible de prospection vers le compte entreprise correspondant.
+ *
+ * Correspondance EXACTE sur la raison sociale (casse et espaces de bord
+ * ignores), et UN SEUL compte valide — les memes garde-fous que le trigger
+ * `job_offers_auto_claim` et le bouton « Rattacher ses offres », et pour la
+ * meme raison : le message contient un mot de passe. Un rapprochement
+ * approximatif donnerait a une societe l'acces au compte d'une autre, donc aux
+ * CV et aux coordonnees de ses candidats. En cas de doute, on refuse.
+ */
+async function compteDeLaCible(ctx: Ctx, cible: { raison_sociale: string }) {
+  const nom = String(cible.raison_sociale || '').trim();
+  if (!nomProvisionnable(nom)) {
+    throw new Error(`« ${nom} » ne designe pas une societe identifiable : pas d'envoi.`);
+  }
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/comptes_entreprise?select=id,nom_entreprise,statut&statut=eq.valide`,
+    { headers: ctx.sb });
+  const comptes = (await r.json()) as { id: string; nom_entreprise: string }[];
+  const cle = nom.toLowerCase();
+  const trouves = comptes.filter((c) => String(c.nom_entreprise || '').trim().toLowerCase() === cle);
+  if (trouves.length === 0) throw new Error(`Aucun compte valide au nom de « ${nom} ».`);
+  if (trouves.length > 1) throw new Error(`${trouves.length} comptes portent le nom « ${nom} » : fusionnez-les avant d'envoyer.`);
+  return trouves[0].id;
+}
+
+/**
+ * Adresse de la cible, avec un message qui dit la VRAIE cause.
+ *
+ * Sans ce controle, une cible sans adresse retombait sur celle du compte —
+ * souvent technique — et l'admin lisait « Adresse technique : renseignez la
+ * vraie adresse », alors que le probleme est qu'il n'a rien saisi dans la ligne
+ * de prospection. Un message qui designe le mauvais champ fait chercher au
+ * mauvais endroit.
+ */
+function adresseDeLaCible(cible: { raison_sociale: string; email: string | null }): string {
+  const e = String(cible.email || '').trim();
+  if (!e) throw new Error(`« ${cible.raison_sociale} » n'a pas d'adresse e-mail dans la liste de prospection : saisissez-la d'abord.`);
+  if (!EMAIL_RE.test(e)) throw new Error(`Adresse invalide pour « ${cible.raison_sociale} » : « ${e} ».`);
+  return e;
+}
+
+async function lireCibles(ctx: Ctx, ids: string[]) {
+  const liste = ids.map((i) => `"${String(i).replace(/"/g, '')}"`).join(',');
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/outreach_targets?id=in.(${encodeURIComponent(liste)})&select=id,raison_sociale,email,ville,statut`,
+    { headers: ctx.sb });
+  if (!r.ok) throw new Error(`Lecture des cibles impossible (${r.status})`);
+  return (await r.json()) as { id: string; raison_sociale: string; email: string | null; ville: string | null; statut: string }[];
+}
+
+/** Apercu d'une cible de prospection : compose, n'envoie rien. */
+async function apercuCible(ctx: Ctx, targetId: string) {
+  const [cible] = await lireCibles(ctx, [targetId]);
+  if (!cible) throw new Error('Cible introuvable');
+  const adresse = adresseDeLaCible(cible);
+  const companyId = await compteDeLaCible(ctx, cible);
+  const apercu = await previsualiserInvitation(ctx, companyId, adresse);
+  return { ...apercu, target_id: cible.id, company_id: companyId };
+}
+
+/** Envoi d'essai : le message exact d'une cible, expedie a l'admin. */
+async function testCible(ctx: Ctx, targetId: string, testVers: string) {
+  const [cible] = await lireCibles(ctx, [targetId]);
+  if (!cible) throw new Error('Cible introuvable');
+  const adresse = adresseDeLaCible(cible);
+  const companyId = await compteDeLaCible(ctx, cible);
+  return envoyerInvitation(ctx, companyId, { destinataire: adresse, testVers });
+}
+
+/**
+ * Envoi reel aux cibles de prospection selectionnees.
+ *
+ * Plafonne a 25 par appel, et 5 par defaut. Ce n'est pas une precaution
+ * theorique : le message porte un mot de passe, et les adresses viennent de
+ * recherches manuelles, pas d'une inscription. Une rafale vers des adresses non
+ * verifiees produit des rebonds qui degradent la reputation du domaine — et
+ * feraient retomber en spam TOUS les envois legitimes, alertes candidats
+ * comprises. Avancer par petits lots en regardant les rebonds entre deux.
+ *
+ * Chaque cible est traitee independamment : une erreur sur l'une n'interrompt
+ * pas les autres, et elle est rendue a l'appelant avec sa raison.
+ */
+async function envoyerAuxCibles(ctx: Ctx, ids: string[], limite: number) {
+  const plafond = Math.max(1, Math.min(limite || 5, 25));
+  const lues = await lireCibles(ctx, ids);
+  // `in.(...)` ne garantit AUCUN ordre : sans ce reclassement, « les 5
+  // premieres » auraient ete 5 cibles arbitraires, differentes a chaque appel.
+  // On rejoue l'ordre envoye par l'admin, qui est celui de son tableau — donc
+  // les entreprises joignables d'abord, puis par nombre de postes.
+  const parId = new Map(lues.map((c) => [c.id, c]));
+  const cibles = ids.map((i) => parId.get(i)).filter(Boolean) as typeof lues;
+  const aTraiter = cibles.slice(0, plafond);
+
+  const envoyes: any[] = [];
+  const erreurs: { target_id: string; raison_sociale: string; erreur: string }[] = [];
+
+  for (const cible of aTraiter) {
+    try {
+      const adresse = adresseDeLaCible(cible);
+      const companyId = await compteDeLaCible(ctx, cible);
+      const r = await envoyerInvitation(ctx, companyId, { destinataire: adresse });
+      // Statut pose APRES l'envoi reussi seulement : une cible marquee
+      // « contacte » alors que rien n'est parti disparaitrait de la campagne.
+      await fetch(`${SUPABASE_URL}/rest/v1/outreach_targets?id=eq.${cible.id}`, {
+        method: 'PATCH', headers: { ...ctx.sb, Prefer: 'return=minimal' },
+        body: JSON.stringify({ statut: 'contacte', date_contact: new Date().toISOString().slice(0, 10) }),
+      });
+      envoyes.push({ ...r, target_id: cible.id });
+    } catch (e: any) {
+      erreurs.push({
+        target_id: cible.id,
+        raison_sociale: cible.raison_sociale,
+        erreur: String(e?.message || e).slice(0, 200),
+      });
+    }
+  }
+  return {
+    envoyes: envoyes.length,
+    details: envoyes,
+    erreurs,
+    restantes: Math.max(0, cibles.length - aTraiter.length),
   };
 }
 
@@ -447,6 +644,22 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
     if (!autorise) return json(403, { error: 'Réservé à l’administrateur' });
 
+    // --- Campagne depuis l'onglet Prospection -------------------------------
+    // L'apercu et le test ne touchent a rien ; seul `invite_targets` envoie.
+    if (body.mode === 'preview_target') {
+      if (!body.target_id) return json(400, { error: 'target_id requis' });
+      return json(200, { ok: true, ...(await apercuCible(ctx, String(body.target_id))) });
+    }
+    if (body.mode === 'test_invite') {
+      if (!body.target_id || !body.test_email) return json(400, { error: 'target_id et test_email requis' });
+      return json(200, { ok: true, ...(await testCible(ctx, String(body.target_id), String(body.test_email))) });
+    }
+    if (body.mode === 'invite_targets') {
+      const ids = Array.isArray(body.target_ids) ? body.target_ids.map(String) : [];
+      if (!ids.length) return json(400, { error: 'target_ids requis' });
+      return json(200, { ok: true, ...(await envoyerAuxCibles(ctx, ids, Number(body.limit) || 5)) });
+    }
+
     // Envoi groupe, par lots courts (voir `envoyerLot`).
     if (body.mode === 'invite_all') {
       return json(200, { ok: true, ...(await envoyerLot(ctx, Number(body.limit) || 5)) });
@@ -461,6 +674,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         return json(200, { ok: true, ...(await envoyerInvitation(ctx, String(body.company_id))) });
       }
       const apercu = await previsualiserInvitation(ctx, String(body.company_id));
+
       return json(200, { ok: true, ...apercu });
     }
 
