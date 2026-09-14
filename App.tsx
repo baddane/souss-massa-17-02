@@ -11,6 +11,7 @@ import Offers from './pages/Offers';
 import JobDetail from './pages/JobDetail';
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
+import DepotCv from './pages/DepotCv';
 import NotFound from './pages/NotFound';
 import CompanyRegister from './pages/CompanyRegister';
 import CompanyLogin from './pages/CompanyLogin';
@@ -49,6 +50,7 @@ const AppShell: React.FC = () => {
             <Route path="/offres/:ville" element={<CityJobs />} />
             <Route path="/emploi/:slug" element={<JobDetail />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/deposer-mon-cv" element={<DepotCv />} />
             <Route path="/observatoire" element={<Observatoire />} />
             <Route path="/observatoire/:slug" element={<ObservatoireArticle />} />
             <Route path="/recruter" element={<Recruter />} />

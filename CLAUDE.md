@@ -1024,6 +1024,79 @@ octet identique.
 > groupes ayant plus d'une fiche sur `file_hash`, sur `lower(btrim(email))`,
 > et sur le couple `cvtheque_tel9(telephone)` / `cvtheque_nom_cle(nom_complet)`.
 
+### Depot de CV spontane — page publique `/deposer-mon-cv` (migration `036`)
+
+**Le constat.** Depuis la fermeture des inscriptions candidat, le bouton
+« Deposer mon CV » du menu renvoyait vers `/offres` : il n'existait plus AUCUN
+moyen de laisser son CV sans avoir d'abord repere une offre precise. Chiffres du
+2026-09-14 : les candidatures montent (72/semaine) mais les **nouvelles
+personnes baissent** (24 la semaine du 3 aout, 8 celle du 7 septembre). Les
+memes 118 personnes postulent 3,5 fois chacune. Le goulot etait l'acquisition,
+et il etait ferme par un `else`.
+
+- **`pages/DepotCv.tsx`** : cinq champs (nom, telephone, e-mail, ville, poste),
+  le CV, et le consentement. Aucun compte, aucun mot de passe — regle « 0
+  friction ». Trilingue (`depot.*` dans les 3 langues).
+- **Le consentement n'est PAS coche par defaut ici**, contrairement au
+  formulaire de candidature : la CVtheque est tout le service rendu par cette
+  page. Le precocher ferait reposer la base juridique de toute la collecte sur
+  une case que personne n'a lue.
+- **La fiche va directement dans `cvtheque`, jamais dans `candidatures`** : un
+  CV depose hors offre n'est pas une candidature, et l'enregistrer comme telle
+  fausserait le compteur des offres et le tableau de bord des entreprises.
+- **`src/services/depotCvService.ts` est separe de `cvthequeService`** : ce
+  dernier importe `cvParser` statiquement (pdf.js + mammoth, ~830 ko). Ici
+  l'analyse est en **import dynamique**, declenchee a l'envoi : le bundle public
+  n'a pris que +14 ko. L'analyse est **best effort** — un CV scanne ne donne
+  rien et ce n'est pas une raison de refuser le depot (rattrapage par
+  « Analyser les CV non traites »).
+
+#### `deposer_cv()` plutot qu'une policy INSERT — ce piege coutera du temps a qui l'ignore
+
+La premiere version posait une policy `INSERT` pour `anon`. **Elle ne pouvait
+pas fonctionner** : le client Supabase envoie `Prefer: return=representation`,
+PostgREST fait alors `INSERT … RETURNING`, et **Postgres applique au RETURNING
+la politique de LECTURE**. Un visiteur anonyme n'en a aucune sur `cvtheque` — et
+ne doit pas en avoir, la CVtheque n'etant lisible que depuis l'espace d'une
+entreprise **inscrite et validee**. L'insertion etait donc refusee (« new row
+violates row-level security policy ») alors que la ligne etait conforme. Les
+tests en SQL et en REST direct passaient : ils ne demandaient pas la ligne en
+retour. **Reproduire au navigateur, pas seulement en SQL.**
+
+La fonction SECURITY DEFINER est aussi **plus stricte qu'une policy** : le
+formulaire ne choisit plus les colonnes qu'il ecrit. `source`, `bucket`,
+`visible_recruteurs`, `notes` et `candidat_id` sont poses par la fonction, meme
+face a une requete forgee. `cvtheque` n'a donc **aucune policy pour `anon`** —
+elle en a exactement deux, comme avant : `cvtheque_admin_all` et
+`cvtheque_company_select`.
+
+- Le chemin est contraint a `^spontane/[^/]+$`. **Sans ce controle**, un
+  appelant creerait une fiche pointant vers le CV d'un AUTRE candidat
+  (`MA-10446749/…`) : `cvs_company_read_via_cvtheque` rend lisible tout fichier
+  de `cvs` rattache a une fiche consentante, ce serait un moyen d'exposer aux
+  entreprises un CV depose hors CVtheque.
+- Elle renvoie **`cree` ou `doublon`, jamais de donnees**. Le client s'en sert
+  uniquement pour retirer le fichier televerse pour rien — sinon chaque
+  re-depot laisserait un orphelin dans `cvs`. **L'interface affiche le meme
+  message dans les deux cas** : annoncer « vous etes deja enregistre » a qui
+  saisit l'adresse d'un tiers revelerait la presence de cette adresse.
+- **Un depot spontane ne modifie JAMAIS une fiche existante** : le garde-fou
+  anti-doublon comble les champs vides pour une candidature, mais abandonne
+  purement et simplement un doublon `source='spontane'`. L'appelant n'etant pas
+  authentifie, il pourrait sinon deposer sous l'e-mail d'un tiers pour glisser
+  SON numero dans la fiche de cette personne, dont un recruteur se servirait.
+- L'advisor signale `deposer_cv` comme SECURITY DEFINER appelable en anonyme :
+  **c'est voulu**, au meme titre que `is_admin()`.
+
+> **Verifie au navigateur, de bout en bout** : depot accepte, CV analyse
+> (competences, langues, niveau, 8 mots-cles, 272 caracteres de texte), fiche
+> trouvable par la recherche plein texte (« comptable », « sage ») et par les
+> filtres ville/poste, **CV telechargeable par une entreprise validee**. Et les
+> refus : sans consentement, e-mail invalide, nom vide, chemin hors
+> `spontane/`, `notes` ou `candidat_id` forces. Lecture de la CVtheque : **0
+> fiche** en anonyme, **0** pour un compte connecte non valide, 131 pour une
+> entreprise validee.
+
 ## Observatoire de l'emploi (rubrique editoriale SEO)
 
 Rubrique `/observatoire` (hub) + `/observatoire/{slug}` (article) : analyses du marche du travail

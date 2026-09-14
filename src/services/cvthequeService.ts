@@ -79,24 +79,27 @@ export const cvthequeService = {
       raw_text: parsed.raw_text || null,
     };
 
-    // `maybeSingle` et non `single` : quand le garde-fou anti-doublon abandonne
-    // la ligne, l'insertion renvoie zero ligne SANS erreur. `single` traduirait
-    // ce cas normal en « JSON object requested, multiple (or no) rows returned »,
-    // un message d'erreur incomprehensible pour l'admin.
-    const { data, error } = await supabaseOffers.from('cvtheque').insert(insert).select('*').maybeSingle();
+    // `select('id')` SANS `single`/`maybeSingle` : ces deux-la demandent a
+    // PostgREST de coercer le resultat en objet (`Accept: …pgrst.object+json`),
+    // et PostgREST repond alors **406** quand il y a zero ligne. Or zero ligne
+    // est ici le cas NORMAL : le garde-fou anti-doublon abandonne la ligne sans
+    // lever d'erreur. Verifie au navigateur — `maybeSingle` faisait echouer un
+    // import parfaitement valide avec « Cannot coerce the result to a single
+    // JSON object ». On lit donc le tableau et on regarde sa longueur.
+    const { data, error } = await supabaseOffers.from('cvtheque').insert(insert).select('*');
     if (error) {
       // Rollback du fichier uploadé pour ne pas laisser d'orphelin
       await supabaseOffers.storage.from(BUCKET).remove([path]);
       return { row: null, supported, error: error.message };
     }
-    if (!data) {
+    if (!data || data.length === 0) {
       // Doublon : le fichier vient d'etre televerse pour rien, on le retire du
       // bucket. Le laisser ferait grossir le stockage d'une copie invisible.
       await supabaseOffers.storage.from(BUCKET).remove([path]);
       const existante = await this.trouverExistante(parsed);
       return { row: existante, supported, doublon: true };
     }
-    return { row: data as CvthequeRow, supported };
+    return { row: data[0] as CvthequeRow, supported };
   },
 
   // Retrouve la fiche qui a fait rejeter l'import, pour pouvoir nommer le

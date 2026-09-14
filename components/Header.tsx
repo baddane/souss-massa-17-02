@@ -55,7 +55,11 @@ const Header: React.FC = () => {
   const candidate =
     account.kind === 'candidate'
       ? { to: '/espace-candidat', label: t('nav.candidateSpaceFull') }
-      : { to: INSCRIPTION_CANDIDAT_OUVERTE ? '/inscription-candidat' : '/offres', label: t('nav.depositCv') };
+      // Inscriptions fermees : le depot spontane REMPLACE la creation de compte,
+      // il ne la contourne pas. Renvoyer vers /offres comme avant revenait a
+      // fermer le principal canal d'acquisition de CV — le visiteur qui veut
+      // laisser son CV sans avoir repere d'offre repartait.
+      : { to: INSCRIPTION_CANDIDAT_OUVERTE ? '/inscription-candidat' : '/deposer-mon-cv', label: t('nav.depositCv') };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">

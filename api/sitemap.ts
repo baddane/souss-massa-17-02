@@ -55,6 +55,10 @@ export default async function handler() {
       // la page redirige, l'indexer enverrait Google sur une redirection.
       // `api/` est resolu a l'execution et ne peut pas importer `src/`, d'ou
       // cette ligne a rebasculer a la main lors de la reouverture.
+      // Page d'acquisition principale cote candidat : c'est elle qui doit
+      // capter « deposer CV Agadir », requete bien plus volumineuse qu'un
+      // intitule de poste. D'ou une priorite alignee sur /offres.
+      { url: '/deposer-mon-cv', priority: '0.9', changefreq: 'weekly' },
       { url: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];
 
