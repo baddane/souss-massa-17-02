@@ -15,13 +15,15 @@ interface SEOProps {
   type?: string;
   image?: string;
   jsonLd?: Record<string, unknown>;
+  /** Exclut la page de l'index Google (ex. résultat de filtre vide → évite les « soft 404 »). */
+  noindex?: boolean;
 }
 
 const SITE_NAME = 'SoussMassa-RH';
 const DEFAULT_DESCRIPTION = 'Trouvez votre emploi idéal dans la région Souss-Massa. Offres CDI, CDD, Stage à Agadir, Inezgane, Taroudant. Recrutement rapide et gratuit.';
 const SITE_URL = 'https://www.soussmassa-rh.com';
 
-const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'website', image, jsonLd }) => {
+const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'website', image, jsonLd, noindex }) => {
   const { lang } = useLanguage();
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Emploi et Recrutement Souss-Massa`;
   const desc = description || DEFAULT_DESCRIPTION;
@@ -32,6 +34,9 @@ const SEO: React.FC<SEOProps> = ({ title, description, canonical, type = 'websit
       <html lang={lang} dir={lang === 'ar' ? 'rtl' : 'ltr'} />
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
+      {/* noindex plus restrictif que le « index, follow » statique d'index.html :
+          en cas de conflit, Google applique la directive la plus restrictive. */}
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={url} />
 
       <meta property="og:title" content={fullTitle} />

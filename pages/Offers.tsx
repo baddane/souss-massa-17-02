@@ -102,12 +102,18 @@ const Offers: React.FC = () => {
     ? t('offers.seoTitleQuery', { query: seoQuery })
     : t('offers.seoTitleDefault');
 
+  // Vue filtrée (secteur, ville, recherche, contrat…) sans aucun résultat :
+  // on la sort de l'index pour éviter les « soft 404 » sur /offres?sector=…
+  const hasActiveFilter = !!(search || seoCity || contractType || seoSector || searchParams.get('jobTitle'));
+  const emptyFiltered = hasActiveFilter && !loading && allOffers.length === 0;
+
   return (
     <>
     <SEO
       title={seoTitle}
       description={t('offers.seoDescription', { count: allOffers.length, city: seoCity ? cityLabel(t, seoCity) : '' })}
       canonical={`/offres${window.location.search}`}
+      noindex={emptyFiltered}
     />
     <div className="max-w-5xl mx-auto px-4 py-8">
 
