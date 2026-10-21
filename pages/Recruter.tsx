@@ -37,13 +37,13 @@ const Recruter: React.FC = () => {
   if (ville && !city) return <Navigate to="/recruter" replace />;
 
   const canonical = city ? `/recruter/${slugify(city)}` : '/recruter';
-  const h1 = city ? `Recrutez à ${city}` : 'Recrutez les meilleurs talents de la Souss-Massa';
+  const h1 = city ? `Recrutement à ${city}` : 'Recrutez les meilleurs talents de la Souss-Massa';
   const heroText = city
-    ? `Publiez vos offres d’emploi à ${city} et dans toute la région Souss-Massa, accédez à la CVthèque régionale et touchez des candidats locaux qualifiés.`
+    ? `Réussissez votre recrutement à ${city} : publiez vos offres d’emploi, accédez à la CVthèque régionale et touchez des candidats locaux qualifiés, gratuitement.`
     : 'Publiez vos offres d’emploi, accédez à la CVthèque régionale et touchez une audience ciblée à Agadir, Inezgane, Taroudant, Tiznit et dans toute la région.';
-  const seoTitle = city ? `Recruter à ${city} : publier une offre d’emploi` : 'Recruter à Souss-Massa : publiez votre offre d’emploi';
+  const seoTitle = city ? `Recrutement à ${city} : publier une offre et trouver des candidats` : 'Recruter à Souss-Massa : publiez votre offre d’emploi';
   const seoDesc = city
-    ? `Recrutez à ${city} : publiez vos offres d’emploi, accédez à la CVthèque et à une audience régionale ciblée. Dépôt simple, gratuit pour démarrer.`
+    ? `Recrutement à ${city} : publiez vos offres d’emploi gratuitement, accédez à la CVthèque régionale et trouvez des candidats qualifiés à ${city}. Dépôt simple, gratuit pour démarrer.`
     : 'Recrutez à Agadir et dans toute la région Souss-Massa : publiez vos offres d’emploi, accédez à la CVthèque et à une audience régionale ciblée. Dépôt simple, gratuit pour démarrer.';
 
   const FAQ = [
@@ -52,6 +52,7 @@ const Recruter: React.FC = () => {
     { q: 'Quels types de contrats puis-je proposer ?', r: 'CDI, CDD, stage, intérim, alternance ou freelance : tous les types de contrats sont acceptés.' },
     { q: 'Comment recevoir et gérer les candidatures ?', r: 'Les candidats postulent directement en ligne. Vous consultez les candidatures et les CV depuis votre espace entreprise.' },
     { q: 'Puis-je consulter des CV sans publier d’offre ?', r: 'Oui, la CVthèque vous permet de rechercher des profils de la région par métier, ville, diplôme, compétence ou années d’expérience.' },
+    { q: `Comment réussir son recrutement à ${city || 'Agadir'} ?`, r: `Pour un recrutement efficace à ${city || 'Agadir'}, publiez une offre claire (intitulé, missions, contrat) et appuyez-vous sur la CVthèque régionale pour contacter directement les profils correspondants. SoussMassa-RH centralise candidats et entreprises de ${city || 'Agadir'} et de la région Souss-Massa.` },
   ];
 
   const jsonLd = {
@@ -97,6 +98,20 @@ const Recruter: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Intro SEO ville (cible « recrutement à {ville} ») */}
+      {city && (
+        <section className="max-w-3xl mx-auto px-4 pt-14 text-center">
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3">Le recrutement à {city} avec SoussMassa-RH</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Vous cherchez à réussir votre <strong>recrutement à {city}</strong> ? SoussMassa-RH est le portail emploi
+            de la région : publiez vos <Link to="/inscription-entreprise" className="text-blue-600 hover:underline">offres d’emploi à {city}</Link> gratuitement
+            et accédez à la <Link to="/cvtheque-gratuite" className="text-blue-600 hover:underline">CVthèque gratuite</Link> pour
+            trouver des candidats locaux par métier, diplôme et expérience. Un recrutement à {city} plus simple,
+            plus rapide et 100 % régional.
+          </p>
+        </section>
+      )}
 
       {/* Bénéfices */}
       <section className="max-w-5xl mx-auto px-4 py-16">
