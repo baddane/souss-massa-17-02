@@ -11,7 +11,7 @@ const RECRUITER_CITIES = ['Agadir', 'Inezgane', 'Aït Melloul', 'Taroudant', 'Ti
 const BENEFITS = [
   { icon: '🎯', titre: 'Une audience 100 % régionale', texte: "Votre offre est vue par des candidats de la région Souss-Massa — pas par un trafic national dilué." },
   { icon: '⚡', titre: 'Dépôt d’offre simple et rapide', texte: 'Créez votre compte entreprise et publiez votre annonce en quelques minutes. Chaque offre est vérifiée avant mise en ligne.' },
-  { icon: '📄', titre: 'Accès à la CVthèque', texte: 'Recherchez directement des profils par métier, ville, diplôme, compétence ou expérience, sans attendre les candidatures.' },
+  { icon: '📄', titre: 'Accès à la CVthèque gratuite', texte: 'Recherchez directement des profils par métier, ville, diplôme, compétence ou expérience, sans attendre les candidatures.', lien: '/cvtheque-gratuite', lienTexte: 'Découvrir la CVthèque gratuite' },
   { icon: '🔎', titre: 'Visibilité sur Google', texte: 'Chaque offre dispose d’une page optimisée SEO (données structurées Google for Jobs) : elle est indexée et référencée automatiquement.' },
   { icon: '💰', titre: 'Des repères de salaires', texte: 'Positionnez votre offre grâce à notre grille des salaires régionale par secteur, pour attirer les bons profils.' },
   { icon: '✅', titre: 'Gratuit pour démarrer', texte: 'Publiez vos premières offres sans frais et testez la qualité des candidatures de la région.' },
@@ -110,6 +110,11 @@ const Recruter: React.FC = () => {
               <div className="text-3xl mb-3">{b.icon}</div>
               <h3 className="font-bold text-gray-900 mb-1.5">{b.titre}</h3>
               <p className="text-gray-600 text-sm leading-relaxed">{b.texte}</p>
+              {(b as any).lien && (
+                <Link to={(b as any).lien} className="inline-block mt-2 text-blue-600 text-sm font-semibold hover:underline">
+                  {(b as any).lienTexte} →
+                </Link>
+              )}
             </div>
           ))}
         </div>

@@ -232,6 +232,7 @@ export const translations: Record<Lang, Dict> = {
     // Espace entreprise
     'nav.companyArea': 'Espace entreprise',
     'nav.postOffer': 'Déposer une offre',
+    'nav.cvtheque': 'CVthèque gratuite',
     'nav.depositCv': 'Déposer mon CV',
 
     // Page de depot de CV spontane (/deposer-mon-cv)
@@ -772,6 +773,7 @@ export const translations: Record<Lang, Dict> = {
     // Employer area
     'nav.companyArea': 'Employers',
     'nav.postOffer': 'Post a job',
+    'nav.cvtheque': 'Free CV database',
     'nav.depositCv': 'Upload my CV',
 
     'depot.title': 'Upload your CV',
@@ -1311,6 +1313,7 @@ export const translations: Record<Lang, Dict> = {
     // فضاء المقاولات
     'nav.companyArea': 'فضاء المقاولات',
     'nav.postOffer': 'نشر عرض عمل',
+    'nav.cvtheque': 'قاعدة السير الذاتية مجانا',
     'nav.depositCv': 'إيداع سيرتي الذاتية',
 
     'depot.title': 'أودع سيرتك الذاتية',

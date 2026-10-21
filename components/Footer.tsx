@@ -65,6 +65,7 @@ const Footer: React.FC = () => {
               <Link to="/contact" className="hover:text-white transition-colors">{t('nav.contact')}</Link>
               <Link to={INSCRIPTION_CANDIDAT_OUVERTE ? '/inscription-candidat' : '/deposer-mon-cv'} className="hover:text-white transition-colors">{t('nav.depositCv')}</Link>
               <Link to="/recruter" className="hover:text-white transition-colors">{t('nav.postOffer')}</Link>
+              <Link to="/cvtheque-gratuite" className="hover:text-white transition-colors">{t('nav.cvtheque')}</Link>
             </nav>
           </div>
         </div>

@@ -49,6 +49,7 @@ export default async function handler() {
       { url: '/', priority: '1.0', changefreq: 'daily' },
       { url: '/offres', priority: '0.9', changefreq: 'daily' },
       { url: '/recruter', priority: '0.8', changefreq: 'monthly' },
+      { url: '/cvtheque-gratuite', priority: '0.8', changefreq: 'weekly' },
       { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
       // '/inscription-candidat' retire tant que les inscriptions candidat sont
       // fermees (`INSCRIPTION_CANDIDAT_OUVERTE` dans src/config/features.ts) :
