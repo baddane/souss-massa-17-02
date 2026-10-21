@@ -15,7 +15,9 @@ const SECTOR_LINKS = [
   { key: 'enseignement', sector: 'enseignement' },
 ];
 
-const CITY_LINKS = ['Agadir', 'Inezgane', 'Aït Melloul', 'Taroudant', 'Tiznit'];
+// Villes ayant effectivement des offres actives : ne pas lier une ville vide
+// (page « Aucune offre » → soft 404 côté Google).
+const CITY_LINKS = ['Agadir', 'Inezgane', 'Taroudant', 'Tiznit', 'Biougra'];
 
 const Footer: React.FC = () => {
   const { t } = useT();

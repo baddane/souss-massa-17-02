@@ -283,6 +283,57 @@ async function companyMeta(slug: string): Promise<Meta> {
   };
 }
 
+// --- Page ville /offres/{ville} -------------------------------------------
+// Les villes sans aucune offre active (ou inconnues) renvoyaient un 200 avec un
+// contenu vide (« Aucune offre… ») ou une redirection cote client : Google les
+// classait en « soft 404 ». On renvoie desormais un vrai 404 pour ces URL, et
+// des balises <head> correctes pour les villes qui ont des offres.
+async function cityMeta(slug: string): Promise<Meta> {
+  const all = await loadOffers();
+  if (all === null) return { ...emptyMeta(), degraded: true };
+
+  const offers = all.filter((o) => slugifyCompany(o.ville) === slug);
+  if (offers.length === 0) return emptyMeta();   // ville vide/inconnue → 404
+
+  const cityName = offers[0].ville;
+  const totalPostes = offers.reduce((s, o) => s + (Number(o.nbre_postes) || 1), 0);
+  const plurielO = offers.length > 1 ? 's' : '';
+  const plurielP = totalPostes > 1 ? 's' : '';
+
+  const title = `Emploi à ${cityName} : offres d'emploi et recrutement`;
+  const description = clamp(
+    `Toutes les offres d'emploi à ${cityName} (Souss-Massa) : ${offers.length} annonce${plurielO} ` +
+    `(${totalPostes} poste${plurielP}) en CDI, CDD, stage et intérim. Jobs in ${cityName}. Postulez gratuitement en ligne.`,
+    158,
+  );
+
+  return {
+    title: `${title} | ${SITE_NAME}`,
+    description,
+    canonical: `${SITE_URL}/offres/${slug}`,
+    type: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `Offres d'emploi à ${cityName}`,
+      numberOfItems: offers.length,
+      itemListElement: offers.slice(0, 30).map((o, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${SITE_URL}/emploi/${o.slug}`,
+        name: o.emploi_metier,
+      })),
+    },
+    body: `
+      <h1>Offres d'emploi à ${esc(cityName)}</h1>
+      <p>${esc(offers.length)} offre${plurielO} d'emploi · ${esc(totalPostes)} poste${plurielP} à ${esc(cityName)}, région Souss-Massa.</p>
+      <ul>${offers.slice(0, 30).map((o) =>
+        `<li><a href="${SITE_URL}/emploi/${encodeURIComponent(o.slug)}">${esc(o.emploi_metier)} — ${esc(o.ville)}</a></li>`,
+      ).join('')}</ul>`,
+    found: true,
+  };
+}
+
 function emptyMeta(): Meta {
   return { title: '', description: '', canonical: '', type: 'website', found: false };
 }
@@ -390,10 +441,12 @@ export default async function handler(req: Request) {
     const offer = /^\/emploi\/([^/?#]+)/.exec(path);
     const article = /^\/observatoire\/([^/?#]+)/.exec(path);
     const company = /^\/recrutement\/([^/?#]+)/.exec(path);
+    const city = /^\/offres\/([^/?#]+)/.exec(path);
 
     if (offer) meta = await offerMeta(decodeURIComponent(offer[1]));
     else if (article) meta = await articleMeta(decodeURIComponent(article[1]));
     else if (company) meta = await companyMeta(decodeURIComponent(company[1]));
+    else if (city) meta = await cityMeta(decodeURIComponent(city[1]));
 
     if (!meta || meta.degraded) return send(shell);        // Supabase muet : statu quo
     if (!meta.found) {
