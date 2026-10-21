@@ -109,6 +109,9 @@ const Recruter: React.FC = () => {
             et accédez à la <Link to="/cvtheque-gratuite" className="text-blue-600 hover:underline">CVthèque gratuite</Link> pour
             trouver des candidats locaux par métier, diplôme et expérience. Un recrutement à {city} plus simple,
             plus rapide et 100 % régional.
+            {city === 'Agadir' && (
+              <> Découvrez pourquoi SoussMassa-RH est une <Link to="/cabinet-recrutement-agadir" className="text-blue-600 hover:underline">alternative gratuite au cabinet de recrutement à Agadir</Link>.</>
+            )}
           </p>
         </section>
       )}

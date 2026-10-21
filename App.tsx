@@ -23,6 +23,7 @@ import Observatoire from './pages/Observatoire';
 import ObservatoireArticle from './pages/ObservatoireArticle';
 import Recruter from './pages/Recruter';
 import CvthequeGratuite from './pages/CvthequeGratuite';
+import CabinetRecrutementAgadir from './pages/CabinetRecrutementAgadir';
 import CompanyJobs from './pages/CompanyJobs';
 import CityJobs from './pages/CityJobs';
 import { AuthProvider } from './contexts/AuthContext';
@@ -57,6 +58,7 @@ const AppShell: React.FC = () => {
             <Route path="/recruter" element={<Recruter />} />
             <Route path="/recruter/:ville" element={<Recruter />} />
             <Route path="/cvtheque-gratuite" element={<CvthequeGratuite />} />
+            <Route path="/cabinet-recrutement-agadir" element={<CabinetRecrutementAgadir />} />
             <Route path="/recrutement/:slug" element={<CompanyJobs />} />
             <Route path="/inscription-entreprise" element={<CompanyRegister />} />
             <Route path="/connexion-entreprise" element={<CompanyLogin />} />
