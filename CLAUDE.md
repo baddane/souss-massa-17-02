@@ -1214,9 +1214,11 @@ d'emploi, **entierement cote navigateur**, **sans IA** et **sans backend** — a
 n'est envoyee au serveur (vie privee + aucun cout/RLS). Persistance locale via
 `src/hooks/useLocalStorage.ts`. Pages dans `pages/outils/` :
 
-- **CvBuilder** (`/outils/cv`) : generateur de CV, apercu A4 en direct, 2 modeles
-  (moderne a colonne / classique ATS), couleur d'accent, photo (dataURL), export PDF
-  via `window.print()` (bloc `@media print` qui isole `#cv-sheet`).
+- **CvBuilder** (`/outils/cv`) : generateur de CV en **2 etapes** — (1) choix du modele
+  (galerie avec miniatures `Thumb`), (2) saisie + apercu A4 en direct. **4 modeles**
+  (`moderne` colonne laterale / `classique` ATS / `elegant` bandeau d'en-tete / `minimal`),
+  couleur d'accent, photo (dataURL), export PDF via `window.print()` (bloc `@media print`
+  qui isole `#cv-sheet`). On peut changer de modele sans perdre la saisie.
 - **LettreMotivation** (`/outils/lettre-motivation`) : cadre guide (accroche/vous/moi/nous)
   + bibliotheque de formulations inserables, apercu A4 imprimable.
 - **SalaireNet** (`/outils/salaire-net`) : brut→net Maroc. Parametres **2025** : CNSS 4,48%

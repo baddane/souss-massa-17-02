@@ -1,18 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../../components/SEO';
 import { useLocalStorage } from '../../src/hooks/useLocalStorage';
 
 // Générateur de CV 100 % client (aucune donnée envoyée au serveur), sans IA.
-// Aperçu A4 en direct + export PDF via l'impression du navigateur.
+// Étape 1 : choix du modèle · Étape 2 : saisie + aperçu A4 + export PDF (impression).
 
+type Modele = 'moderne' | 'classique' | 'elegant' | 'minimal';
 interface Exp { poste: string; entreprise: string; ville: string; debut: string; fin: string; desc: string; }
 interface Edu { diplome: string; etablissement: string; ville: string; annee: string; }
 interface CvData {
   prenom: string; nom: string; titre: string; email: string; tel: string; ville: string;
   linkedin: string; permis: string; photo: string; accroche: string;
   experiences: Exp[]; formations: Edu[]; competences: string; langues: string; interets: string;
-  modele: 'moderne' | 'classique'; accent: string;
+  modele: Modele; accent: string;
 }
 
 const EMPTY: CvData = {
@@ -23,12 +24,59 @@ const EMPTY: CvData = {
 };
 
 const ACCENTS = ['#1d4ed8', '#0f766e', '#b45309', '#9333ea', '#be123c', '#111827'];
+const TEMPLATES: { id: Modele; nom: string; desc: string }[] = [
+  { id: 'moderne', nom: 'Moderne', desc: 'Colonne latérale colorée. Polyvalent et structuré.' },
+  { id: 'classique', nom: 'Classique (ATS)', desc: 'Sobre, une colonne. Optimisé pour les logiciels de tri.' },
+  { id: 'elegant', nom: 'Élégant', desc: 'Bandeau d’en-tête coloré, mise en page aérée sur deux colonnes.' },
+  { id: 'minimal', nom: 'Minimaliste', desc: 'Épuré, accent discret, beaucoup de blanc. Idéal profils juniors.' },
+];
 const field = 'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none';
 const label = 'block text-xs font-semibold text-gray-500';
 const splitLines = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 
+// Miniature d'aperçu d'un modèle (maquette CSS, pas un rendu réel).
+const Thumb: React.FC<{ id: Modele; a: string }> = ({ id, a }) => {
+  const bar = (w: string, c = '#d1d5db') => <div style={{ width: w, background: c }} className="h-1 rounded" />;
+  if (id === 'moderne') return (
+    <div className="flex h-full bg-white">
+      <div className="w-1/3 p-1.5 space-y-1" style={{ background: a }}>
+        <div className="w-5 h-5 rounded-full bg-white/70 mx-auto" />
+        {bar('80%', 'rgba(255,255,255,.7)')}{bar('60%', 'rgba(255,255,255,.7)')}{bar('70%', 'rgba(255,255,255,.7)')}
+      </div>
+      <div className="flex-1 p-1.5 space-y-1">
+        <div className="h-1.5 w-3/4 rounded" style={{ background: a }} />{bar('90%')}{bar('85%')}{bar('70%')}<div className="h-1" />{bar('88%')}{bar('60%')}
+      </div>
+    </div>
+  );
+  if (id === 'classique') return (
+    <div className="h-full bg-white p-1.5 space-y-1">
+      <div className="h-1.5 w-1/2 rounded bg-gray-800" /><div className="h-px w-full" style={{ background: a }} />
+      {bar('95%')}{bar('90%')}<div className="h-1" />{bar('92%')}{bar('85%')}{bar('70%')}
+    </div>
+  );
+  if (id === 'elegant') return (
+    <div className="h-full bg-white">
+      <div className="p-1.5 space-y-1" style={{ background: a }}>
+        <div className="h-1.5 w-1/2 rounded bg-white/80" />{bar('40%', 'rgba(255,255,255,.6)')}
+      </div>
+      <div className="p-1.5 flex gap-1.5">
+        <div className="flex-1 space-y-1">{bar('95%')}{bar('85%')}{bar('90%')}</div>
+        <div className="w-1/3 space-y-1">{bar('80%', a)}{bar('70%')}{bar('60%')}</div>
+      </div>
+    </div>
+  );
+  return ( // minimal
+    <div className="h-full bg-white p-2 space-y-1.5">
+      <div className="h-2 w-2/3 rounded" style={{ background: a }} />{bar('40%')}
+      <div className="h-1" />{bar('95%')}{bar('88%')}{bar('92%')}{bar('70%')}
+    </div>
+  );
+};
+
 const CvBuilder: React.FC = () => {
   const [cv, setCv, reset] = useLocalStorage<CvData>('ssm_cv_v1', EMPTY);
+  const hasContent = !!(cv.prenom || cv.nom || cv.titre || cv.accroche || cv.experiences.some((e) => e.poste || e.entreprise));
+  const [step, setStep] = useState<'choix' | 'edition'>(hasContent ? 'edition' : 'choix');
   const fileRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<CvData>) => setCv((c) => ({ ...c, ...patch }));
 
@@ -39,7 +87,6 @@ const CvBuilder: React.FC = () => {
     r.onload = () => set({ photo: String(r.result) });
     r.readAsDataURL(file);
   };
-
   const setExp = (i: number, p: Partial<Exp>) =>
     setCv((c) => ({ ...c, experiences: c.experiences.map((e, j) => (j === i ? { ...e, ...p } : e)) }));
   const setEdu = (i: number, p: Partial<Edu>) =>
@@ -51,14 +98,62 @@ const CvBuilder: React.FC = () => {
   const interets = splitLines(cv.interets);
   const fullName = `${cv.prenom} ${cv.nom}`.trim() || 'Votre Nom';
   const periode = (d: string, f: string) => [d, f].filter(Boolean).join(' – ');
+  const contacts = [cv.email, cv.tel, cv.ville, cv.linkedin, cv.permis].filter(Boolean);
 
+  const expOk = cv.experiences.filter((e) => e.poste || e.entreprise);
+  const eduOk = cv.formations.filter((e) => e.diplome || e.etablissement);
+
+  // ---------------- Étape 1 : choix du modèle ----------------
+  if (step === 'choix') {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <SEO
+          title="Générateur de CV gratuit en ligne (PDF) — modèles professionnels"
+          description="Créez gratuitement un CV professionnel en ligne et exportez-le en PDF. Choisissez parmi plusieurs modèles, aperçu en direct, sans inscription. Vos données restent privées (aucune IA)."
+          canonical="/outils/cv"
+        />
+        <nav className="text-sm text-gray-400 mb-4">
+          <Link to="/outils" className="hover:text-blue-600">Outils</Link><span className="mx-2">/</span><span>Générateur de CV</span>
+        </nav>
+        <h1 className="text-3xl font-black text-gray-900 mb-1">Choisissez votre modèle de CV</h1>
+        <p className="text-gray-600 mb-6">Sélectionnez un format pour commencer. Vous pourrez en changer à tout moment, sans perdre vos informations.</p>
+
+        <div className="mb-6">
+          <span className="text-xs font-semibold text-gray-500 me-2">Couleur :</span>
+          {ACCENTS.map((c) => (
+            <button key={c} onClick={() => set({ accent: c })} aria-label={`couleur ${c}`}
+              className={`inline-block w-6 h-6 rounded-full border-2 align-middle me-1 ${a === c ? 'border-gray-800' : 'border-white'} shadow`} style={{ background: c }} />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {TEMPLATES.map((tpl) => (
+            <button key={tpl.id} onClick={() => { set({ modele: tpl.id }); setStep('edition'); }}
+              className={`text-left bg-white rounded-2xl border p-3 transition-all hover:shadow-md ${cv.modele === tpl.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}>
+              <div className="aspect-[1/1.414] rounded-lg border border-gray-100 overflow-hidden mb-3 shadow-sm">
+                <Thumb id={tpl.id} a={a} />
+              </div>
+              <h2 className="font-bold text-gray-900 text-sm">{tpl.nom}</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{tpl.desc}</p>
+              <span className="inline-block mt-2 text-blue-600 font-bold text-sm">Choisir ce modèle →</span>
+            </button>
+          ))}
+        </div>
+
+        {hasContent && (
+          <div className="mt-6">
+            <button onClick={() => setStep('edition')} className="text-sm font-semibold text-gray-600 hover:text-blue-600">↩ Reprendre mon CV en cours</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ---------------- Étape 2 : saisie + aperçu ----------------
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <SEO
-        title="Générateur de CV gratuit en ligne (PDF) — modèles professionnels"
-        description="Créez gratuitement un CV professionnel en ligne et exportez-le en PDF. Plusieurs modèles, aperçu en direct, sans inscription. Vos données restent privées (aucune IA, aucun envoi)."
-        canonical="/outils/cv"
-      />
+      <SEO title="Générateur de CV gratuit en ligne (PDF) — modèles professionnels"
+        description="Créez gratuitement un CV professionnel en ligne et exportez-le en PDF. Plusieurs modèles, aperçu en direct, sans inscription." canonical="/outils/cv" />
 
       <style>{`
         @media print {
@@ -69,40 +164,36 @@ const CvBuilder: React.FC = () => {
         }
       `}</style>
 
-      <nav className="text-sm text-gray-400 mb-4">
-        <Link to="/outils" className="hover:text-blue-600">Outils</Link>
-        <span className="mx-2">/</span><span>Générateur de CV</span>
+      <nav className="text-sm text-gray-400 mb-4 print:hidden">
+        <Link to="/outils" className="hover:text-blue-600">Outils</Link><span className="mx-2">/</span>
+        <button onClick={() => setStep('choix')} className="hover:text-blue-600">Générateur de CV</button>
+        <span className="mx-2">/</span><span>Saisie</span>
       </nav>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* ---------------- Formulaire ---------------- */}
         <div className="w-full lg:w-1/2 space-y-5 print:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-black text-gray-900">Générateur de CV</h1>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h1 className="text-2xl font-black text-gray-900">Votre CV</h1>
             <div className="flex gap-2">
               <button onClick={() => window.print()} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700">⬇ Télécharger (PDF)</button>
-              <button onClick={() => { if (confirm('Effacer tout le CV ?')) reset(); }} className="px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">Réinitialiser</button>
+              <button onClick={() => { if (confirm('Effacer tout le CV ?')) { reset(); setStep('choix'); } }} className="px-3 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">Réinitialiser</button>
             </div>
           </div>
           <p className="text-xs text-gray-400">💾 Enregistré automatiquement dans ce navigateur · 🔒 aucune donnée envoyée.</p>
 
-          {/* Style */}
+          {/* Modèle + couleur */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <h2 className="font-bold text-gray-900 text-sm mb-3">Style</h2>
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex gap-2">
-                {(['moderne', 'classique'] as const).map((m) => (
-                  <button key={m} onClick={() => set({ modele: m })}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold border ${cv.modele === m ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600'}`}>
-                    {m === 'moderne' ? 'Moderne' : 'Classique (ATS)'}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Couleur :</span>
+                <span className="text-sm font-bold text-gray-900">Modèle :</span>
+                <span className="text-sm text-gray-600">{TEMPLATES.find((t) => t.id === cv.modele)?.nom}</span>
+                <button onClick={() => setStep('choix')} className="text-sm text-blue-600 font-semibold hover:underline">changer</button>
+              </div>
+              <div className="flex items-center gap-1.5">
                 {ACCENTS.map((c) => (
                   <button key={c} onClick={() => set({ accent: c })} aria-label={`couleur ${c}`}
-                    className={`w-6 h-6 rounded-full border-2 ${a === c ? 'border-gray-800' : 'border-white'} shadow`} style={{ background: c }} />
+                    className={`w-5 h-5 rounded-full border-2 ${a === c ? 'border-gray-800' : 'border-white'} shadow`} style={{ background: c }} />
                 ))}
               </div>
             </div>
@@ -189,81 +280,96 @@ const CvBuilder: React.FC = () => {
         <div className="w-full lg:w-1/2 lg:sticky lg:top-20 overflow-x-auto">
           <div className="hidden lg:block text-xs text-gray-400 mb-2">Aperçu — format A4</div>
           <div id="cv-sheet" className="bg-white shadow-lg mx-auto text-[12px] leading-snug text-gray-800"
-            style={{ width: '210mm', minHeight: '297mm', transform: 'none' }}>
-            {cv.modele === 'moderne' ? (
+            style={{ width: '210mm', minHeight: '297mm' }}>
+
+            {cv.modele === 'moderne' && (
               <div className="flex min-h-[297mm]">
-                {/* Colonne latérale */}
                 <aside className="w-[34%] p-5 text-white" style={{ background: a }}>
                   {cv.photo && <img src={cv.photo} alt="" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-2 border-white/50" />}
                   <Section title="Contact" light>
-                    {cv.email && <P>{cv.email}</P>}
-                    {cv.tel && <P>{cv.tel}</P>}
-                    {cv.ville && <P>{cv.ville}</P>}
-                    {cv.linkedin && <P>{cv.linkedin}</P>}
-                    {cv.permis && <P>{cv.permis}</P>}
+                    {cv.email && <P>{cv.email}</P>}{cv.tel && <P>{cv.tel}</P>}{cv.ville && <P>{cv.ville}</P>}{cv.linkedin && <P>{cv.linkedin}</P>}{cv.permis && <P>{cv.permis}</P>}
                   </Section>
-                  {competences.length > 0 && (
-                    <Section title="Compétences" light>
-                      {competences.map((c, i) => <P key={i}>• {c}</P>)}
-                    </Section>
-                  )}
-                  {langues.length > 0 && (
-                    <Section title="Langues" light>
-                      {langues.map((l, i) => <P key={i}>• {l}</P>)}
-                    </Section>
-                  )}
-                  {interets.length > 0 && (
-                    <Section title="Centres d’intérêt" light>
-                      {interets.map((l, i) => <P key={i}>• {l}</P>)}
-                    </Section>
-                  )}
+                  {competences.length > 0 && <Section title="Compétences" light>{competences.map((c, i) => <P key={i}>• {c}</P>)}</Section>}
+                  {langues.length > 0 && <Section title="Langues" light>{langues.map((l, i) => <P key={i}>• {l}</P>)}</Section>}
+                  {interets.length > 0 && <Section title="Centres d’intérêt" light>{interets.map((l, i) => <P key={i}>• {l}</P>)}</Section>}
                 </aside>
-                {/* Colonne principale */}
                 <main className="w-[66%] p-6">
                   <h1 className="text-2xl font-black" style={{ color: a }}>{fullName}</h1>
                   {cv.titre && <p className="text-sm font-semibold text-gray-500 mb-3">{cv.titre}</p>}
                   {cv.accroche && <p className="text-[12px] text-gray-600 mb-4">{cv.accroche}</p>}
-                  <Block title="Expérience professionnelle" a={a}>
-                    {cv.experiences.filter((e) => e.poste || e.entreprise).map((e, i) => (
-                      <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />
-                    ))}
-                  </Block>
-                  <Block title="Formation" a={a}>
-                    {cv.formations.filter((e) => e.diplome || e.etablissement).map((e, i) => (
-                      <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />
-                    ))}
-                  </Block>
+                  <Block title="Expérience professionnelle" a={a}>{expOk.map((e, i) => <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />)}</Block>
+                  <Block title="Formation" a={a}>{eduOk.map((e, i) => <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />)}</Block>
                 </main>
               </div>
-            ) : (
-              /* Classique / ATS — une colonne sobre */
+            )}
+
+            {cv.modele === 'classique' && (
               <div className="p-10">
                 <div className="flex items-center gap-4 border-b-2 pb-3 mb-4" style={{ borderColor: a }}>
                   {cv.photo && <img src={cv.photo} alt="" className="w-20 h-20 rounded object-cover" />}
                   <div>
                     <h1 className="text-2xl font-black text-gray-900">{fullName}</h1>
                     {cv.titre && <p className="text-sm font-semibold" style={{ color: a }}>{cv.titre}</p>}
-                    <p className="text-[11px] text-gray-500 mt-1">
-                      {[cv.email, cv.tel, cv.ville, cv.linkedin, cv.permis].filter(Boolean).join('  ·  ')}
-                    </p>
+                    <p className="text-[11px] text-gray-500 mt-1">{contacts.join('  ·  ')}</p>
                   </div>
                 </div>
                 {cv.accroche && <p className="text-[12px] text-gray-700 mb-4">{cv.accroche}</p>}
-                <Block title="Expérience professionnelle" a={a} plain>
-                  {cv.experiences.filter((e) => e.poste || e.entreprise).map((e, i) => (
-                    <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />
-                  ))}
-                </Block>
-                <Block title="Formation" a={a} plain>
-                  {cv.formations.filter((e) => e.diplome || e.etablissement).map((e, i) => (
-                    <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />
-                  ))}
-                </Block>
+                <Block title="Expérience professionnelle" a={a}>{expOk.map((e, i) => <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />)}</Block>
+                <Block title="Formation" a={a}>{eduOk.map((e, i) => <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />)}</Block>
                 <div className="grid grid-cols-2 gap-6">
-                  {competences.length > 0 && <Block title="Compétences" a={a} plain><p className="text-[12px] text-gray-700">{competences.join(' · ')}</p></Block>}
-                  {langues.length > 0 && <Block title="Langues" a={a} plain><p className="text-[12px] text-gray-700">{langues.join(' · ')}</p></Block>}
+                  {competences.length > 0 && <Block title="Compétences" a={a}><p className="text-[12px] text-gray-700">{competences.join(' · ')}</p></Block>}
+                  {langues.length > 0 && <Block title="Langues" a={a}><p className="text-[12px] text-gray-700">{langues.join(' · ')}</p></Block>}
                 </div>
-                {interets.length > 0 && <Block title="Centres d’intérêt" a={a} plain><p className="text-[12px] text-gray-700">{interets.join(' · ')}</p></Block>}
+                {interets.length > 0 && <Block title="Centres d’intérêt" a={a}><p className="text-[12px] text-gray-700">{interets.join(' · ')}</p></Block>}
+              </div>
+            )}
+
+            {cv.modele === 'elegant' && (
+              <div className="min-h-[297mm]">
+                <header className="px-8 py-7 text-white flex items-center gap-4" style={{ background: a }}>
+                  {cv.photo && <img src={cv.photo} alt="" className="w-20 h-20 rounded-full object-cover border-2 border-white/60" />}
+                  <div>
+                    <h1 className="text-3xl font-black tracking-tight">{fullName}</h1>
+                    {cv.titre && <p className="text-sm font-semibold opacity-90">{cv.titre}</p>}
+                    <p className="text-[11px] mt-1 opacity-85">{contacts.join('  ·  ')}</p>
+                  </div>
+                </header>
+                <div className="p-8">
+                  {cv.accroche && <p className="text-[12px] text-gray-700 italic mb-5 border-s-2 ps-3" style={{ borderColor: a }}>{cv.accroche}</p>}
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="col-span-2">
+                      <Block title="Expérience professionnelle" a={a}>{expOk.map((e, i) => <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />)}</Block>
+                      <Block title="Formation" a={a}>{eduOk.map((e, i) => <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />)}</Block>
+                    </div>
+                    <div className="col-span-1">
+                      {competences.length > 0 && <Block title="Compétences" a={a}><ul className="space-y-1 text-[12px] text-gray-700">{competences.map((c, i) => <li key={i}>• {c}</li>)}</ul></Block>}
+                      {langues.length > 0 && <Block title="Langues" a={a}><ul className="space-y-1 text-[12px] text-gray-700">{langues.map((c, i) => <li key={i}>• {c}</li>)}</ul></Block>}
+                      {interets.length > 0 && <Block title="Centres d’intérêt" a={a}><ul className="space-y-1 text-[12px] text-gray-700">{interets.map((c, i) => <li key={i}>• {c}</li>)}</ul></Block>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {cv.modele === 'minimal' && (
+              <div className="p-12">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="text-4xl font-black tracking-tight" style={{ color: a }}>{fullName}</h1>
+                    {cv.titre && <p className="text-sm font-semibold text-gray-500 mt-1">{cv.titre}</p>}
+                  </div>
+                  {cv.photo && <img src={cv.photo} alt="" className="w-20 h-20 rounded object-cover" />}
+                </div>
+                <p className="text-[11px] text-gray-500 mt-2">{contacts.join('   •   ')}</p>
+                <hr className="my-5" style={{ borderColor: a, borderTopWidth: 2 }} />
+                {cv.accroche && <p className="text-[12px] text-gray-700 mb-6">{cv.accroche}</p>}
+                <Block title="Expérience" a={a}>{expOk.map((e, i) => <Item key={i} head={e.poste} sub={[e.entreprise, e.ville].filter(Boolean).join(' · ')} date={periode(e.debut, e.fin)} desc={e.desc} />)}</Block>
+                <Block title="Formation" a={a}>{eduOk.map((e, i) => <Item key={i} head={e.diplome} sub={[e.etablissement, e.ville].filter(Boolean).join(' · ')} date={e.annee} />)}</Block>
+                <div className="grid grid-cols-2 gap-6">
+                  {competences.length > 0 && <Block title="Compétences" a={a}><p className="text-[12px] text-gray-700">{competences.join(' · ')}</p></Block>}
+                  {langues.length > 0 && <Block title="Langues" a={a}><p className="text-[12px] text-gray-700">{langues.join(' · ')}</p></Block>}
+                </div>
+                {interets.length > 0 && <Block title="Centres d’intérêt" a={a}><p className="text-[12px] text-gray-700">{interets.join(' · ')}</p></Block>}
               </div>
             )}
           </div>
@@ -276,7 +382,7 @@ const CvBuilder: React.FC = () => {
   );
 };
 
-// Petits composants de rendu
+// Composants de rendu
 const Section: React.FC<{ title: string; light?: boolean; children: React.ReactNode }> = ({ title, children }) => (
   <div className="mb-4">
     <h3 className="text-[11px] font-black uppercase tracking-wider mb-1.5 opacity-90">{title}</h3>
@@ -285,7 +391,7 @@ const Section: React.FC<{ title: string; light?: boolean; children: React.ReactN
 );
 const P: React.FC<{ children: React.ReactNode }> = ({ children }) => <p className="break-words">{children}</p>;
 
-const Block: React.FC<{ title: string; a: string; plain?: boolean; children: React.ReactNode }> = ({ title, a, children }) => (
+const Block: React.FC<{ title: string; a: string; children: React.ReactNode }> = ({ title, a, children }) => (
   <section className="mb-4">
     <h2 className="text-[13px] font-black uppercase tracking-wide mb-2" style={{ color: a }}>{title}</h2>
     <div className="space-y-3">{children}</div>
