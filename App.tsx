@@ -21,6 +21,12 @@ import CandidateLogin from './pages/CandidateLogin';
 import CandidateDashboard from './pages/CandidateDashboard';
 import Observatoire from './pages/Observatoire';
 import ObservatoireArticle from './pages/ObservatoireArticle';
+import Outils from './pages/Outils';
+import CvBuilder from './pages/outils/CvBuilder';
+import LettreMotivation from './pages/outils/LettreMotivation';
+import SalaireNet from './pages/outils/SalaireNet';
+import AnalyseCv from './pages/outils/AnalyseCv';
+import ProjetProfessionnel from './pages/outils/ProjetProfessionnel';
 import Recruter from './pages/Recruter';
 import CvthequeGratuite from './pages/CvthequeGratuite';
 import CabinetRecrutementAgadir from './pages/CabinetRecrutementAgadir';
@@ -55,6 +61,12 @@ const AppShell: React.FC = () => {
             <Route path="/deposer-mon-cv" element={<DepotCv />} />
             <Route path="/observatoire" element={<Observatoire />} />
             <Route path="/observatoire/:slug" element={<ObservatoireArticle />} />
+            <Route path="/outils" element={<Outils />} />
+            <Route path="/outils/cv" element={<CvBuilder />} />
+            <Route path="/outils/lettre-motivation" element={<LettreMotivation />} />
+            <Route path="/outils/salaire-net" element={<SalaireNet />} />
+            <Route path="/outils/analyse-cv" element={<AnalyseCv />} />
+            <Route path="/outils/projet-professionnel" element={<ProjetProfessionnel />} />
             <Route path="/recruter" element={<Recruter />} />
             <Route path="/recruter/:ville" element={<Recruter />} />
             <Route path="/cvtheque-gratuite" element={<CvthequeGratuite />} />

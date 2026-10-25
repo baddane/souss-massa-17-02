@@ -54,6 +54,12 @@ async function main() {
     { url: '/cvtheque-gratuite', priority: '0.8', changefreq: 'weekly' },
     { url: '/cabinet-recrutement-agadir', priority: '0.7', changefreq: 'monthly' },
     { url: '/observatoire', priority: '0.8', changefreq: 'daily' },
+    { url: '/outils', priority: '0.8', changefreq: 'weekly' },
+    { url: '/outils/cv', priority: '0.8', changefreq: 'monthly' },
+    { url: '/outils/lettre-motivation', priority: '0.7', changefreq: 'monthly' },
+    { url: '/outils/salaire-net', priority: '0.8', changefreq: 'monthly' },
+    { url: '/outils/analyse-cv', priority: '0.7', changefreq: 'monthly' },
+    { url: '/outils/projet-professionnel', priority: '0.7', changefreq: 'monthly' },
     // '/inscription-candidat' retire : la page redirige tant que les
     // inscriptions candidat sont fermees, l'indexer enverrait Google sur
     // une redirection. Remis a la reouverture, comme dans api/sitemap.ts.

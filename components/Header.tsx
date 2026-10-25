@@ -72,6 +72,7 @@ const Header: React.FC = () => {
 
           <nav className="hidden md:flex items-center gap-5">
             {navLink('/offres', t('nav.allOffers'), location.pathname === '/offres')}
+            {navLink('/outils', t('nav.outils'), location.pathname.startsWith('/outils'))}
             {navLink('/observatoire', t('nav.observatoire'), location.pathname.startsWith('/observatoire'))}
             {navLink('/contact', t('nav.contact'), location.pathname === '/contact')}
 
@@ -115,6 +116,9 @@ const Header: React.FC = () => {
         <nav className="md:hidden bg-white border-t border-gray-100 py-3 px-4 space-y-2">
           <Link to="/offres" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.allOffers')}
+          </Link>
+          <Link to="/outils" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+            {t('nav.outils')}
           </Link>
           <Link to="/observatoire" className="block px-3 py-2 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
             {t('nav.observatoire')}

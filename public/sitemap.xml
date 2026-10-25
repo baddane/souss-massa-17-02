@@ -37,6 +37,42 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.soussmassa-rh.com/outils</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.soussmassa-rh.com/outils/cv</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.soussmassa-rh.com/outils/lettre-motivation</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.soussmassa-rh.com/outils/salaire-net</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.soussmassa-rh.com/outils/analyse-cv</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.soussmassa-rh.com/outils/projet-professionnel</loc>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.soussmassa-rh.com/deposer-mon-cv</loc>
     <lastmod>2026-10-25</lastmod>
     <changefreq>weekly</changefreq>

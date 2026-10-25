@@ -1207,6 +1207,32 @@ ignore tournerait en boucle).
 > ajoutes. Entreprise deja contactee : compteurs a jour, `statut` et `email`
 > intacts.
 
+## Outils candidat (onglet « Outils », 100% client, sans IA)
+
+Onglet **Outils** (`/outils`, hub `pages/Outils.tsx`) : boite a outils pour chercheurs
+d'emploi, **entierement cote navigateur**, **sans IA** et **sans backend** — aucune donnee
+n'est envoyee au serveur (vie privee + aucun cout/RLS). Persistance locale via
+`src/hooks/useLocalStorage.ts`. Pages dans `pages/outils/` :
+
+- **CvBuilder** (`/outils/cv`) : generateur de CV, apercu A4 en direct, 2 modeles
+  (moderne a colonne / classique ATS), couleur d'accent, photo (dataURL), export PDF
+  via `window.print()` (bloc `@media print` qui isole `#cv-sheet`).
+- **LettreMotivation** (`/outils/lettre-motivation`) : cadre guide (accroche/vous/moi/nous)
+  + bibliotheque de formulations inserables, apercu A4 imprimable.
+- **SalaireNet** (`/outils/salaire-net`) : brut→net Maroc. Parametres **2025** : CNSS 4,48%
+  (plafond 6 000), AMO 2,26%, frais pro 35%/25% (plafond 2 916,67), bareme IR mensuel,
+  charges de famille 500/an (max 6). Estimation (hors CIMR/mutuelle) — disclaimer affiche.
+  **Verifier/mettre a jour ces taux a chaque Loi de Finances.**
+- **AnalyseCv** (`/outils/analyse-cv`) : score /100 par **regles** (longueur, coordonnees,
+  sections, verbes d'action, resultats chiffres, correspondance mots-cles d'une offre). Pas d'IA.
+- **ProjetProfessionnel** (`/outils/projet-professionnel`) : test d'interets **RIASEC**
+  (bareme transparent) + bilan + objectif SMART + plan d'action, fiche imprimable.
+
+- **SEO** : chaque page a son `<SEO>` (cible « cv gratuit », « salaire net maroc »,
+  « lettre de motivation », « projet professionnel »…) ; ajoutees au sitemap (api + script).
+- **i18n** : seul le libelle de nav est traduit (`nav.outils`, 3 langues) ; le contenu des
+  outils est en FR (meme choix que les pages marketing Recruter/CVthequeGratuite).
+
 ## Securite (RLS, donnees candidats, auth admin)
 
 Modele : le frontend utilise la **cle anon (publique)**. Les protections reposent donc
