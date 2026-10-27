@@ -5887,6 +5887,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.soussmassa-rh.com/observatoire/creations-emplois-souss-massa-services-agriculture-industrie</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.soussmassa-rh.com/observatoire/chomage-diplome-plus-qualifies-plus-exposes</loc>
     <lastmod>2026-10-20</lastmod>
     <changefreq>monthly</changefreq>
@@ -5971,12 +5977,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.soussmassa-rh.com/observatoire/marche-emploi-souss-massa-analyse-346-offres-2026</loc>
-    <lastmod>2026-07-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.soussmassa-rh.com/observatoire/grille-salaires-souss-massa-2026</loc>
     <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
@@ -5989,19 +5989,25 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.soussmassa-rh.com/observatoire/marche-emploi-souss-massa-analyse-346-offres-2026</loc>
+    <lastmod>2026-07-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.soussmassa-rh.com/observatoire/smig-smag-2026-impact-salaires-souss-massa</loc>
     <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.soussmassa-rh.com/observatoire/chomage-jeunes-diplomes-2024-souss-massa</loc>
+    <loc>https://www.soussmassa-rh.com/observatoire/observatoire-emploi-souss-massa-mission</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.soussmassa-rh.com/observatoire/observatoire-emploi-souss-massa-mission</loc>
+    <loc>https://www.soussmassa-rh.com/observatoire/chomage-jeunes-diplomes-2024-souss-massa</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
