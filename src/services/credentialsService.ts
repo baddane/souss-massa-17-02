@@ -71,7 +71,21 @@ async function adminFetch(payload: Record<string, unknown>) {
   return body as any;
 }
 
+export interface CibleRelance {
+  company_id: string; nom: string; destinataire: string; invite_le: string;
+  nouvelles: number; total: number; exclue?: string;
+}
+
 export const credentialsService = {
+  /** Relance des entreprises deja invitees : apercu, rien n'est envoye. */
+  async relancePreview(): Promise<{ cibles: CibleRelance[]; exemple: null | { destinataire: string; sujet: string; html: string } }> {
+    return adminFetch({ mode: 'relance_preview' });
+  },
+  /** Envoie un lot de relances (5 au plus, plafonne cote serveur). */
+  async relanceSend(limit = 5): Promise<{ envoyes: { nom: string; email: string; nouvelles: number }[]; erreurs: { nom: string; erreur: string }[]; restantes: number }> {
+    return adminFetch({ mode: 'relance_send', limit });
+  },
+
   async list(): Promise<CompanyCredential[]> {
     const { data, error } = await supabaseOffers
       .from('company_credentials')

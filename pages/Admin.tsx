@@ -13,6 +13,7 @@ import LinkedInPostPanel from '../components/LinkedInPostPanel';
 import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services/observatoireService';
 import { outreachService, OutreachTarget, OUTREACH_STATUTS, EMAIL_RE } from '../src/services/outreachService';
 import InvitationCampaignPanel from '../components/InvitationCampaignPanel';
+import RelancePanel from '../components/RelancePanel';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -1611,6 +1612,8 @@ const Admin: React.FC = () => {
             <div className="flex-1" />
             <span className="text-sm text-gray-500">{outSel.size} sélectionnée(s)</span>
           </div>
+
+          <RelancePanel />
 
           {/* Campagne d'acces : le message porte les identifiants, il est compose
               par le serveur et non saisi ici (voir InvitationCampaignPanel). */}
