@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 import { sendBrevoEmail, estAdresseTechnique } from './_brevo.js';
 import { corpsInvitation, sujetInvitation } from './_invitation.js';
+import { corpsRelance, sujetRelance } from './_relance.js';
 
 // Provisionne des comptes entreprise prets a l'emploi pour les societes qui
 // recrutent deja sur la plateforme, et leur rattache leurs offres existantes.
@@ -705,6 +706,101 @@ async function envoyerLot(ctx: Ctx, limite: number) {
   return { envoyes: envoyes.length, erreurs, details: envoyes, restantes: Math.max(0, cibles.length - aTraiter.length) };
 }
 
+// --- Relance des entreprises deja invitees (sans identifiants) -------------
+//
+// Cible : chaque entreprise ayant recu une invitation reussie (`envoye`), a la
+// derniere adresse utilisee, si elle n'a pas encore ete relancee, si elle a
+// recu de NOUVELLES candidatures depuis, et si l'adresse n'a pas rebondi.
+// Le compteur est recalcule ici, jamais transmis par le client.
+
+const RELANCE_LOT_MAX = 5;
+
+async function aRebondi(email: string): Promise<boolean> {
+  const cle = process.env.BREVO_API_KEY;
+  if (!cle) return false;
+  try {
+    const r = await fetch(
+      `https://api.brevo.com/v3/smtp/statistics/events?email=${encodeURIComponent(email)}&event=hardBounces&days=90&limit=1`,
+      { headers: { 'api-key': cle, accept: 'application/json' } });
+    if (!r.ok) return false;
+    const j: any = await r.json();
+    return Array.isArray(j?.events) && j.events.length > 0;
+  } catch { return false; }
+}
+
+async function ciblesRelance(ctx: Ctx) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/invitation_envois?statut=in.(envoye,relance)&company_id=not.is.null&select=company_id,destinataire,nom_entreprise,statut,created_at&order=created_at.asc`,
+    { headers: ctx.sb });
+  const lignes = (await r.json()) as { company_id: string; destinataire: string; nom_entreprise: string; statut: string; created_at: string }[];
+  const parCompte = new Map<string, { company_id: string; destinataire: string; nom: string; invite_le: string; relance: boolean }>();
+  for (const l of lignes) {
+    const c = parCompte.get(l.company_id);
+    if (l.statut === 'relance') { if (c) c.relance = true; continue; }
+    // Derniere invitation reussie : son adresse et sa date font foi.
+    parCompte.set(l.company_id, { company_id: l.company_id, destinataire: l.destinataire, nom: l.nom_entreprise, invite_le: l.created_at, relance: c?.relance || false });
+  }
+
+  const compter = async (url: string) => {
+    const rr = await fetch(url, { headers: { ...ctx.sb, Prefer: 'count=exact', Range: '0-0' } });
+    return Number((rr.headers.get('content-range') || '').split('/')[1] || 0);
+  };
+
+  const resultat: { company_id: string; nom: string; destinataire: string; invite_le: string; nouvelles: number; total: number; exclue?: string }[] = [];
+  for (const c of parCompte.values()) {
+    const offres = (await (await fetch(
+      `${SUPABASE_URL}/rest/v1/job_offers?company_id=eq.${c.company_id}&select=ref_offre`, { headers: ctx.sb })).json()) as { ref_offre: string }[];
+    const refs = Array.from(new Set(offres.map((o) => o.ref_offre).filter(Boolean)));
+    let total = 0, nouvelles = 0;
+    if (refs.length) {
+      const liste = encodeURIComponent(refs.map((x) => `"${String(x).replace(/"/g, '')}"`).join(','));
+      total = await compter(`${SUPABASE_URL}/rest/v1/candidatures?job_ref=in.(${liste})&select=id`);
+      nouvelles = await compter(`${SUPABASE_URL}/rest/v1/candidatures?job_ref=in.(${liste})&created_at=gt.${encodeURIComponent(c.invite_le)}&select=id`);
+    }
+    let exclue: string | undefined;
+    if (c.relance) exclue = 'déjà relancée';
+    else if (nouvelles === 0) exclue = 'aucune nouvelle candidature';
+    else if (estAdresseTechnique(c.destinataire)) exclue = 'adresse technique';
+    else if (await aRebondi(c.destinataire)) exclue = 'adresse en rebond';
+    resultat.push({ company_id: c.company_id, nom: c.nom, destinataire: c.destinataire, invite_le: c.invite_le, nouvelles, total, exclue });
+  }
+  resultat.sort((a, b) => b.nouvelles - a.nouvelles);
+  return resultat;
+}
+
+async function apercuRelance(ctx: Ctx) {
+  const cibles = await ciblesRelance(ctx);
+  const premiere = cibles.find((c) => !c.exclue);
+  return {
+    cibles,
+    exemple: premiere ? {
+      destinataire: premiere.destinataire,
+      sujet: sujetRelance({ nomEntreprise: premiere.nom, nouvelles: premiere.nouvelles, total: premiere.total, dateInvitation: premiere.invite_le }),
+      html: corpsRelance({ nomEntreprise: premiere.nom, nouvelles: premiere.nouvelles, total: premiere.total, dateInvitation: premiere.invite_le }),
+    } : null,
+  };
+}
+
+async function envoyerRelances(ctx: Ctx, limite: number) {
+  const eligibles = (await ciblesRelance(ctx)).filter((c) => !c.exclue);
+  const lot = eligibles.slice(0, Math.min(Math.max(1, limite), RELANCE_LOT_MAX));
+  const envoyes: unknown[] = [];
+  const erreurs: unknown[] = [];
+  for (const c of lot) {
+    const data = { nomEntreprise: c.nom, nouvelles: c.nouvelles, total: c.total, dateInvitation: c.invite_le };
+    const base = { company_id: c.company_id, destinataire: c.destinataire, nom_entreprise: c.nom, sujet: sujetRelance(data), candidatures: c.total, offres: 0 };
+    try {
+      await sendBrevoEmail({ to: c.destinataire, toName: c.nom, subject: base.sujet, html: corpsRelance(data), replyTo: 'contact@soussmassa-rh.com', tags: ['relance-entreprise'] });
+      await journaliser(ctx, { ...base, statut: 'relance' });
+      envoyes.push({ nom: c.nom, email: c.destinataire, nouvelles: c.nouvelles });
+    } catch (e: any) {
+      await journaliser(ctx, { ...base, statut: 'echec', erreur: String(e?.message || e).slice(0, 300) });
+      erreurs.push({ nom: c.nom, erreur: String(e?.message || e).slice(0, 200) });
+    }
+  }
+  return { envoyes, erreurs, restantes: eligibles.length - lot.length };
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const json = (status: number, obj: unknown) => {
     res.statusCode = status;
@@ -737,6 +833,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       autorise = r.ok && (await r.json()) === true;
     }
     if (!autorise) return json(403, { error: 'Réservé à l’administrateur' });
+
+    if (body.mode === 'relance_preview') {
+      return json(200, { ok: true, ...(await apercuRelance(ctx)) });
+    }
+    if (body.mode === 'relance_send') {
+      return json(200, { ok: true, ...(await envoyerRelances(ctx, Number(body.limit) || RELANCE_LOT_MAX)) });
+    }
 
     if (body.mode === 'rename_ids') {
       return json(200, { ok: true, ...(await renommerIdentifiants(ctx, Number(body.limit) || 25)) });
