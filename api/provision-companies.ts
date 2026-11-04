@@ -784,6 +784,24 @@ async function apercuRelance(ctx: Ctx) {
 async function envoyerRelances(ctx: Ctx, limite: number) {
   const eligibles = (await ciblesRelance(ctx)).filter((c) => !c.exclue);
   const lot = eligibles.slice(0, Math.min(Math.max(1, limite), RELANCE_LOT_MAX));
+  if (!lot.length) return { envoyes: [], erreurs: [], restantes: 0 };
+
+  // Le journal est le SEUL garde-fou contre une double relance : sans le
+  // statut « relance » (migration 037), l'ecriture echouerait en silence et
+  // chaque clic relancerait les memes entreprises. On le verifie AVANT
+  // d'envoyer quoi que ce soit, par une ligne sonde aussitot supprimee.
+  const sonde = await fetch(`${SUPABASE_URL}/rest/v1/invitation_envois`, {
+    method: 'POST', headers: { ...ctx.sb, Prefer: 'return=representation' },
+    body: JSON.stringify({ company_id: lot[0].company_id, destinataire: 'sonde@invalid', nom_entreprise: 'sonde', sujet: 'sonde', candidatures: 0, offres: 0, statut: 'relance' }),
+  });
+  if (!sonde.ok) {
+    throw new Error("Migration 037 non appliquée (statut « relance » refusé par invitation_envois) : aucun envoi.");
+  }
+  const [ligne] = await sonde.json();
+  if (ligne?.id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/invitation_envois?id=eq.${ligne.id}`, { method: 'DELETE', headers: ctx.sb });
+  }
+
   const envoyes: unknown[] = [];
   const erreurs: unknown[] = [];
   for (const c of lot) {
