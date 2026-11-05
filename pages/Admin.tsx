@@ -14,6 +14,7 @@ import { observatoireService, ObsArticle, OBS_CATEGORIES } from '../src/services
 import { outreachService, OutreachTarget, OUTREACH_STATUTS, EMAIL_RE } from '../src/services/outreachService';
 import InvitationCampaignPanel from '../components/InvitationCampaignPanel';
 import RelancePanel from '../components/RelancePanel';
+import OutboxPanel from '../components/OutboxPanel';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
 
@@ -777,6 +778,9 @@ const Admin: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">{ongletActif?.label || 'Administration'}</h1>
             <p className="text-gray-500 text-sm mt-1">Gérez les candidatures et messages</p>
           </div>
+
+          {/* File « Messages préparés » : visible quel que soit l'onglet. */}
+          <OutboxPanel />
 
       {activeTab === 'candidatures' && (
         <>
