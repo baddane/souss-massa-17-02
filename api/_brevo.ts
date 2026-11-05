@@ -13,6 +13,8 @@ export interface BrevoMail {
   toName?: string;
   subject: string;
   html: string;
+  /** Version texte de secours (textContent). */
+  text?: string;
   replyTo?: string;
   /** Pieces jointes : `content` en base64 (avec ou sans prefixe data:). */
   attachments?: { name: string; content: string }[];
@@ -101,6 +103,7 @@ export async function sendBrevoEmail(mail: BrevoMail): Promise<void> {
     subject: mail.subject,
     htmlContent: mail.html,
   };
+  if (mail.text) body.textContent = mail.text;
   if (mail.replyTo) body.replyTo = { email: mail.replyTo };
   if (mail.tags?.length) body.tags = mail.tags;
   if (mail.attachments?.length) {
