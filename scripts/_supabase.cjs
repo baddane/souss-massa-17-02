@@ -42,4 +42,30 @@ function logKeyMode(scriptName) {
   }
 }
 
-module.exports = { SUPABASE_URL, SUPABASE_KEY, USING_SERVICE_ROLE, headers, logKeyMode };
+/**
+ * Lecture COMPLETE d'une table, par pages de 1 000 lignes.
+ *
+ * PostgREST renvoie au plus 1 000 lignes par requete et tronque SANS erreur.
+ * Pour le dedoublonnage c'est grave : au-dela de 1 000 offres, les offres
+ * existantes non lues passeraient pour nouvelles et seraient reinserees.
+ * `url` doit porter un ordre stable (`order=id.asc`). Leve une erreur au
+ * moindre echec : ne jamais continuer avec une liste partielle.
+ */
+async function fetchAll(url, label = 'Supabase') {
+  const TAILLE = 1000;
+  const toutes = [];
+  const sep = url.includes('?') ? '&' : '?';
+  for (let n = 0; n < 200; n++) {
+    const r = await fetch(`${url}${sep}limit=${TAILLE}&offset=${n * TAILLE}`, { headers: headers() });
+    const body = await r.json().catch(() => null);
+    if (!r.ok || !Array.isArray(body)) {
+      const detail = body && body.message ? body.message : `HTTP ${r.status}`;
+      throw new Error(`Lecture ${label} impossible : ${detail}. Verifier la cle Supabase (SUPABASE_SERVICE_ROLE_KEY si definie).`);
+    }
+    toutes.push(...body);
+    if (body.length < TAILLE) break;
+  }
+  return toutes;
+}
+
+module.exports = { SUPABASE_URL, SUPABASE_KEY, USING_SERVICE_ROLE, headers, logKeyMode, fetchAll };

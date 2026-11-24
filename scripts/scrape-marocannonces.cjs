@@ -21,7 +21,7 @@ const cheerio = require('cheerio');
 
 // Cle resolue par scripts/_supabase.cjs : service_role si SUPABASE_SERVICE_ROLE_KEY
 // est definie, sinon repli sur la cle anon.
-const { SUPABASE_URL, SUPABASE_KEY, logKeyMode } = require('./_supabase.cjs');
+const { SUPABASE_URL, SUPABASE_KEY, logKeyMode, fetchAll } = require('./_supabase.cjs');
 
 const BASE = 'https://www.marocannonces.com';
 const HEADERS = {
@@ -115,16 +115,10 @@ function parseDetail(html, id) {
 }
 
 async function existingFromDB() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=ref_offre,slug`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
-  });
-  // Ne JAMAIS avaler cet echec : une liste vide ferait passer toutes les offres
-  // pour nouvelles et provoquerait des doublons en base. On arrete net.
-  if (!res.ok) {
-    throw new Error(`Lecture des offres existantes impossible (HTTP ${res.status}) : dedoublonnage impossible, insertion annulee. Verifier la cle Supabase.`);
-  }
-  const rows = await res.json();
-  if (!Array.isArray(rows)) throw new Error('Reponse inattendue de Supabase lors du dedoublonnage : insertion annulee.');
+  // Lecture paginee (1 000 lignes max par requete) : une liste tronquee ferait
+  // passer des offres existantes pour nouvelles et creerait des doublons.
+  // fetchAll leve une erreur au moindre echec : l'insertion est alors annulee.
+  const rows = await fetchAll(`${SUPABASE_URL}/rest/v1/job_offers?select=ref_offre,slug&order=id.asc`, 'des offres existantes (dedoublonnage)');
   const refs = new Set(), slugs = new Set();
   for (const r of rows) { if (r.ref_offre) refs.add(r.ref_offre); if (r.slug) slugs.add(r.slug); }
   return { refs, slugs };

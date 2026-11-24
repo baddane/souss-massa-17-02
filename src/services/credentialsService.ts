@@ -1,4 +1,5 @@
 import { supabaseOffers } from './supabase';
+import { toutesLesLignes } from './toutesLesLignes';
 
 // Comptes entreprise provisionnes par la plateforme, avec leurs identifiants.
 //
@@ -87,16 +88,19 @@ export const credentialsService = {
   },
 
   async list(): Promise<CompanyCredential[]> {
-    const { data, error } = await supabaseOffers
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('company_credentials')
       .select('*, comptes_entreprise(nom_entreprise,ville,telephone,secteur,statut)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('company_id')
+      .range(debut, fin));
     if (error) { console.error('credentials.list', error); return []; }
 
     // Nombre d'offres rattachees a chaque compte : compte a part, PostgREST ne
     // sachant pas agreger sur une relation inverse sans vue dediee.
-    const { data: offres } = await supabaseOffers
-      .from('job_offers').select('company_id').not('company_id', 'is', null);
+    const { data: offres } = await toutesLesLignes((debut, fin) => supabaseOffers
+      .from('job_offers').select('company_id').not('company_id', 'is', null)
+      .order('id').range(debut, fin));
     const parCompte = new Map<string, number>();
     for (const o of (offres || []) as any[]) {
       parCompte.set(o.company_id, (parCompte.get(o.company_id) || 0) + 1);
@@ -115,11 +119,13 @@ export const credentialsService = {
 
   // Entreprises qui ont des offres en ligne mais pas encore de compte.
   async pending(): Promise<{ raison_sociale: string; offres: number; ville: string | null }[]> {
-    const { data, error } = await supabaseOffers
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('job_offers')
       .select('raison_sociale,ville')
       .is('company_id', null)
-      .eq('statut', 'active');
+      .eq('statut', 'active')
+      .order('id')
+      .range(debut, fin));
     if (error) { console.error('credentials.pending', error); return []; }
     const map = new Map<string, { raison_sociale: string; offres: number; ville: string | null }>();
     for (const o of (data || []) as any[]) {

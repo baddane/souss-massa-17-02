@@ -12,7 +12,7 @@ const path = require('path');
 
 // Cle resolue par scripts/_supabase.cjs : service_role si SUPABASE_SERVICE_ROLE_KEY
 // est definie, sinon repli sur la cle anon.
-const { SUPABASE_URL, SUPABASE_KEY, logKeyMode } = require('./_supabase.cjs');
+const { SUPABASE_URL, SUPABASE_KEY, logKeyMode, fetchAll } = require('./_supabase.cjs');
 const SITE_URL = 'https://www.soussmassa-rh.com';
 
 function toISODate(raw) {
@@ -42,7 +42,8 @@ async function main() {
     return body;
   }
 
-  const offers = await fetchRows(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc`, 'job_offers');
+  // Pagine : au-dela de 1 000 offres, une lecture simple tronque le sitemap.
+  const offers = await fetchAll(`${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc,id.asc`, 'job_offers');
   const obsArticles = await fetchRows(`${SUPABASE_URL}/rest/v1/observatoire_articles?select=slug,date_publi&statut=eq.publie&order=date_publi.desc`, 'observatoire_articles');
 
   const today = new Date().toISOString().split('T')[0];
