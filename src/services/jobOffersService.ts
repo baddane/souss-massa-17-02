@@ -1,13 +1,17 @@
 import { supabaseOffers, supabaseSite } from './supabase';
+import { toutesLesLignes } from './toutesLesLignes';
 
 export const jobOffersService = {
   async getAllJobOffers() {
     // Utilise la base de données externe pour les offres d'emploi
-    const { data, error } = await supabaseOffers
+    // Pagine : l'API plafonne chaque requete a 1 000 lignes.
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('job_offers')
       .select('*')
       .eq('statut', 'active')
-      .order('date_offre', { ascending: false });
+      .order('date_offre', { ascending: false })
+      .order('id')
+      .range(debut, fin));
 
     if (error) {
       console.error('Error fetching job offers from external DB:', error);
@@ -38,38 +42,44 @@ export const jobOffersService = {
       construction: expandCategory(['bâtiment', 'batiment', 'construction', 'travaux', 'dessinateur', 'électricien', 'géologue', 'conducteur des travaux', 'cadre technique']),
     };
 
-    let query = supabaseOffers
-      .from('job_offers')
-      .select('*')
-      .eq('statut', 'active')
-      .order('date_offre', { ascending: false });
+    // Requete reconstruite pour chaque page : l'API plafonne a 1 000 lignes.
+    const construire = () => {
+      let query = supabaseOffers
+        .from('job_offers')
+        .select('*')
+        .eq('statut', 'active')
+        .order('date_offre', { ascending: false })
+        .order('id');
 
-    if (filters.city) {
-      query = query.eq('ville', filters.city);
-    }
-
-    if (filters.contractType) {
-      query = query.eq('type_contrat', filters.contractType);
-    }
-
-    if (filters.jobTitle) {
-      query = query.ilike('emploi_metier', `%${filters.jobTitle}%`);
-    }
-
-    if (filters.sector) {
-      const expanded = CATEGORY_FILTERS[filters.sector];
-      if (expanded) {
-        query = query.or(expanded);
+      if (filters.city) {
+        query = query.eq('ville', filters.city);
       }
-    }
 
-    if (filters.keywords) {
-      query = query.or(
-        `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
-      );
-    }
+      if (filters.contractType) {
+        query = query.eq('type_contrat', filters.contractType);
+      }
 
-    const { data, error } = await query;
+      if (filters.jobTitle) {
+        query = query.ilike('emploi_metier', `%${filters.jobTitle}%`);
+      }
+
+      if (filters.sector) {
+        const expanded = CATEGORY_FILTERS[filters.sector];
+        if (expanded) {
+          query = query.or(expanded);
+        }
+      }
+
+      if (filters.keywords) {
+        query = query.or(
+          `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
+        );
+      }
+
+      return query;
+    };
+
+    const { data, error } = await toutesLesLignes((debut, fin) => construire().range(debut, fin));
 
     if (error) {
       console.error('Error searching job offers from external DB:', error);

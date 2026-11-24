@@ -1,4 +1,5 @@
 import { supabaseOffers as supabase } from '../src/services/supabase';
+import { toutesLesLignes } from '../src/services/toutesLesLignes';
 
 // Types pour les offres d'emploi
 export interface JobOffer {
@@ -33,11 +34,14 @@ export interface JobOffer {
 export const jobOffersService = {
   // Obtenir toutes les offres d'emploi
   async getAllJobOffers(): Promise<JobOffer[]> {
-    const { data, error } = await supabase
+    // Pagine : l'API plafonne chaque requete a 1 000 lignes.
+    const { data, error } = await toutesLesLignes<JobOffer>((debut, fin) => supabase
       .from('job_offers')
       .select('*')
       .eq('statut', 'active')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(debut, fin));
 
     if (error) {
       console.error('Error fetching job offers:', error);
@@ -152,38 +156,44 @@ export const jobOffersService = {
       construction: expandCategory(['bâtiment', 'batiment', 'construction', 'travaux', 'dessinateur', 'électricien', 'géologue', 'conducteur des travaux', 'cadre technique']),
     };
 
-    let query = supabase
-      .from('job_offers')
-      .select('*')
-      .eq('statut', 'active')
-      .order('created_at', { ascending: false });
+    // Requete reconstruite pour chaque page : l'API plafonne a 1 000 lignes.
+    const construire = () => {
+      let query = supabase
+        .from('job_offers')
+        .select('*')
+        .eq('statut', 'active')
+        .order('created_at', { ascending: false })
+        .order('id');
 
-    if (filters.city) {
-      query = query.eq('ville', filters.city);
-    }
-
-    if (filters.contractType) {
-      query = query.eq('type_contrat', filters.contractType);
-    }
-
-    if (filters.jobTitle) {
-      query = query.ilike('emploi_metier', `%${filters.jobTitle}%`);
-    }
-
-    if (filters.sector) {
-      const expanded = CATEGORY_FILTERS[filters.sector];
-      if (expanded) {
-        query = query.or(expanded);
+      if (filters.city) {
+        query = query.eq('ville', filters.city);
       }
-    }
 
-    if (filters.keywords) {
-      query = query.or(
-        `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
-      );
-    }
+      if (filters.contractType) {
+        query = query.eq('type_contrat', filters.contractType);
+      }
 
-    const { data, error } = await query;
+      if (filters.jobTitle) {
+        query = query.ilike('emploi_metier', `%${filters.jobTitle}%`);
+      }
+
+      if (filters.sector) {
+        const expanded = CATEGORY_FILTERS[filters.sector];
+        if (expanded) {
+          query = query.or(expanded);
+        }
+      }
+
+      if (filters.keywords) {
+        query = query.or(
+          `emploi_metier.ilike.%${filters.keywords}%,raison_sociale.ilike.%${filters.keywords}%`
+        );
+      }
+
+      return query;
+    };
+
+    const { data, error } = await toutesLesLignes<JobOffer>((debut, fin) => construire().range(debut, fin));
 
     if (error) {
       console.error('Error searching job offers:', error);

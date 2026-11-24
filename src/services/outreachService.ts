@@ -1,4 +1,5 @@
 import { supabaseOffers } from './supabase';
+import { toutesLesLignes } from './toutesLesLignes';
 
 // Prospection entreprises : cibles à contacter + envoi via Brevo (admin only).
 export interface OutreachTarget {
@@ -39,11 +40,13 @@ const rangEmail = (t: OutreachTarget): number => {
 
 export const outreachService = {
   async list(): Promise<OutreachTarget[]> {
-    const { data, error } = await supabaseOffers
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('outreach_targets')
       .select(SELECT)
       .order('postes', { ascending: false })
-      .order('nb_offres', { ascending: false });
+      .order('nb_offres', { ascending: false })
+      .order('id')
+      .range(debut, fin));
     if (error) { console.error('outreach.list', error); return []; }
 
     // Tri fait ICI et non dans le rendu : la saisie d'un e-mail met a jour la

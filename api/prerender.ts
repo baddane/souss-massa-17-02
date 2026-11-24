@@ -1,3 +1,5 @@
+import { lireTout } from './_lireTout.js';
+
 export const config = { runtime: 'edge' };
 
 // Pre-rendu des balises <head> pour les pages profondes du SPA.
@@ -223,9 +225,12 @@ const OFFERS_TTL = 5 * 60 * 1000;
 
 async function loadOffers(): Promise<CompanyOffer[] | null> {
   if (offersCache && Date.now() - offersCache.at < OFFERS_TTL) return offersCache.rows;
-  const rows = await sbGet(
-    'job_offers?select=raison_sociale,ville,nbre_postes,emploi_metier,slug&statut=eq.active',
-  );
+  // Pagine : au-dela de 1 000 offres actives, une page entreprise aurait
+  // perdu une partie de ses offres.
+  const rows = await lireTout(
+    `${SUPABASE_URL}/rest/v1/job_offers?select=raison_sociale,ville,nbre_postes,emploi_metier,slug&statut=eq.active&order=id.asc`,
+    { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  ).catch(() => null);
   if (rows === null) return offersCache?.rows || null;
   offersCache = { rows: rows as CompanyOffer[], at: Date.now() };
   return offersCache.rows;

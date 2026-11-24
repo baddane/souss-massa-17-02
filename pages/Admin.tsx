@@ -17,6 +17,7 @@ import RelancePanel from '../components/RelancePanel';
 import OutboxPanel from '../components/OutboxPanel';
 import { slugify } from '../components/SEO';
 import { SOUSS_MASSA_CITIES } from '../constants';
+import { toutesLesLignes } from '../src/services/toutesLesLignes';
 
 const CONTRACT_TYPES = ['CDI', 'CDD', 'Stage', 'Alternance', 'Freelance'];
 const emptyOfferForm = {
@@ -563,10 +564,14 @@ const Admin: React.FC = () => {
 
   const loadCandidatures = async () => {
     setLoading(true);
-    const { data, error } = await supabaseOffers
+    // Lecture paginee : l'API Supabase plafonne chaque requete a 1 000 lignes,
+    // ce qui figeait le compteur a 1 000 (cf. src/services/toutesLesLignes.ts).
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('candidatures')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(debut, fin));
 
     if (error) {
       console.error('Erreur chargement candidatures:', error);

@@ -1344,6 +1344,22 @@ Pour finir la bascule :
 > et **tester les 4 parcours publics** (upload CV, postuler, contact, inscription entreprise)
 > pour verifier qu'on n'a rien casse.
 
+## Plafond de 1 000 lignes de l'API Supabase (pagination obligatoire)
+
+PostgREST renvoie **au plus 1 000 lignes par requete** et tronque **sans
+erreur**. Le 24/11/2026, l'onglet « Candidatures » affichait 1 000 alors que la
+base en contenait 1 074 ; aucune donnee n'etait perdue, seul l'affichage etait
+coupe. Toute lecture qui peut depasser 1 000 lignes passe donc par un helper :
+
+- navigateur : `toutesLesLignes()` (`src/services/toutesLesLignes.ts`), avec
+  `.range(debut, fin)` et un ordre stable termine par `.order('id')` ;
+- fonctions `api/` : `lireTout()` (`api/_lireTout.ts`), URL avec `order=…,id.asc` ;
+- scripts : `fetchAll()` (`scripts/_supabase.cjs`). **Critique pour le
+  dedoublonnage** : une liste tronquee ferait reinserer des offres existantes.
+
+Pour un simple total, utiliser `count: 'exact'` (`head: true`) plutot que
+`data.length`.
+
 ## Keepalive Supabase (cron Vercel)
 
 Le free-tier Supabase met le projet en pause apres ~7 jours d'inactivite. Un **cron Vercel**

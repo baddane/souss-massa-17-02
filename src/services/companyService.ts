@@ -1,4 +1,5 @@
 import { supabaseOffers } from './supabase';
+import { toutesLesLignes } from './toutesLesLignes';
 
 // ---- Types ----
 export interface CompanyProfile {
@@ -226,11 +227,13 @@ export const companyService = {
     const refs = (offers || []).map((o: any) => o.ref_offre).filter(Boolean);
     if (refs.length === 0) return [];
 
-    const { data, error } = await supabaseOffers
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('candidatures')
       .select('*')
       .in('job_ref', refs)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(debut, fin));
     if (error) { console.error('getMyCandidatures', error); return []; }
     return (data || []) as CandidatureRow[];
   },
@@ -435,8 +438,9 @@ export const claimService = {
     const refs = rows.map((o: any) => o.ref_offre).filter(Boolean);
     const counts = new Map<string, number>();
     if (refs.length) {
-      const { data: cands } = await supabaseOffers
-        .from('candidatures').select('job_ref').in('job_ref', refs);
+      const { data: cands } = await toutesLesLignes((debut, fin) => supabaseOffers
+        .from('candidatures').select('job_ref').in('job_ref', refs)
+        .order('id').range(debut, fin));
       for (const c of cands || []) counts.set((c as any).job_ref, (counts.get((c as any).job_ref) || 0) + 1);
     }
 

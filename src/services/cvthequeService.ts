@@ -1,4 +1,5 @@
 import { supabaseOffers } from './supabase';
+import { toutesLesLignes } from './toutesLesLignes';
 import { parseCvFile, ParsedCv } from './cvParser';
 
 const BUCKET = 'cvtheque';
@@ -121,21 +122,26 @@ export const cvthequeService = {
 
   // Recherche dynamique
   async search(filters: CvthequeFilters = {}): Promise<CvthequeRow[]> {
-    let query = supabaseOffers.from('cvtheque').select('*').order('created_at', { ascending: false });
+    // Requete reconstruite pour chaque page : l'API plafonne a 1 000 lignes.
+    const construire = () => {
+      let query = supabaseOffers.from('cvtheque').select('*').order('created_at', { ascending: false }).order('id');
 
-    if (filters.q && filters.q.trim()) {
-      query = query.textSearch('search_tsv', filters.q.trim(), { type: 'websearch', config: 'french' });
-    }
-    if (filters.ville) query = query.ilike('ville', `%${filters.ville}%`);
-    if (filters.poste) query = query.ilike('poste', `%${filters.poste}%`);
-    if (filters.diplome) query = query.ilike('diplome', `%${filters.diplome}%`);
-    if (filters.niveau) query = query.ilike('niveau_etudes', `%${filters.niveau}%`);
-    if (filters.competence) query = query.contains('competences', [filters.competence]);
-    if (typeof filters.minExperience === 'number' && !isNaN(filters.minExperience)) {
-      query = query.gte('experience_years', filters.minExperience);
-    }
+      if (filters.q && filters.q.trim()) {
+        query = query.textSearch('search_tsv', filters.q.trim(), { type: 'websearch', config: 'french' });
+      }
+      if (filters.ville) query = query.ilike('ville', `%${filters.ville}%`);
+      if (filters.poste) query = query.ilike('poste', `%${filters.poste}%`);
+      if (filters.diplome) query = query.ilike('diplome', `%${filters.diplome}%`);
+      if (filters.niveau) query = query.ilike('niveau_etudes', `%${filters.niveau}%`);
+      if (filters.competence) query = query.contains('competences', [filters.competence]);
+      if (typeof filters.minExperience === 'number' && !isNaN(filters.minExperience)) {
+        query = query.gte('experience_years', filters.minExperience);
+      }
 
-    const { data, error } = await query;
+      return query;
+    };
+
+    const { data, error } = await toutesLesLignes((debut, fin) => construire().range(debut, fin));
     if (error) { console.error('cvtheque.search', error); return []; }
     return (data || []) as CvthequeRow[];
   },
@@ -145,11 +151,13 @@ export const cvthequeService = {
   // / telephone sans jamais lire le CV. Sans rattrapage, les filtres ville,
   // niveau, diplome et competences ne servent a rien sur ces profils.
   async unparsed(): Promise<CvthequeRow[]> {
-    const { data, error } = await supabaseOffers
+    const { data, error } = await toutesLesLignes((debut, fin) => supabaseOffers
       .from('cvtheque')
       .select('*')
       .is('raw_text', null)
-      .not('file_path', 'is', null);
+      .not('file_path', 'is', null)
+      .order('id')
+      .range(debut, fin));
     if (error) { console.error('cvtheque.unparsed', error); return []; }
     return (data || []) as CvthequeRow[];
   },

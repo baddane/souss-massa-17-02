@@ -1,3 +1,5 @@
+import { lireTout } from './_lireTout.js';
+
 export const config = { runtime: 'edge' };
 
 const SUPABASE_URL = 'https://tqrhxhoqqktnhttzmoqt.supabase.co';
@@ -25,17 +27,12 @@ function toISODate(raw: string | null | undefined): string | null {
 
 export default async function handler() {
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
-
-    const offers = res.ok ? await res.json() : [];
+    // Lecture paginee : au-dela de 1 000 offres, une requete simple tronque
+    // le sitemap sans le dire.
+    const offers: any[] = await lireTout(
+      `${SUPABASE_URL}/rest/v1/job_offers?select=slug,date_offre,ville,raison_sociale&statut=eq.active&order=date_offre.desc,id.asc`,
+      { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    ).catch(() => []);
 
     const obsRes = await fetch(
       `${SUPABASE_URL}/rest/v1/observatoire_articles?select=slug,date_publi&statut=eq.publie&order=date_publi.desc`,

@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 import { sendBrevoEmail, estAdresseTechnique } from './_brevo.js';
+import { lireTout } from './_lireTout.js';
 import { corpsInvitation, sujetInvitation } from './_invitation.js';
 import { corpsRelance, sujetRelance } from './_relance.js';
 
@@ -680,11 +681,12 @@ async function envoyerLot(ctx: Ctx, limite: number) {
   // par date a contacte deux entreprises a 0 candidature avant BEST PROFIL, qui
   // en avait 34 qui dormaient.
   const parOffre = new Map<string, number>();
-  const oRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/job_offers?select=company_id,ref_offre&company_id=not.is.null`, { headers: ctx.sb });
-  const offres = (await oRes.json()) as { company_id: string; ref_offre: string }[];
-  const cRes = await fetch(`${SUPABASE_URL}/rest/v1/candidatures?select=job_ref`, { headers: ctx.sb });
-  const cands = (await cRes.json()) as { job_ref: string }[];
+  // Lectures paginees : la table candidatures a depasse 1 000 lignes (24/11),
+  // et une lecture simple tronquee faussait cet ordre de priorite.
+  const offres = await lireTout<{ company_id: string; ref_offre: string }>(
+    `${SUPABASE_URL}/rest/v1/job_offers?select=company_id,ref_offre&company_id=not.is.null&order=id.asc`, ctx.sb);
+  const cands = await lireTout<{ job_ref: string }>(
+    `${SUPABASE_URL}/rest/v1/candidatures?select=job_ref&order=id.asc`, ctx.sb);
   const parRef = new Map<string, number>();
   for (const c of cands) parRef.set(c.job_ref, (parRef.get(c.job_ref) || 0) + 1);
   for (const o of offres) {
@@ -921,12 +923,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       // Toutes les entreprises qui ont des offres en ligne et pas encore de
       // compte. L'email reel est repris d'`outreach_targets` quand il existe ;
       // sinon on fabrique un identifiant technique, qui sert de login.
-      const [oRes, tRes, cRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/job_offers?select=raison_sociale,ville&statut=eq.active&company_id=is.null`, { headers: sb }),
+      // Offres lues page par page : au-dela de 1 000, une lecture simple
+      // aurait ignore des entreprises sans compte.
+      const [offresSansCompte, tRes, cRes] = await Promise.all([
+        lireTout<any>(`${SUPABASE_URL}/rest/v1/job_offers?select=raison_sociale,ville&statut=eq.active&company_id=is.null&order=id.asc`, sb),
         fetch(`${SUPABASE_URL}/rest/v1/outreach_targets?select=raison_sociale,email,ville`, { headers: sb }),
         fetch(`${SUPABASE_URL}/rest/v1/comptes_entreprise?select=nom_entreprise,email`, { headers: sb }),
       ]);
-      if (!oRes.ok || !tRes.ok || !cRes.ok) throw new Error('Lecture des entreprises impossible');
+      if (!tRes.ok || !cRes.ok) throw new Error('Lecture des entreprises impossible');
 
       const comptes = (await cRes.json()) as any[];
       const dejaNoms = new Set(comptes.map((c) => (c.nom_entreprise || '').trim().toLowerCase()));
@@ -939,7 +943,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       }
 
       const parNom = new Map<string, { raison_sociale: string; ville: string | null }>();
-      for (const o of (await oRes.json()) as any[]) {
+      for (const o of offresSansCompte) {
         const nom = (o.raison_sociale || '').trim();
         if (!nom || dejaNoms.has(nom.toLowerCase())) continue;
         if (!parNom.has(nom.toLowerCase())) parNom.set(nom.toLowerCase(), { raison_sociale: nom, ville: o.ville || null });
