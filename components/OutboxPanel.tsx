@@ -10,6 +10,10 @@ import { corpsMessage } from '../api/_gabarit';
 // (relance a un recruteur, reponse a un message de contact) sont deposes dans
 // la file ; ils s'affichent ici, en tete de l'admin, quel que soit l'onglet.
 // L'admin relit, corrige au besoin, puis envoie d'un clic (api/send-outbox).
+//
+// Regle du 24/11/2026 (BADDANE) : un message envoye ou retire DISPARAIT de la
+// file, systematiquement. Seules les lignes a traiter sont chargees ; le
+// journal des envois reste en base (statut, sent_at), il n'encombre plus l'admin.
 
 interface Ligne {
   id: string; to_email: string; to_name: string | null; subject: string; body: string;
@@ -23,12 +27,12 @@ export default function OutboxPanel() {
   const [apercu, setApercu] = useState<string | null>(null);
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [succes, setSucces] = useState<string | null>(null);
 
   const charger = async () => {
-    const depuis = new Date(Date.now() - 7 * 864e5).toISOString();
     const { data, error } = await supabaseOffers
       .from('outbox').select('*')
-      .or(`statut.in.(a_envoyer,envoi_en_cours),sent_at.gt.${depuis}`)
+      .in('statut', ['a_envoyer', 'envoi_en_cours'])
       .order('created_at', { ascending: true });
     // Table absente (migration 038 non appliquee) : le panneau reste masque.
     if (error) { setLignes([]); return; }
@@ -36,8 +40,14 @@ export default function OutboxPanel() {
   };
   useEffect(() => { charger(); }, []);
 
-  if (!lignes || lignes.length === 0) return null;
-  const aEnvoyer = lignes.filter(l => l.statut !== 'envoye' && l.statut !== 'abandonne');
+  // Ceinture et bretelles : meme si une ligne envoyee revenait de la requete,
+  // elle n'est jamais affichee.
+  const aEnvoyer = (lignes || []).filter(l => l.statut === 'a_envoyer' || l.statut === 'envoi_en_cours');
+  if (aEnvoyer.length === 0) {
+    return succes ? (
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 text-sm text-green-800">{succes}</div>
+    ) : null;
+  }
 
   const valeur = (l: Ligne) => edition[l.id] || { subject: l.subject, body: l.body };
   const modifie = (l: Ligne) => Boolean(edition[l.id]) &&
@@ -52,7 +62,7 @@ export default function OutboxPanel() {
 
   const envoyer = async (l: Ligne) => {
     if (!(await confirmer({ message: `Envoyer « ${valeur(l).subject} » à ${l.to_email} ? L'envoi est irréversible.` }))) return;
-    setEnCours(l.id); setErreur(null);
+    setEnCours(l.id); setErreur(null); setSucces(null);
     try {
       if (modifie(l)) await enregistrer(l);
       const { data: { session } } = await supabaseOffers.auth.getSession();
@@ -64,6 +74,7 @@ export default function OutboxPanel() {
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error((j as any).error || `Échec (${r.status})`);
       setEdition(e => { const n = { ...e }; delete n[l.id]; return n; });
+      setSucces(`Message envoyé à ${l.to_email}. Il a été retiré de la file.`);
     } catch (e: any) { setErreur(String(e?.message || e)); }
     finally { setEnCours(null); charger(); }
   };
@@ -81,8 +92,9 @@ export default function OutboxPanel() {
         Relisez, corrigez si besoin, puis envoyez : le message part depuis contact@soussmassa-rh.com, au gabarit du site.
       </p>
       {erreur && <p className="text-sm text-red-600 mb-3">{erreur}</p>}
+      {succes && <p className="text-sm text-green-700 mb-3">{succes}</p>}
       <div className="space-y-4">
-        {lignes.map(l => {
+        {aEnvoyer.map(l => {
           const v = valeur(l);
           const ouvert = l.statut === 'a_envoyer';
           return (
